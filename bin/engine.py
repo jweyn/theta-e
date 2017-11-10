@@ -16,3 +16,8 @@ Main engine for the theta-e system.
 # Step 5: retrieve verification data; save to db
 # Step 6: run manager to calculate verification statistics; save to db
 # Step 7: run plotting scripts; theta-e website scripts
+
+import configobj
+
+config_dict = configobj.ConfigObj(args[0], file_error=True)
+
