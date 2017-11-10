@@ -19,5 +19,7 @@ Main engine for the theta-e system.
 
 import configobj
 
-config_dict = configobj.ConfigObj(args[0], file_error=True)
+def main(options, args):
+    config_dict = configobj.ConfigObj(args[0], file_error=True)
+    print(config_dict)
 
