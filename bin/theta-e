@@ -1,0 +1,31 @@
+#!/usr/bin/env python2
+#
+# Copyright (c) 2017 Jonathan Weyn <jweyn@uw.edu>
+#
+# See the file LICENSE for your rights.
+
+'''
+Launching script for the theta-e forecast verification system.
+'''
+
+import sys
+from optparse import OptionParser
+
+# Import the main engine
+import engine
+
+#===============================================================================
+# Parse the input arguments
+def parseArgs():
+    '''
+    Parse input arguments.
+    '''
+    
+    parser = OptionParser()
+    return
+
+options, args = parseArgs()
+
+#===============================================================================
+# Launch the main engine
+engine.main(options, args)
