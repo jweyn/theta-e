@@ -20,6 +20,6 @@ Main engine for the theta-e system.
 import configobj
 
 def main(options, args):
-    config_dict = configobj.ConfigObj(args[0], file_error=True)
+    config_dict = getConfig(args[0])
     print(config_dict)
 
