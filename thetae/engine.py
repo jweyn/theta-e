@@ -17,9 +17,14 @@ Main engine for the theta-e system.
 # Step 6: run manager to calculate verification statistics; save to db
 # Step 7: run plotting scripts; theta-e website scripts
 
-import configobj
+from . import getConfig, Forecast
 
 def main(options, args):
-    config_dict = getConfig(args[0])
-    print(config_dict)
+    '''
+        Main engine process.
+    '''
+    
+    config = getConfig(args[0])
+    print(config)
+
 
