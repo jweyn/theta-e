@@ -5,11 +5,14 @@
 #
 
 '''
-Utilities for theta-e
+Utilities for theta-e.
 '''
 
 def _get_object(module_class):
-    """Given a string with a module class name, it imports and returns the class."""
+    """
+    Given a string with a module class name, it imports and returns the class.
+    This function (c) Tom Keffer, weeWX.
+    """
     # Split the path into its parts
     parts = module_class.split('.')
     # Strip off the classname:
@@ -23,5 +26,6 @@ def _get_object(module_class):
             mod = getattr(mod, part)
     except AttributeError:
         # Can't find something. Give a more informative error message:
-        raise AttributeError("Module '%s' has no attribute '%s' when searching for '%s'" % (mod.__name__, part, module_class))
+        raise AttributeError("Module '%s' has no attribute '%s' when searching for '%s'" %
+                             (mod.__name__, part, module_class))
     return mod
