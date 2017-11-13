@@ -12,7 +12,7 @@ import sys
 from optparse import OptionParser
 
 # Import the main engine
-import engine
+import thetae.engine
 
 #===============================================================================
 # Parse the input arguments
@@ -28,4 +28,4 @@ options, args = parseArgs()
 
 #===============================================================================
 # Launch the main engine
-engine.main(options, args)
+thetae.engine.main(options, args)
