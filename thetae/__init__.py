@@ -21,7 +21,7 @@ all_service_groups = [
 # Get configuration.
 # =============================================================================
 
-def getConfiguration(config_path):
+def getConfig(config_path):
     '''
     Retrieve the config dictionary from config_path.
     '''
