@@ -8,6 +8,8 @@
 Main engine for the theta-e system.
 '''
 
+import thetae.db
+
 # Step 1: check the database
 # Step 2: if database has no table for the stid or data are old, reset the table
 # Step 3: if applicable, run db_init for site: retrieves historical
@@ -21,12 +23,15 @@ from . import getConfig, Forecast
 
 def main(options, args):
     '''
-        Main engine process.
+    Main engine process.
     '''
     
     config = getConfig(args[0])
     print(config)
 
+    # Step one: check the database initialization
+    add_sites = thetae.db.db_init(config)
+    print(add_sites)
 
 def mainArchive(config):
-    
+    return

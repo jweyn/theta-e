@@ -31,7 +31,7 @@ def getConfig(config_path):
     except IOError:
         print("Error: unable to open configuration file %s" % config_path)
         raise
-    except configobj.ConfigObjError, e:
+    except(configobj.ConfigObjError, e):
         print("Error while parsing configuration file %s" % config_path)
         print("    Reason: '%s'" % e)
         raise
