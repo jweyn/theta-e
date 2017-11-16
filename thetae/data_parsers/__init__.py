@@ -6,6 +6,10 @@
 
 '''
 Module containing forecast data parsers.
+
+Each sub-module should have a function main() which takes in arguments of
+(config, stid, forecast_date). The main function should return a Forecast
+object.
 '''
 
 # =============================================================================
