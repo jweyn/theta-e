@@ -11,7 +11,7 @@ Retrieve GFS MOS data.
 from thetae import Forecast
 from datetime import datetime, timedelta
 
-# For now, let's return some junk! It's not even using a Forecast object yet.
+# For now, let's return some junk!
 
 def gfs_mos_forecast(stid, forecast_date):
     '''

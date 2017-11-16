@@ -69,11 +69,16 @@ def getConfig(config_path):
 import pandas as pd
 
 class TimeSeries():
-    def __init__(self):
+    def __init__(self, stid):
+        self.stid = stid
+        self.model = None
         self.data = pd.DataFrame()
 
 class Daily():
-    def __init__(self):
+    def __init__(self, stid, date):
+        self.stid = stid
+        self.date = date
+        self.model = None
         self.high = None
         self.low = None
         self.wind = None
@@ -83,11 +88,14 @@ class Forecast():
     '''
     Forecast object for a single date. Contains both a timeseries and daily
     values.
+    stid and model should be type str; date should be datetime object.
     '''
     
-    def __init__(self, stid, source, date):
+    def __init__(self, stid, model, date):
         self.stid = stid
-        self.source = source
+        self.model = model
         self.date = date
-        self.timeseries = TimeSeries()
-        self.daily = Daily()
+        self.timeseries = TimeSeries(stid)
+        self.timeseries.model = model
+        self.daily = Daily(stid, date)
+        self.daily.model = model
