@@ -6,10 +6,6 @@
 
 '''
 Main engine for the theta-e system.
-'''
-
-import thetae
-from thetae.util import _get_object, getConfig, Forecast
 
 # Step 1: check the database; if database has no table for the stid or data are
 #         old, reset the table
@@ -19,6 +15,10 @@ from thetae.util import _get_object, getConfig, Forecast
 # Step 4: retrieve verification data; save to db
 # Step 5: run manager to calculate verification statistics; save to db
 # Step 6: run plotting scripts; theta-e website scripts
+'''
+
+import thetae
+from thetae.util import _get_object, getConfig, Forecast
 
 def main(options, args):
     '''
@@ -28,7 +28,7 @@ def main(options, args):
     config = getConfig(args[0])
 
     # Step one: check the database initialization
-    print('engine: runnung database initialization checks')
+    print('engine: running database initialization checks')
     add_sites = thetae.db.db_init(config)
 
     # Step two: for each site in add_sites above, run historical data

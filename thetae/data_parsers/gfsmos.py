@@ -11,6 +11,7 @@ Retrieve GFS MOS data.
 from thetae import Forecast
 from datetime import datetime, timedelta
 
+model_name = 'GFS MOS'
 # For now, let's return some junk!
 
 def gfs_mos_forecast(stid, forecast_date):
@@ -19,7 +20,7 @@ def gfs_mos_forecast(stid, forecast_date):
     '''
     
     # Generate a Forecast object
-    forecast = Forecast(stid, 'GFS MOS', forecast_date)
+    forecast = Forecast(stid, model_name, forecast_date)
     forecast.daily.high = 52.
     forecast.daily.low = 41.
     forecast.daily.wind = 17.
