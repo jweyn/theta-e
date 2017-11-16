@@ -5,13 +5,13 @@
 #
 
 '''
-Retrieve GFS MOS data.
+Retrieve GFS or NAM MOS data.
 '''
 
 from thetae import Forecast
 from datetime import datetime, timedelta
 
-model_name = 'MOS'
+default_model_name = 'MOS'
 # For now, let's return some junk!
 
 def gfs_mos_forecast(stid, forecast_date):
@@ -20,7 +20,7 @@ def gfs_mos_forecast(stid, forecast_date):
     '''
     
     # Generate a Forecast object
-    forecast = Forecast(stid, model_name, forecast_date)
+    forecast = Forecast(stid, default_model_name, forecast_date)
     forecast.daily.high = 52.
     forecast.daily.low = 41.
     forecast.daily.wind = 17.
@@ -34,13 +34,17 @@ def gfs_mos_forecast(stid, forecast_date):
 
     return forecast
 
-def main(config, stid, forecast_date):
+def main(config, model, stid, forecast_date):
     '''
-    Produce a Forecast object from GFS MOS.
+    Produce a Forecast object from MOS.
     '''
-
+    
+    # A driver that can be used for multiple model sources would here be
+    # tasked with reading the config['Models'][model] for extra parameters.
     # Get forecast
     forecast = gfs_mos_forecast(stid, forecast_date)
+    # Set the model name
+    forecast.setModel(model)
 
     return forecast
 

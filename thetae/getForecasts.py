@@ -39,15 +39,16 @@ def main(config):
                 print('getForecasts: getting forecast for station %s' % stid)
             try:
                 # Each forecast has a function main which returns a Forecast
-                forecast = _get_object(driver).main(config, stid, forecast_date)
-                # Overwrite the driver's model name with the one from config,
-                # in case a single driver is used for more than one model
-                forecast.setModel(model)
+                forecast = _get_object(driver).main(config, model, stid,
+                                                    forecast_date)
             except BaseException as e:
                 print('getForecast: failed to get forecast from %s for %s' %
                       (model, stid))
                 print("Reason: '%s'" % str(e))
                 continue
+            # Overwrite the driver's model name with the one from config,
+            # in case a single driver is used for more than one model
+            forecast.setModel(model)
             # Write to the database
             try:
                 if int(config['debug']) > 9:
