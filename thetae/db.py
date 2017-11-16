@@ -260,6 +260,8 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
         '''
         Converts an hourly timeseries to sql rows
         '''
+        if int(config['debug']) > 50:
+            print('db_writeTimeSeries: converting timseries data to SQL rows')
         series = []
         hourly.columns = [c.upper() for c in hourly.columns]
         columns = [c.upper() for c in columns]
