@@ -49,7 +49,7 @@ def main(config):
                 if int(config['debug']) > 9:
                     print('getForecasts: writing forecast to database')
 #                db_write(config, stid, forecast, 'DAILY_FORECAST', model=model)
-                db_writeForecast(config, forecast)
+                db_writeForecast(config, [forecast,forecast])
             except BaseException as e:
                 print('getForecast: failed to write forecast to database')
                 print("*** Reason: '%s'" % str(e))
