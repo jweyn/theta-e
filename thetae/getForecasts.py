@@ -8,7 +8,7 @@
 Service to get all forecasts specified in config
 '''
 
-from thetae.db import db_write
+from thetae.db import db_writeForecast
 from datetime import datetime, timedelta
 from thetae.util import _get_object
 
@@ -25,7 +25,6 @@ def main(config):
     
     # Go through the models in config
     for model in config['Models'].keys():
-        timeseries = config['Models'][model].get('timeseries', False)
         try:
             driver = config['Models'][model]['driver']
         except KeyError:
@@ -36,20 +35,22 @@ def main(config):
         # Get the forecast from the driver at each site
         for stid in config['Stations'].keys():
             if int(config['debug']) > 9:
-                print('getForecasts: forecast for station %s' % stid)
+                print('getForecasts: getting forecast for station %s' % stid)
             try:
+                # Each forecast has a function main and returns a Forecast
                 forecast = _get_object(driver).main(config, stid, forecast_date)
             except BaseException as e:
                 print('getForecast: failed to get forecast from %s for %s' %
                       (model, stid))
-                print("Reason: '%s'" % e.message)
+                print("Reason: '%s'" % str(e))
                 continue
             # Write to the database
-#            try:
-            if int(config['debug']) > 9:
-                print('getForecasts: writing forecast to database')
-            db_write(config, stid, forecast, 'DAILY_FORECAST', model=model)
-#            except BaseException as e:
-#                print('getForecast: failed to write forecast to database')
-#                print("Reason: '%s'" % e.message)
+            try:
+                if int(config['debug']) > 9:
+                    print('getForecasts: writing forecast to database')
+#                db_write(config, stid, forecast, 'DAILY_FORECAST', model=model)
+                db_writeForecast(config, forecast)
+            except BaseException as e:
+                print('getForecast: failed to write forecast to database')
+                print("*** Reason: '%s'" % str(e))
 

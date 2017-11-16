@@ -132,7 +132,7 @@ def db_init(config):
             
     return add_sites
 
-def _db_write(config, values, database, table):
+def _db_write(config, values, database, table, replace=True):
     '''
     Writes data in values to the table. Values is a list of tuples, each with
     the appropriate number of elements to fill a row in table.
@@ -149,18 +149,25 @@ def _db_write(config, values, database, table):
             row_len = len(row)
         else:
             raise ValueError('_db_write: all rows of values must have the same length.')
-
     # Find the length of the tuple formatter for the row length
     value_formatter = ('(' + '?,' * row_len)[:-1] + ')'
     # Open a database connection and execute and commit
     conn = db_conn(config, database)
     cursor = conn.cursor()
-    if int(config['debug']) > 10:
+    if replace:
+        sql_cmd = 'REPLACE'
+        if int(config['debug']) > 9:
+            print('_db_write: calling SQL REPLACE to overwrite existing')
+    else:
+        sql_cmd = 'INSERT'
+        if int(config['debug']) > 9:
+            print('_db_write: calling SQL INSERT; will raise exception if existing')
+    if int(config['debug']) > 9:
         print('_db_write: committing values to %s table %s' % (database,
                                                                table))
     if int(config['debug']) > 50:
         print(values)
-    cursor.executemany("INSERT INTO %s VALUES %s;" % (table, value_formatter),
+    cursor.executemany("%s INTO %s VALUES %s;" % (sql_cmd, table, value_formatter),
                        values)
     conn.commit()
     conn.close()
@@ -180,6 +187,8 @@ def db_write(config, stid, values_dict, table_type, model=None):
     converted directly into database values. If a key,values dictionary is
     provided, then the keys MUST match the columns in the database schema, with
     the exception of DateTime and Model, which MUST be the first two columns.
+    
+    In the future, this function will be deprecated.
     '''
 
     from datetime import datetime, timedelta
@@ -234,20 +243,128 @@ def db_write(config, stid, values_dict, table_type, model=None):
         values_sql.append(row)
 
     # Write to the database
-#    try:
     _db_write(config, values_sql, database, table)
-#    except BaseException as e:
-#        print('db_write: failed to write values to database')
-#        print("Reason: '%s'" % e.message)
 
 def db_writeForecast(config, forecast):
     '''
     Function to write a Forecast object or list of Forecast objects to the main
-    theta-e database.
+    theta-e database. The structure of the Forecast object and its TimeSeries
+    pandas database must match the structure of the default database schema.
     '''
-    stid = forecast.stid
     
-    return
+    def daily_to_row(daily, datestr, model, columns):
+        '''
+        Converts a Daily object to a sql row
+        '''
+        row = []
+        for column in columns:
+            if column.upper() == 'DATETIME':
+                row.append(datestr)
+            elif column.upper() == 'MODEL':
+                row.append(model)
+            elif column.upper() != 'PRIMARY KEY':
+                row.append(getattr(daily, column, None))
+        return tuple(row)
+                
+    def hourly_to_row(hourly, model, columns):
+        '''
+        Converts an hourly timeseries to sql rows
+        '''
+        series = []
+        for index, pdrow in hourly.iterrows():
+            try:
+                datestr = pdrow['DateTime']
+            except:
+                datestr = pdrow['datetime']
+            if type(datestr) is not str:
+                datestr = datetime.strftime(datestr, '%Y-%m-%d %H:%M')
+            row = []
+            for column in columns:
+                if column.upper() == 'DATETIME':
+                    row.append(datestr)
+                elif column.upper() == 'MODEL':
+                    row.append(model)
+                elif column.upper() != 'PRIMARY KEY':
+                    try:
+                        row.append(pdrow[column])
+                    except:
+                        row.append(None)
+            series.append(tuple(row))
+        return series
+    
+    from datetime import datetime, timedelta
+    
+    # Retrieve the default database configuration
+    data_binding = 'forecast'
+    database = config['DataBinding'][data_binding]['database']
+    
+    # The daily forecast part
+    # Get the names of columns in the schema
+    schema_name = config['DataBinding'][data_binding]['schema']
+    schema = _get_object(schema_name).schema
+    table_type = 'DAILY_FORECAST'
+    columns = [c[0] for c in schema['_%s' % table_type.upper()]]
+    if int(config['debug']) > 50:
+        print('db_writeForecast: converting daily data to columns and values as follows')
+        print(columns)
+    # If forecast is a list of Forecasts, iterate
+    daily_sql = []
+    if type(forecast) is list:
+        stid = forecast[0].stid
+        for f in forecast:
+            if stid != f.stid:
+                raise ValueError('db_writeForecast error: all forecasts in list ' +
+                                 'must have the same station id.')
+            datestr = datetime.strftime(f.date, '%Y-%m-%d %H:%M')
+            row = daily_to_row(f.daily, datestr, f.source, columns)
+            if int(config['debug']) > 50:
+                print(row)
+            daily_sql.append(row)
+    else:
+        stid = forecast.stid
+        datestr = datetime.strftime(forecast.date, '%Y-%m-%d %H:%M')
+        row = daily_to_row(forecast.daily, datestr, forecast.source, columns)
+        if int(config['debug']) > 50:
+            print(row)
+        daily_sql.append(row)
+    # Write to the database
+    table = '%s_%s' % (stid.upper(), table_type)
+    if int(config['debug']) > 9:
+        print('db_writeForecast: writing data to table %s' % table)
+    _db_write(config, daily_sql, database, table)
+
+    # The timeseries forecast part
+    table_type = 'HOURLY_FORECAST'
+    columns = [c[0] for c in schema['_%s' % table_type.upper()]]
+    if int(config['debug']) > 50:
+        print('db_writeForecast: converting hourly data to columns and values as follows')
+        print(columns)
+    if type(forecast) is list:
+        hourly_sql = []
+        stid = forecast[0].stid
+        for f in forecast:
+            if stid != f.stid:
+                raise ValueError('db_writeForecast error: all forecasts in list ' +
+                                 'must have the same station id.')
+            # Datetime must be derived from pandas dataframe of timeseries
+            series = hourly_to_row(f.timeseries.data, f.source, columns)
+            if int(config['debug']) > 50:
+                print(series)
+            # Add the series (all lists)
+            hourly_sql += series
+    else:
+        stid = forecast.stid
+        series = hourly_to_row(forecast.timeseries.data, forecast.source,
+                               columns)
+        if int(config['debug']) > 50:
+            print(series)
+        hourly_sql = series
+    # Write to the database
+    table = '%s_%s' % (stid.upper(), table_type)
+    if int(config['debug']) > 9:
+        print('db_writeForecast: writing data to table %s' % table)
+    _db_write(config, hourly_sql, database, table)
+
 
 
 

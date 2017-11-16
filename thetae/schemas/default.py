@@ -6,7 +6,7 @@
 
 '''
 Default schema for the theta-e SQLite database. Use this structure to create any
-user database schemas.
+user database schemas. THIS DEFAULT SCHEMA SHOULD NOT BE MODIFIED.
 The first column in any table MUST be the datetime column. This is used for
 indexing and retrieving data. An optional column name of 'PRIMARY KEY' may be
 used to assign a composite index to a table. That is the only column name that
