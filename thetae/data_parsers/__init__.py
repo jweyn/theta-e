@@ -8,8 +8,10 @@
 Module containing forecast data parsers.
 
 Each sub-module should have a function main() which takes in arguments of
-(config, stid, forecast_date). The main function should return a Forecast
-object.
+(config, model, stid, forecast_date). The main function should return a Forecast
+object. We pass 'model' to the driver so that it knows where in config it should
+look for any parameters specific to the model; this allows the use of a single
+driver for multiple models.
 '''
 
 # =============================================================================
