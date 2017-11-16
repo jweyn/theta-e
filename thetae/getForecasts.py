@@ -14,7 +14,8 @@ from thetae.util import _get_object
 
 def main(config):
     '''
-    Main function
+    Main function. Iterates through models and sites and writes each to the
+    'forecast' database.
     '''
 
     # Figure out which day we are forecasting for: the next UTC day.
@@ -37,8 +38,11 @@ def main(config):
             if int(config['debug']) > 9:
                 print('getForecasts: getting forecast for station %s' % stid)
             try:
-                # Each forecast has a function main and returns a Forecast
+                # Each forecast has a function main which returns a Forecast
                 forecast = _get_object(driver).main(config, stid, forecast_date)
+                # Overwrite the driver's model name with the one from config,
+                # in case a single driver is used for more than one model
+                forecast.setModel(model)
             except BaseException as e:
                 print('getForecast: failed to get forecast from %s for %s' %
                       (model, stid))
@@ -48,8 +52,7 @@ def main(config):
             try:
                 if int(config['debug']) > 9:
                     print('getForecasts: writing forecast to database')
-#                db_write(config, stid, forecast, 'DAILY_FORECAST', model=model)
-                db_writeForecast(config, [forecast,forecast])
+                db_writeForecast(config, forecast)
             except BaseException as e:
                 print('getForecast: failed to write forecast to database')
                 print("*** Reason: '%s'" % str(e))

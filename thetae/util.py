@@ -99,3 +99,13 @@ class Forecast():
         self.timeseries.model = model
         self.daily = Daily(stid, date)
         self.daily.model = model
+
+    def setModel(self, model):
+        '''
+        Changes the model name in the Forecast object and in the embedded
+        TimeSeries and Daily.ß
+        '''
+        self.model = model
+        self.timeseries.model = model
+        self.daily.model = model
+
