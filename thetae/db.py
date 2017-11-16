@@ -55,7 +55,8 @@ def db_conn(config, database):
 def db_init(config):
     '''
     Initializes new station IDs in the databases. Returns a list of all sites
-    included in config that require historical data to be retrieved.
+    included in config that require historical data to be retrieved. Also
+    creates a database if it does not exist.
     '''
     
     for data_binding in config['DataBinding'].keys():
