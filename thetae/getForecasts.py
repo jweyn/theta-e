@@ -38,7 +38,7 @@ def main(config):
             if int(config['debug']) > 9:
                 print('getForecasts: getting forecast for station %s' % stid)
             try:
-                # Each forecast has a function main which returns a Forecast
+                # Each forecast has a function 'main' which returns a Forecast
                 forecast = _get_object(driver).main(config, model, stid,
                                                     forecast_date)
             except BaseException as e:
@@ -57,4 +57,10 @@ def main(config):
             except BaseException as e:
                 print('getForecast: failed to write forecast to database')
                 print("*** Reason: '%s'" % str(e))
+
+    # TEST: READ SOME DATA
+    from thetae.db import db_readForecast
+    forecast = db_readForecast(config, 'KSEA', 'GFS MOS', forecast_date)
+    print(forecast.daily.high)
+    print(forecast.timeseries.data)
 

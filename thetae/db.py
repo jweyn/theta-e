@@ -10,9 +10,14 @@ Functions for interfacing with SQL databases.
 
 import sqlite3
 import os
-from thetae.util import _get_object
+import pandas as pd
+from thetae.util import _get_object, TimeSeries, Daily, Forecast
 import thetae.schemas
 from datetime import datetime, timedelta
+
+# ==============================================================================
+# Connection and utility functions
+# ==============================================================================
 
 def db_conn(config, database):
     '''
@@ -133,6 +138,10 @@ def db_init(config):
             
     return add_sites
 
+# ==============================================================================
+# General writing and reading functions for SQL-formatted data
+# ==============================================================================
+
 def _db_write(config, values, database, table, replace=True):
     '''
     Writes data in values to the table. Values is a list of tuples, each with
@@ -173,78 +182,79 @@ def _db_write(config, values, database, table, replace=True):
     conn.commit()
     conn.close()
 
-def db_write(config, stid, values_dict, table_type, model=None):
+def _db_read(config, database, table, start_date=None, end_date=None,
+             model=None):
     '''
-    Example function to write data for the main theta-e processes. Calls
-    _db_write which is a more generic function that writes pre-formatted data
-    into the database. This function formats the data for appropriate pass to
-    _db_write. For user-generated components, custom db_write functions must
-    be created.
-    table_type must be 'obs', 'verif', 'climo', 'hourly_forecast', or
-    'daily_forecast'. If table_type is a forecast, then model must be given as
-    one of the models in config.
-    Values MUST be a dictionary with datetime objects as keys. The values of the
-    dictionary may either be dictionaries of key,value pairs or a list to be
-    converted directly into database values. If a key,values dictionary is
-    provided, then the keys MUST match the columns in the database schema, with
-    the exception of DateTime and Model, which MUST be the first two columns.
-    
-    In the future, this function will be deprecated.
+    Return a pandas DataFrame from table in database.
+    If start_date and end_date are None, then then the start is set to now and
+    the end to 24 hours in the future. If start_date only is None, then it is
+    set to 24 hours before end_date. If end_date only is None, then it is set
+    to 24 hours after start_date.
     '''
 
-    from datetime import datetime, timedelta
-
-    # Retrieve the default database configuration
-    data_binding = 'forecast'
-    database = config['DataBinding'][data_binding]['database']
-    # Find the appropriate table
-    if table_type.upper() in ['OBS', 'VERIF', 'CLIMO', 'HOURLY_FORECAST',
-                              'DAILY_FORECAST']:
-        table = '%s_%s' % (stid.upper(), table_type.upper())
-    else:
-        raise ValueError("db_write: table_type must be 'obs', 'verif', 'climo', " +
-                         "'hourly_forecast', or 'daily_forecast'.")
-    if 'FORECAST' in table_type.upper() and type(model) is not str:
-        raise ValueError('db_write: model must be provided as a string if ' +
-                         ' table_type is a forecast.')
+    # Find the string dates
+    if start_date is not None and end_date is not None:
+        if type(start_date) is not str:
+            start = datetime.strftime(start_date, '%Y-%m-%d %H:%M')
+        if type(end_date) is not str:
+            end = datetime.strftime(start_date, '%Y-%m-%d %H:%M')
+    if start_date is None and end_date is not None:
+        if type(end_date) is str:
+            end_date = datetime.strptime(end_date, '%Y-%m-%d %H:%M')
+        start = end_date - timedelta(hours=24)
+        start = datetime.strftime(start, '%Y-%m-%d %H:%M')
+        end = datetime.strftime(end_date, '%Y-%m-%d %H:%M')
+    if start_date is not None and end_date is None:
+        if type(start_date) is str:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d %H:%M')
+        end = start_date + timedelta(hours=24)
+        start = datetime.strftime(start_date, '%Y-%m-%d %H:%M')
+        end = datetime.strftime(end, '%Y-%m-%d %H:%M')
+    if start_date is None and end_date is None:
+        start = datetime.utcnow()
+        end = start + timedelta(hours=24)
+        start = datetime.strftime(start, '%Y-%m-%d %H:%M')
+        end = datetime.strftime(end, '%Y-%m-%d %H:%M')
     if int(config['debug']) > 9:
-        print('db_write: writing data to table %s' % table)
+        print('_db_read: getting data from %s for %s to %s' %
+              (table, start, end))
 
-    # Get the names of columns in the schema
-    schema_name = config['DataBinding'][data_binding]['schema']
-    schema = _get_object(schema_name).schema
-    columns = [c[0] for c in schema['_%s' % table_type.upper()]]
-    if int(config['debug']) > 50:
-        print('db_write: converting input data to columns and values as follows')
-        print(columns)
-    # Parse the dictionary
-    date_keys = list(values_dict.keys())
-    values_sql = []
+    # Open a database connection
+    conn = db_conn(config, database)
+    cursor = conn.cursor()
+
+    # Fetch the data
     if model is None:
-        model_tuple = ()
+        cursor.execute("SELECT * FROM %s WHERE DATETIME>=? AND DATETIME<=?;" % table,
+                       (start, end))
     else:
-        model_tuple = (model,)
-    for date in date_keys:
-        datestr = datetime.strftime(date, '%Y-%m-%d %H:%M')
-        if type(values_dict[date]) is list or type(values_dict[date]) is tuple:
-            row = (datestr,) + model_tuple + tuple(values_dict[date])
-        elif type(values_dict[date]) is dict:
-            row = []
-            for column in columns:
-                if ((column.upper() != 'DATETIME') and
-                    (column.upper() != 'PRIMARY KEY') and
-                    (column.upper() != 'MODEL')):
-                    try:
-                        row.append(values_dict[date][column])
-                    except:
-                        row.append(None)
-            row = (datestr,) + model_tuple + tuple(row)
-        if int(config['debug']) > 50:
-            print(row)
-        values_sql.append(row)
+        cursor.execute("SELECT * FROM %s WHERE DATETIME>=? AND DATETIME<=? AND MODEL=?;" % table,
+                       (start, end, model.upper()))
+    values = cursor.fetchall()
+    if int(config['debug']) > 50:
+        print('_db_read: fetched the following values')
+        print(values)
 
-    # Write to the database
-    _db_write(config, values_sql, database, table)
+    # Get column names
+    cursor.execute("PRAGMA table_info(%s);" % table)
+    columns = [c[1].upper() for c in cursor.fetchall()]
+    if int(config['debug']) > 50:
+        print('_db_read: fetched the following column names')
+        print(columns)
+    conn.close() # Done with db
+
+    # Convert to DataFrame and create TimeSeries
+    data = pd.DataFrame(values)
+    data.columns = columns
+    # If model was given, then take it out
+    if model is not None:
+        data = data.drop('MODEL', axis=1)
+
+    return data
+
+# ==============================================================================
+# Writing functions for Forecast, TimeSeries, and Daily objects
+# ==============================================================================
 
 def db_writeTimeSeries(config, timeseries, data_binding, table_type):
     '''
@@ -409,7 +419,124 @@ def db_writeForecast(config, forecast):
         timeseries = forecast.timeseries
     db_writeTimeSeries(config, timeseries, data_binding, table_type)
 
+# ==============================================================================
+# Reading functions for Forecast, TimeSeries, and Daily objects
+# ==============================================================================
 
+def db_readTimeSeries(config, stid, data_binding, table_type, model=None,
+                      start_date=None, end_date=None, ):
+    '''
+    Read a TimeSeries from a specified data_binding at a certain station id and
+    of a given table type.
+    table_type must be 'obs', 'verif', 'climo', 'hourly_forecast', or
+    'daily_forecast', or something defined in the schema of data_binding as
+    %(stid)_%(table_type).upper().
+    If start_date and end_date are None, then then the start is set to now and
+    the end to 24 hours in the future. If start_date only is None, then it is
+    set to 24 hours before end_date. If end_date only is None, then it is set
+    to 24 hours after start_date.
+    '''
+    
+    # Get the database and table names
+    database = config['DataBinding'][data_binding]['database']
+    table = '%s_%s' % (stid, table_type)
+
+    # Get data from _db_read
+    data = _db_read(config, database, table, start_date=start_date,
+                    end_date=end_date, model=model)
+
+    # Generate TimeSeries object
+    timeseries = TimeSeries(stid)
+    timeseries.data = data
+    if model is not None:
+        timeseries.model = model
+    
+    return timeseries
+
+def db_readDaily(config, stid, data_binding, table_type, model=None,
+                start_date=None, end_date=None, ):
+    '''
+    Read a Daily from a specified data_binding at a certain station id and
+    of a given table type.
+    table_type must be 'obs', 'verif', 'climo', 'hourly_forecast', or
+    'daily_forecast', or something defined in the schema of data_binding as
+    %(stid)_%(table_type).upper().
+    If start_date and end_date are None, then then the start is set to now and
+    the end to 24 hours in the future. If start_date only is None, then it is
+    set to 24 hours before end_date. If end_date only is None, then it is set
+    to 24 hours after start_date.
+    '''
+
+    # Get the database and table names
+    database = config['DataBinding'][data_binding]['database']
+    table = '%s_%s' % (stid, table_type)
+
+    # Get data from _db_read
+    data = _db_read(config, database, table, start_date=start_date,
+                    end_date=end_date, model=model)
+
+    # Generate Daily object(s)
+    daily_list = []
+    for index in range(len(data.index)):
+        row = data.iloc[index]
+        daily = Daily(stid, row['DATETIME'])
+        daily.setValues(row['HIGH'], row['LOW'], row['WIND'], row['RAIN'])
+        daily.model = model
+        daily_list.append(daily)
+    if len(data.index) > 1:
+        if int(config['debug']) > 9:
+            print('db_readDaily: generating list of daily objects')
+        return daily_list
+    else:
+        try:
+            return daily_list[0]
+        except:
+            raise IndexError('db_readDaily error: no data found.')
+
+def db_readForecast(config, stid, model, date, hour_start=6, hour_padding=6):
+    '''
+    Return a Forecast object from the main theta-e database for a given model
+    and date. This is specifically designed to return a Forecast for a single
+    model and a single day.
+    hour_start is the starting hour for the 24-hour forecast period.
+    hous_padding is the number of hours on either side of the forecast period
+    to include in the timeseries.
+    '''
+    
+    # Basic check for hour parameters
+    if hour_start < 0 or hour_start > 23:
+        raise ValueError('db_readForecast error: hour_start must be between ' +
+                         '0 and 23.')
+    if hour_padding < 0 or hour_padding > 24:
+        raise ValueError('db_readForecast error: hour_padding must be between ' +
+                         '0 and 24.')
+
+    # Set the default database configuration; create Forecast
+    data_binding = 'forecast'
+    if int(config['debug']) > 9:
+        print("db_readForecast: reading forecast from '%s' data binding"
+              % data_binding)
+    forecast = Forecast(stid, model, date)
+    
+    # The daily forecast part
+    table_type = 'DAILY_FORECAST'
+    daily = db_readDaily(config, stid, data_binding, table_type, model,
+                         start_date=date, end_date=date)
+    
+    # The hourly forecast part
+    table_type = 'HOURLY_FORECAST'
+    if type(date) is str:
+        date = datetime.strptime(date, '%Y-%m-%d %H:%M')
+    start_date = date + timedelta(hours=hour_start-hour_padding)
+    end_date = date + timedelta(hours=hour_start+24+hour_padding)
+    timeseries = db_readTimeSeries(config, stid, data_binding, table_type,
+                                   model, start_date, end_date)
+
+    # Assign and return
+    forecast.timeseries = timeseries
+    forecast.daily = daily
+    return forecast
+    
 
 
 

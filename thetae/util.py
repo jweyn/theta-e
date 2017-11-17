@@ -83,6 +83,12 @@ class Daily():
         self.low = None
         self.wind = None
         self.rain = None
+    
+    def setValues(self, high, low, wind, rain):
+        self.high = high
+        self.low = low
+        self.wind = wind
+        self.rain = rain
 
 class Forecast():
     '''
