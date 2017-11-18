@@ -47,7 +47,7 @@ def main(config):
             except BaseException as e:
                 print('getForecasts: failed to get forecast from %s for %s' %
                       (model, stid))
-                print("Reason: '%s'" % str(e))
+                print("*** Reason: '%s'" % str(e))
                 continue
             # Write to the database
             try:
@@ -71,24 +71,24 @@ def historical(config, stid):
     at the config start_date.
     '''
 
-    if int(config['debug']) > 9:
-        print('getForecasts: getting historical forecasts for station %s' % stid)
+    print('getForecasts: getting historical forecasts for station %s' % stid)
     
     # Figure out which days we are forecasting for since start.
     time_now = datetime.utcnow()
     forecast_dates = []
-#    try:
-    start_date = _config_date_to_datetime(config['Stations'][stid]['start_date'])
-#    except:
-#        print('getForecasts warning: cannot find start_date in config for ' +
-#              'station %s, setting to -30 days' % stid)
-#        start_date = (datetime(time_now.year, time_now.month, time_now.day) -
-#                      timedelta(days=30))
+    try:
+        start_date = _config_date_to_datetime(config['Stations'][stid]['start_date'])
+    except:
+        print('getForecasts warning: cannot find start_date in config for ' +
+              'station %s, setting to -30 days' % stid)
+        start_date = (datetime(time_now.year, time_now.month, time_now.day) -
+                      timedelta(days=30))
     date = start_date
     while date < time_now:
         forecast_dates.append(date)
         date = date + timedelta(hours=24)
-    print('getForecasts: getting historical forecasts starting %s' % start_date)
+    if int(config['debug']) > 9:
+        print('getForecasts: getting historical forecasts starting %s' % start_date)
 
     # Go through the models in config
     for model in config['Models'].keys():
@@ -112,7 +112,7 @@ def historical(config, stid):
         except BaseException as e:
             print('getForecasts: failed to get historical forecasts from %s for %s' %
                   (model, stid))
-            print("Reason: '%s'" % str(e))
+            print("*** Reason: '%s'" % str(e))
             continue
         # Write to the database
         try:

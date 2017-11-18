@@ -49,7 +49,7 @@ def main(config):
 #            verification = _get_object(verif_driver).main(config, stid)
 #        except BaseException as e:
 #            print('getVerification: failed to get verification for %s' % stid)
-#            print("Reason: '%s'" % str(e))
+#            print("*** Reason: '%s'" % str(e))
 #            continue
 #        # Write to the database
 #        try:
@@ -68,7 +68,7 @@ def main(config):
             obs = _get_object(obs_driver).main(config, stid)
         except BaseException as e:
             print('getVerification: failed to get obs for %s' % stid)
-            print("Reason: '%s'" % str(e))
+            print("*** Reason: '%s'" % str(e))
             continue
         # Write to the database
         try:
@@ -85,3 +85,9 @@ def main(config):
                                    end_date=datetime.utcnow())
     print(timeseries.data)
 
+def historical(config, stid):
+    '''
+    Retrive historical verification (and climo!) for a stid.
+    '''
+    
+    return

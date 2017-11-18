@@ -222,7 +222,6 @@ def _db_read(config, database, table, model=None,
         sql_line = ("SELECT * FROM %s WHERE DATETIME>=? AND DATETIME<=? " +
                     "AND MODEL=? ORDER BY DATETIME ASC") % table
         cursor.execute(sql_line, (start, end, model.upper()))
-    print(sql_line)
     values = cursor.fetchall()
     if int(config['debug']) > 50:
         print('_db_read: fetched the following values')
