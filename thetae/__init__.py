@@ -14,12 +14,14 @@ __version__ = '0.0.1'
 # Make sure we import everything we need.
 # ==============================================================================
 
-import db
-import engine
-import getForecasts
-# More to come.
+# Local files
+from . import db
+from . import engine
+from . import getForecasts
+from . import getVerification
 
-import util
+# Local module folders
+from . import util
 from util import Forecast, Daily, TimeSeries
 
 # ==============================================================================

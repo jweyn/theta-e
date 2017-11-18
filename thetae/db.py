@@ -11,7 +11,8 @@ Functions for interfacing with SQL databases.
 import sqlite3
 import os
 import pandas as pd
-from thetae.util import _get_object, TimeSeries, Daily, Forecast
+from thetae.util import (_get_object, TimeSeries, Daily, Forecast,
+                         _date_to_datetime, _date_to_string)
 import thetae.schemas
 from datetime import datetime, timedelta
 
@@ -114,8 +115,7 @@ def db_init(config):
                     try:
                         cursor.execute("SELECT %s FROM %s ORDER BY %s DESC LIMIT 1;" %
                                        (key, table, key))
-                        last_dt = datetime.strptime(cursor.fetchone()[0],
-                                                    '%Y-%m-%d %H:%M')
+                        last_dt = _date_to_datetime(cursor.fetchone()[0])
                     except:
                         last_dt = None
                     if last_dt is None or (time_now - last_dt > timedelta(days=30)):
@@ -145,10 +145,11 @@ def db_init(config):
 def _db_write(config, values, database, table, replace=True):
     '''
     Writes data in values to the table. Values is a list of tuples, each with
-    the appropriate number of elements to fill a row in table.
+    the appropriate number of elements to fill a row in table. IMPORTANT: the
+    appropriate number of row elements is NOT checked; will throw a SQL error.
     '''
     
-    # Check the data
+    # Basic sanity checks on the data
     if type(values) not in [list, tuple]:
         raise TypeError('_db_write: values must be provided as a list or tuple.')
     row_len = 0
@@ -182,8 +183,8 @@ def _db_write(config, values, database, table, replace=True):
     conn.commit()
     conn.close()
 
-def _db_read(config, database, table, start_date=None, end_date=None,
-             model=None):
+def _db_read(config, database, table, model=None,
+             start_date=None, end_date=None):
     '''
     Return a pandas DataFrame from table in database.
     If start_date and end_date are None, then then the start is set to now and
@@ -192,29 +193,18 @@ def _db_read(config, database, table, start_date=None, end_date=None,
     to 24 hours after start_date.
     '''
 
-    # Find the string dates
-    if start_date is not None and end_date is not None:
-        if type(start_date) is not str:
-            start = datetime.strftime(start_date, '%Y-%m-%d %H:%M')
-        if type(end_date) is not str:
-            end = datetime.strftime(start_date, '%Y-%m-%d %H:%M')
+    # Find the dates and make strings
+    start_date = _date_to_datetime(start_date)
+    end_date = _date_to_datetime(end_date)
     if start_date is None and end_date is not None:
-        if type(end_date) is str:
-            end_date = datetime.strptime(end_date, '%Y-%m-%d %H:%M')
-        start = end_date - timedelta(hours=24)
-        start = datetime.strftime(start, '%Y-%m-%d %H:%M')
-        end = datetime.strftime(end_date, '%Y-%m-%d %H:%M')
-    if start_date is not None and end_date is None:
-        if type(start_date) is str:
-            start_date = datetime.strptime(start_date, '%Y-%m-%d %H:%M')
-        end = start_date + timedelta(hours=24)
-        start = datetime.strftime(start_date, '%Y-%m-%d %H:%M')
-        end = datetime.strftime(end, '%Y-%m-%d %H:%M')
-    if start_date is None and end_date is None:
-        start = datetime.utcnow()
-        end = start + timedelta(hours=24)
-        start = datetime.strftime(start, '%Y-%m-%d %H:%M')
-        end = datetime.strftime(end, '%Y-%m-%d %H:%M')
+        start_date = end_date - timedelta(hours=24)
+    elif start_date is not None and end_date is None:
+        end_date = start_date + timedelta(hours=24)
+    elif start_date is None and end_date is None:
+        start_date = datetime.utcnow()
+        end_date = start_date + timedelta(hours=24)
+    start = _date_to_string(start_date)
+    end = _date_to_string(end_date)
     if int(config['debug']) > 9:
         print('_db_read: getting data from %s for %s to %s' %
               (table, start, end))
@@ -225,11 +215,14 @@ def _db_read(config, database, table, start_date=None, end_date=None,
 
     # Fetch the data
     if model is None:
-        cursor.execute("SELECT * FROM %s WHERE DATETIME>=? AND DATETIME<=?;" % table,
-                       (start, end))
+        sql_line = ("SELECT * FROM %s WHERE DATETIME>=? AND DATETIME<=? " +
+                    "ORDER BY DATETIME ASC;") % table
+        cursor.execute(sql_line, (start, end))
     else:
-        cursor.execute("SELECT * FROM %s WHERE DATETIME>=? AND DATETIME<=? AND MODEL=?;" % table,
-                       (start, end, model.upper()))
+        sql_line = ("SELECT * FROM %s WHERE DATETIME>=? AND DATETIME<=? " +
+                    "AND MODEL=? ORDER BY DATETIME ASC") % table
+        cursor.execute(sql_line, (start, end, model.upper()))
+    print(sql_line)
     values = cursor.fetchall()
     if int(config['debug']) > 50:
         print('_db_read: fetched the following values')
@@ -277,9 +270,7 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
         hourly.columns = [c.upper() for c in hourly.columns]
         columns = [c.upper() for c in columns]
         for index, pdrow in hourly.iterrows():
-            datestr = pdrow['DATETIME']
-            if type(datestr) is not str:
-                datestr = datetime.strftime(datestr, '%Y-%m-%d %H:%M')
+            datestr = _date_to_string(pdrow['DATETIME'])
             row = []
             for column in columns:
                 if column == 'DATETIME':
@@ -372,14 +363,14 @@ def db_writeDaily(config, daily, data_binding, table_type):
             if stid != d.stid:
                 raise ValueError('db_writeDaily error: all forecasts in list ' +
                                  'must have the same station id.')
-            datestr = datetime.strftime(d.date, '%Y-%m-%d %H:%M')
+            datestr = _date_to_string(d.date)
             row = daily_to_row(d, datestr, d.model, columns)
             if int(config['debug']) > 50:
                 print(row)
             daily_sql.append(row)
     else:
         stid = daily.stid
-        datestr = datetime.strftime(daily.date, '%Y-%m-%d %H:%M')
+        datestr = _date_to_string(daily.date)
         row = daily_to_row(daily, datestr, daily.model, columns)
         if int(config['debug']) > 50:
             print(row)
@@ -428,9 +419,9 @@ def db_readTimeSeries(config, stid, data_binding, table_type, model=None,
     '''
     Read a TimeSeries from a specified data_binding at a certain station id and
     of a given table type.
-    table_type must be 'obs', 'verif', 'climo', 'hourly_forecast', or
-    'daily_forecast', or something defined in the schema of data_binding as
-    %(stid)_%(table_type).upper().
+    table_type must be 'obs', 'hourly_forecast', or something defined in the
+    schema of data_binding as %(stid)_%(table_type).upper().
+    Model should be provided unless retrieving from obs.
     If start_date and end_date are None, then then the start is set to now and
     the end to 24 hours in the future. If start_date only is None, then it is
     set to 24 hours before end_date. If end_date only is None, then it is set
@@ -439,7 +430,7 @@ def db_readTimeSeries(config, stid, data_binding, table_type, model=None,
     
     # Get the database and table names
     database = config['DataBinding'][data_binding]['database']
-    table = '%s_%s' % (stid, table_type)
+    table = '%s_%s' % (stid.upper(), table_type.upper())
 
     # Get data from _db_read
     data = _db_read(config, database, table, start_date=start_date,
@@ -456,11 +447,11 @@ def db_readTimeSeries(config, stid, data_binding, table_type, model=None,
 def db_readDaily(config, stid, data_binding, table_type, model=None,
                 start_date=None, end_date=None, ):
     '''
-    Read a Daily from a specified data_binding at a certain station id and
-    of a given table type.
-    table_type must be 'obs', 'verif', 'climo', 'hourly_forecast', or
-    'daily_forecast', or something defined in the schema of data_binding as
-    %(stid)_%(table_type).upper().
+    Read a Daily or list of Dailys from a specified data_binding at a certain
+    station id and of a given table type.
+    table_type must be 'verif', 'climo', 'daily_forecast', or something defined
+    in the schema of data_binding as %(stid)_%(table_type).upper().
+    Model should be provided unless retrieving from verif or climo.
     If start_date and end_date are None, then then the start is set to now and
     the end to 24 hours in the future. If start_date only is None, then it is
     set to 24 hours before end_date. If end_date only is None, then it is set
@@ -469,7 +460,7 @@ def db_readDaily(config, stid, data_binding, table_type, model=None,
 
     # Get the database and table names
     database = config['DataBinding'][data_binding]['database']
-    table = '%s_%s' % (stid, table_type)
+    table = '%s_%s' % (stid.upper(), table_type.upper())
 
     # Get data from _db_read
     data = _db_read(config, database, table, start_date=start_date,
@@ -503,7 +494,7 @@ def db_readForecast(config, stid, model, date, hour_start=6, hour_padding=6):
     to include in the timeseries.
     '''
     
-    # Basic check for hour parameters
+    # Basic sanity check for hour parameters
     if hour_start < 0 or hour_start > 23:
         raise ValueError('db_readForecast error: hour_start must be between ' +
                          '0 and 23.')
@@ -525,8 +516,7 @@ def db_readForecast(config, stid, model, date, hour_start=6, hour_padding=6):
     
     # The hourly forecast part
     table_type = 'HOURLY_FORECAST'
-    if type(date) is str:
-        date = datetime.strptime(date, '%Y-%m-%d %H:%M')
+    date = _date_to_datetime(date)
     start_date = date + timedelta(hours=hour_start-hour_padding)
     end_date = date + timedelta(hours=hour_start+24+hour_padding)
     timeseries = db_readTimeSeries(config, stid, data_binding, table_type,
