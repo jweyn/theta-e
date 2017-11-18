@@ -21,10 +21,12 @@ def gfs_mos_forecast(stid, forecast_date):
     
     # Generate a Forecast object
     forecast = Forecast(stid, default_model_name, forecast_date)
-    forecast.daily.high = 52.
-    forecast.daily.low = 41.
-    forecast.daily.wind = 17.
-    forecast.daily.rain = 0.41
+    
+    import numpy as np
+    forecast.daily.high = np.round(np.random.rand()*100.)
+    forecast.daily.low = np.round(np.random.rand()*100.)
+    forecast.daily.wind = np.round(np.random.rand()*40.)
+    forecast.daily.rain = np.round(np.random.rand()*3., 2)
     
     # Create a dummy pd dataframe to test
     forecast.timeseries.data['DateTime'] = [forecast_date, forecast_date +
@@ -39,12 +41,27 @@ def main(config, model, stid, forecast_date):
     Produce a Forecast object from MOS.
     '''
     
-    # A driver that can be used for multiple model sources would here be
-    # tasked with reading the config['Models'][model] for extra parameters.
+    # A driver that can be used for multiple model sources or that requires
+    # extra parameters would here be tasked with reading the
+    # config['Models'][model]. This could also be defined in a separate
+    # function, i.e., to use it for both main() and historical().
+    
     # Get forecast
     forecast = gfs_mos_forecast(stid, forecast_date)
-    # Set the model name
+    # Overwrite the default model name
     forecast.setModel(model)
 
     return forecast
 
+def historical(config, model, stid, forecast_dates):
+    '''
+    Produce a list of Forecast objects for each date in forecast_dates.
+    '''
+    
+    forecasts = []
+    for forecast_date in forecast_dates:
+        forecast = gfs_mos_forecast(stid, forecast_date)
+        forecast.setModel(model)
+        forecasts.append(forecast)
+    
+    return forecasts

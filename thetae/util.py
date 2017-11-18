@@ -8,6 +8,8 @@
 Utility functions and classes for theta-e.
 '''
 
+from datetime import datetime, timedelta
+
 # ==============================================================================
 # Functions
 # ==============================================================================
@@ -61,6 +63,83 @@ def getConfig(config_path):
               "to put it in the config file...")
 
     return config_dict
+
+def _date_to_datetime(date):
+    '''
+    Converts a date from string format to datetime object.
+    '''
+    if date is None:
+        return
+    if type(date) is str or type(date) is unicode:
+        date = datetime.strptime(date, '%Y-%m-%d %H:%M')
+    return date
+
+def _date_to_string(date):
+    '''
+    Converts a date from datetime object to string format.
+    '''
+    if date is None:
+        return
+    if type(date) is not str and type(date) is not unicode:
+        date = datetime.strftime(date, '%Y-%m-%d %H:%M')
+    return date
+
+def _config_date_to_datetime(datestr):
+    '''
+    Converts a string date from config formatting %Y%m%d to a datetime object.
+    '''
+    if datestr is None:
+        return
+    return datetime.strptime(datestr, '%Y%m%d')
+
+def _meso_api_dates(start_date, end_date):
+    '''
+    Return string-formatted start and end dates for the MesoPy api.
+    '''
+    start = datetime.strftime(start_date, '%Y%m%d%H%M')
+    end = datetime.strftime(end_date, '%Y%m%d%H%M')
+    return start, end
+
+def tobool(x):
+    """Convert an object to boolean.
+    
+    Examples:
+    >>> print tobool('TRUE')
+    True
+    >>> print tobool(True)
+    True
+    >>> print tobool(1)
+    True
+    >>> print tobool('FALSE')
+    False
+    >>> print tobool(False)
+    False
+    >>> print tobool(0)
+    False
+    >>> print tobool('Foo')
+    Traceback (most recent call last):
+    ValueError: Unknown boolean specifier: 'Foo'.
+    >>> print tobool(None)
+    Traceback (most recent call last):
+    ValueError: Unknown boolean specifier: 'None'.
+    
+    This function (c) Tom Keffer, weeWX.
+    """
+
+    try:
+        if x.lower() in ['true', 'yes']:
+            return True
+        elif x.lower() in ['false', 'no']:
+            return False
+    except AttributeError:
+        pass
+    try:
+        return bool(int(x))
+    except (ValueError, TypeError):
+        pass
+    raise ValueError("Unknown boolean specifier: '%s'." % x)
+
+to_bool = tobool
 
 # ==============================================================================
 # Classes
