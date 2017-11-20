@@ -58,11 +58,11 @@ def main(config):
                 print('getForecasts: failed to write forecast to database')
                 print("*** Reason: '%s'" % str(e))
 
-    # TEST: READ SOME DATA
-    from thetae.db import db_readForecast
-    forecast = db_readForecast(config, 'KSEA', 'GFS MOS', forecast_date)
-    print(forecast.daily.high)
-    print(forecast.timeseries.data)
+#    # TEST: READ SOME DATA
+#    from thetae.db import db_readForecast
+#    forecast = db_readForecast(config, 'KSEA', 'GFS MOS', forecast_date)
+#    print(forecast.daily.high)
+#    print(forecast.timeseries.data)
 
 def historical(config, stid):
     '''
@@ -73,13 +73,13 @@ def historical(config, stid):
 
     print('getForecasts: getting historical forecasts for station %s' % stid)
     
-    # Figure out which days we are forecasting for since start.
+    # Figure out which days we are forecasting for since config start_date.
     time_now = datetime.utcnow()
     forecast_dates = []
     try:
         start_date = _config_date_to_datetime(config['Stations'][stid]['start_date'])
     except:
-        print('getForecasts warning: cannot find start_date in config for ' +
+        print('getForecasts warning: cannot get start_date in config for ' +
               'station %s, setting to -30 days' % stid)
         start_date = (datetime(time_now.year, time_now.month, time_now.day) -
                       timedelta(days=30))

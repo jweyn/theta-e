@@ -63,16 +63,16 @@ def historical(config, stid):
                   % service_group)
             continue
         for service in config['Engine']['Services'][service_group]:
-            # Execute the service
-            try:
-                _get_object(service).historical(config, stid)
-            except AttributeError:
-                if int(config['debug']) > 9:
-                    print("engine warning: no 'historical' attribute for " +
-                          "service %s" % service)
-                    continue
-            except BaseException as e:
-                print('engine warning: failed to run historical for ' +
-                      'service %s' % service)
-                print("*** Reason: '%s'" % str(e))
+            # Execute the service. Will have an exception catch in the future.
+#            try:
+            _get_object(service).historical(config, stid)
+#            except AttributeError:
+#                if int(config['debug']) > 9:
+#                    print("engine warning: no 'historical' attribute for " +
+#                          "service %s" % service)
+#                    continue
+#            except BaseException as e:
+#                print('engine warning: failed to run historical for ' +
+#                      'service %s' % service)
+#                print("*** Reason: '%s'" % str(e))
 
