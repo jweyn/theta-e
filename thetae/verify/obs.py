@@ -35,7 +35,7 @@ def _cloud(series):
 
 def _reformat_date(series):
     '''
-    Reformats the string date format in a MesoWest DataFrame
+    Reformats the pandas string date format in a MesoWest series
     '''
     new_series = series.copy()
     for index, date in series.iteritems():
@@ -48,7 +48,7 @@ def get_obs(config, stid, start, end):
     Retrieve data from MesoPy
     '''
     
-    # MesoWest token
+    # MesoWest token and init
     meso_token = config['Verify']['api_key']
     m = Meso(token=meso_token)
     if int(config['debug']) > 9:
@@ -90,8 +90,14 @@ def get_obs(config, stid, start, end):
     obspd.columns = col_names
     datename = 'DATETIME'
     obspd = obspd.rename(columns={'date_time' : datename})
+
+    # Let's add a check here to make sure that we do indeed have all of the
+    # variables we want
+    for var in vars_request:
+        if var not in col_names:
+            obspd[var] = np.nan
     
-    ### Reformat data into hourly obs
+    # Reformat data into hourly obs
     # Find mode of minute data: where the hourly metars are. Sometimes there are
     # additional obs at odd times that would mess with rain totals.
     minutes = []
@@ -103,7 +109,7 @@ def get_obs(config, stid, start, end):
     minute_mode = minute_count.size - rev_count.argmax() - 1
     if int(config['debug']) > 9:
         print('obs: mode of hourly data is minute %d' % minute_mode)
-
+    # Subset only hourly data
     obs_hourly = obspd[pd.DatetimeIndex(obspd[datename]).minute == minute_mode]
 
     # Check for all requested variables, otherwise set them to null, or 0
@@ -116,19 +122,25 @@ def get_obs(config, stid, start, end):
     obs_hourly['cloud_layer_2_code'].fillna(1.0, inplace=True)
     obs_hourly['cloud_layer_3_code'].fillna(1.0, inplace=True)
 
-    # Format cloud data and date
+    # Format cloud data
     cloud = (_cloud(obspd['cloud_layer_1_code']) +
              _cloud(obspd['cloud_layer_2_code']) +
              _cloud(obspd['cloud_layer_3_code']))
+    # Cloud exceeding 100% set to 100
+    cloud[cloud > 100.] = 100.
+    # Drop old cloud columns and replace with only total cloud
     obs_hourly = obs_hourly.drop('cloud_layer_1_code', axis=1)
     obs_hourly = obs_hourly.drop('cloud_layer_2_code', axis=1)
     obs_hourly = obs_hourly.drop('cloud_layer_3_code', axis=1)
     obs_hourly['cloud'] = cloud
-    if int(config['debug']) > 50:
-        print(obs_hourly)
+
+    # Reformat dates, replacing pandas default string format with SQL format
     new_dates = _reformat_date(obs_hourly[datename])
     obs_hourly = obs_hourly.drop(datename, axis=1)
     obs_hourly[datename] = new_dates
+    if int(config['debug']) > 50:
+        print('obs: here is the timeseries')
+        print(obs_hourly)
 
     # Rename columns to match default schema
     rename_dict = {
@@ -155,6 +167,18 @@ def main(config, stid):
     
     end_date = datetime.utcnow()
     start_date = end_date - timedelta(hours=24)
+    start, end = _meso_api_dates(start_date, end_date)
+    
+    timeseries = get_obs(config, stid, start, end)
+
+    return timeseries
+
+def historical(config, stid, start_date):
+    '''
+    Retrieves observations at site stid starting at start_date.
+    '''
+    
+    end_date = datetime.utcnow()
     start, end = _meso_api_dates(start_date, end_date)
     
     timeseries = get_obs(config, stid, start, end)

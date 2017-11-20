@@ -14,15 +14,15 @@ will be ignored when attempting to write data to the database.
 
 The actual tables have the 4-letter station ID appended to the beginning of the
 schema keys. The tables represent:
-    XXXX_OBS: time series of hourly observations
-    XXXX_HOURLY_FORECAST: time series of hourly forecasts from various sources
-    XXXX_VERIF: individual days' verified high, low, wind, and rain
-    XXXX_DAILY_FORECAST: model forecasts of next day's high, low, wind, and rain
-    XXXX_CLIMO: climatological yearly norms, populated once
+    OBS: time series of hourly observations
+    HOURLY_FORECAST: time series of hourly forecasts from various sources
+    VERIF: individual days' verified high, low, wind, and rain
+    DAILY_FORECAST: model forecasts of next day's high, low, wind, and rain
+    CLIMO: climatological yearly norms, populated once
 '''
 
 schema = {
-'_OBS': [
+'OBS': [
     ('DateTime',        'TEXT NOT NULL UNIQUE PRIMARY KEY'),
     ('temperature',     'REAL'),
     ('dewpoint',        'REAL'),
@@ -32,7 +32,7 @@ schema = {
     ('rainHour',        'REAL'),
     ('condition',       'TEXT')
          ],
-'_HOURLY_FORECAST': [
+'HOURLY_FORECAST': [
     ('DateTime',        'TEXT NOT NULL'),
     ('Model',           'TEXT'),
     ('temperature',     'REAL'),
@@ -44,14 +44,14 @@ schema = {
     ('condition',       'TEXT'),
     ('PRIMARY KEY',     '(DateTime, Model)') # make composite key
               ],
-'_VERIF': [
+'VERIF': [
     ('DateTime',        'TEXT NOT NULL UNIQUE PRIMARY KEY'),
     ('high',            'REAL'),
     ('low',             'REAL'),
     ('wind',            'REAL'),
     ('rain',            'REAL')
            ],
-'_DAILY_FORECAST': [
+'DAILY_FORECAST': [
     ('DateTime',        'TEXT NOT NULL'),
     ('Model',           'TEXT'),
     ('high',            'REAL'),
@@ -60,7 +60,7 @@ schema = {
     ('rain',            'REAL'),
     ('PRIMARY KEY',     '(DateTime, Model)')
                     ],
-'_CLIMO': [
+'CLIMO': [
     ('DateTime',        'TEXT NOT NULL UNIQUE PRIMARY KEY'),
     ('high',            'REAL'),
     ('low',             'REAL'),

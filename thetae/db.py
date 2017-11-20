@@ -28,7 +28,7 @@ def db_conn(config, database):
     '''
     
     db_dir = '%s/archive' % config['THETAE_ROOT']
-    if int(config['debug']) > 0:
+    if int(config['debug']) > 9:
         print('db_conn: attempting to connect to database %s' % database)
     if not(os.path.isdir(db_dir)):
         try:
@@ -81,7 +81,8 @@ def db_init(config):
         for stid in config['Stations'].keys():
             add_site = False
             # Find the tables in the db and requested by the schema
-            schema_table_names = [stid.upper()+key for key in schema.keys()]
+            schema_table_names = ['%s_%s' % (stid.upper(), key) for key in
+                                  schema.keys()]
             schema_table_structures = list(schema.values())
             # Schema must have primary (datetime) key listed first
             date_keys = [schema[key][0][0] for key in schema.keys()]
@@ -288,7 +289,7 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
     database = config['DataBinding'][data_binding]['database']
     schema_name = config['DataBinding'][data_binding]['schema']
     schema = _get_object(schema_name).schema
-    columns = [c[0] for c in schema['_%s' % table_type.upper()]]
+    columns = [c[0] for c in schema[table_type.upper()]]
     if int(config['debug']) > 50:
         print('db_writeTimeSeries: converting hourly data to columns and ' +
               'values as follows')
@@ -348,7 +349,7 @@ def db_writeDaily(config, daily, data_binding, table_type):
     database = config['DataBinding'][data_binding]['database']
     schema_name = config['DataBinding'][data_binding]['schema']
     schema = _get_object(schema_name).schema
-    columns = [c[0] for c in schema['_%s' % table_type.upper()]]
+    columns = [c[0] for c in schema[table_type.upper()]]
     if int(config['debug']) > 50:
         print('db_writeDaily: converting hourly data to columns and ' +
               'values as follows')
