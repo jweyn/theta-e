@@ -13,7 +13,7 @@ used to assign a composite index to a table. That is the only column name that
 will be ignored when attempting to write data to the database.
 
 The actual tables have the 4-letter station ID appended to the beginning of the
-schema keys. The tables represent:
+schema keys, e.g., KSEA_OBS. The tables represent:
     OBS: time series of hourly observations
     HOURLY_FORECAST: time series of hourly forecasts from various sources
     VERIF: individual days' verified high, low, wind, and rain

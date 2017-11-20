@@ -104,7 +104,7 @@ def historical(config, stid):
               'station %s, setting to -30 days' % stid)
         start_date = (datetime(time_now.year, time_now.month, time_now.day) -
                       timedelta(days=30))
-    print('getVerification: getting historical data for %s starting at date %s' %
+    print('getVerification: getting historical data for %s starting %s' %
           (stid, start_date))
 
     # Verification
@@ -131,7 +131,7 @@ def historical(config, stid):
     except BaseException as e:
         print('getVerification: failed to write verification to database')
         print("*** Reason: '%s'" % str(e))
-    
+
     # Obs
     # Find the obs driver
     try:
