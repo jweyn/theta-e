@@ -70,7 +70,7 @@ def _date_to_datetime(date):
     '''
     if date is None:
         return
-    if type(date) is str or type(date) is unicode:
+    if type(date) is str or type(date) is unicode: # UNICODE only in Python 2
         date = datetime.strptime(date, '%Y-%m-%d %H:%M')
     return date
 
