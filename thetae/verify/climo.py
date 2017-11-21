@@ -45,12 +45,12 @@ def get_climo(config, stid, ghcn_stid, start_year=1980):
         print('climo: grouping data into yearly climatology')
     aggregate = {'value' : np.mean}
     ghcn_yearly = {}
+    if int(config['debug']) > 9:
+        print('climo: averaging for years since %d' % start_year)
     for var, df in ghcn.items():
         # Apparently values are "object" type. Convert to floats
         df['value'] = df['value'].astype(str).astype(np.float64)
         # Remove any data older than start year
-        if int(config['debug']) > 9:
-            print('climo: averaging for years since %d' % start_year)
         df = df[df.index > datetime(start_year, 1, 1)]
         ghcn_yearly[var] = df.groupby([df.index.month, df.index.day]).agg(aggregate)
 
