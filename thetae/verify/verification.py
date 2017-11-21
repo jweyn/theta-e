@@ -44,9 +44,10 @@ def get_cf6_files(config, stid, num_files=1):
 
     # Determine how many files (iterations of product) we want to fetch
     if num_files == 1:
-        print('get_cf6_files: retrieving latest CF6 file')
+        print('get_cf6_files: retrieving latest CF6 file for %s' % stid)
     else:
-        print('get_cf6_files: retrieving %s archived CF6 files' % num_files)
+        print('get_cf6_files: retrieving %s archived CF6 files for %s' %
+              (num_files, stid))
 
     # Fetch files
     for r in range(1, num_files+1):
@@ -391,11 +392,16 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
 
     # Create list of Daily objects
     dailys = []
+    if int(config['debug']) > 50:
+        print('verification: here are the values')
     for index, row in obs_daily.iterrows():
         date = index.to_pydatetime()
         daily = Daily(stid, date)
         for attr in export_cols:
             setattr(daily, attr, row[attr])
+        if int(config['debug']) > 50:
+            print('%s %0.0f/%0.0f/%0.0f/%0.2f' % (daily.date, daily.high, daily.low,
+                                                  daily.wind, daily.rain))
         dailys.append(daily)
 
     return dailys
@@ -417,8 +423,9 @@ def main(config, stid):
     start_date = datetime(yesterday.year, yesterday.month, yesterday.day, 6)
     start, end = _meso_api_dates(start_date, end_date)
     
-    # Download latest CF6 files, if necessary
+    # Download latest CF6 files. There's no need to do this all the time
     if end_date.hour >= 12 and end_date.hour < 20:
+        # If we're at the beginning of the month, get the last month too
         if end_date.day < 3:
             num_files = 2
         else:
