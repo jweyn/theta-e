@@ -167,12 +167,12 @@ def historical(config, stid):
     # Get obs
     if int(config['debug']) > 9:
         print('getVerification: getting historical climatology')
-#    try:
+    try:
         # Verification and obs historical() need config, stid, start_date
-    climo = _get_object(climo_driver).historical(config, stid)
-#    except BaseException as e:
-#        print('getVerification: failed to get climo for %s' % stid)
-#        print("*** Reason: '%s'" % str(e))
+        climo = _get_object(climo_driver).historical(config, stid)
+    except BaseException as e:
+        print('getVerification: failed to get climo for %s' % stid)
+        print("*** Reason: '%s'" % str(e))
     # Write to the database
     try:
         if int(config['debug']) > 9:
