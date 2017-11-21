@@ -6,7 +6,7 @@ Forecast verification project
 
 pandas
 ulmo
-sqlite3
+sqlite3  
 
 ## Running the program
 
