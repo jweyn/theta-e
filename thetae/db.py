@@ -109,8 +109,12 @@ def db_init(config):
                                             schema_table_structures[t]])
                     cursor.execute("CREATE TABLE %s (%s);" %
                                    (table, sqltypestr, ))
-                elif table != stid.upper()+'_CLIMO': # don't check CLIMO table
+                else:
                     # Check if data in table are recent
+                    if table != stid.upper()+'_CLIMO':
+                        recent = timedelta(days=30)
+                    else:
+                        recent = timedelta(days=4*365.25)
                     time_now = datetime.utcnow()
                     key = date_keys[t]
                     try:
@@ -119,7 +123,7 @@ def db_init(config):
                         last_dt = _date_to_datetime(cursor.fetchone()[0])
                     except:
                         last_dt = None
-                    if last_dt is None or (time_now - last_dt > timedelta(days=30)):
+                    if last_dt is None or (time_now - last_dt > recent):
                         # Old or missing data, drop table and recreate it
                         add_site = True
                         if int(config['debug']) > 0:
@@ -134,6 +138,8 @@ def db_init(config):
             # Lastly, add the site if we need to rerun historical data
             if add_site:
                 add_sites.append(stid)
+            elif int(config['debug']) > 0:
+                print('db_init: nothing to do for station %s' % stid)
                     
         conn.close()
             

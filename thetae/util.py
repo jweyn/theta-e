@@ -11,6 +11,60 @@ Utility functions and classes for theta-e.
 from datetime import datetime, timedelta
 
 # ==============================================================================
+# Classes
+# ==============================================================================
+
+import pandas as pd
+
+class TimeSeries():
+    def __init__(self, stid):
+        self.stid = stid
+        self.model = None
+        self.data = pd.DataFrame()
+
+class Daily():
+    def __init__(self, stid, date):
+        self.stid = stid
+        self.date = date
+        self.model = None
+        self.high = None
+        self.low = None
+        self.wind = None
+        self.rain = None
+    
+    def setValues(self, high, low, wind, rain):
+        self.high = high
+        self.low = low
+        self.wind = wind
+        self.rain = rain
+
+class Forecast():
+    '''
+        Forecast object for a single date. Contains both a timeseries and daily
+        values.
+        stid and model should be type str; date should be datetime object.
+        '''
+    
+    def __init__(self, stid, model, date):
+        self.stid = stid
+        self.model = model
+        self.date = date
+        self.timeseries = TimeSeries(stid)
+        self.timeseries.model = model
+        self.daily = Daily(stid, date)
+        self.daily.model = model
+    
+    def setModel(self, model):
+        '''
+            Changes the model name in the Forecast object and in the embedded
+            TimeSeries and Daily.
+            '''
+        self.model = model
+        self.timeseries.model = model
+        self.daily.model = model
+
+
+# ==============================================================================
 # Functions
 # ==============================================================================
 
@@ -141,56 +195,53 @@ def tobool(x):
 
 to_bool = tobool
 
-# ==============================================================================
-# Classes
-# ==============================================================================
-
-import pandas as pd
-
-class TimeSeries():
-    def __init__(self, stid):
-        self.stid = stid
-        self.model = None
-        self.data = pd.DataFrame()
-
-class Daily():
-    def __init__(self, stid, date):
-        self.stid = stid
-        self.date = date
-        self.model = None
-        self.high = None
-        self.low = None
-        self.wind = None
-        self.rain = None
-    
-    def setValues(self, high, low, wind, rain):
-        self.high = high
-        self.low = low
-        self.wind = wind
-        self.rain = rain
-
-class Forecast():
+def get_ghcn_stid(stid, THETAE_ROOT='.'):
     '''
-    Forecast object for a single date. Contains both a timeseries and daily
-    values.
-    stid and model should be type str; date should be datetime object.
-    '''
+    After code by Luke Madaus.
     
-    def __init__(self, stid, model, date):
-        self.stid = stid
-        self.model = model
-        self.date = date
-        self.timeseries = TimeSeries(stid)
-        self.timeseries.model = model
-        self.daily = Daily(stid, date)
-        self.daily.model = model
+    Gets the GHCN station ID from the 4-letter station ID.
+    '''
 
-    def setModel(self, model):
-        '''
-        Changes the model name in the Forecast object and in the embedded
-        TimeSeries and Daily.
-        '''
-        self.model = model
-        self.timeseries.model = model
-        self.daily.model = model
+    import urllib2
+    import os
+    main_addr = 'ftp://ftp.ncdc.noaa.gov/pub/data/noaa'
 
+    site_directory = '%s/site_data' % THETAE_ROOT
+    if not(os.path.isdir(site_directory)):
+        os.system('mkdir -p %s' % site_directory)
+    # Check to see that ish-history.txt exists
+    stations_file = 'isd-history.txt'
+    stations_filename = '%s/%s' % (site_directory, stations_file)
+    if not os.path.exists(stations_filename):
+        print "Downloading site name database..."
+        os.system('wget --directory-prefix=%s %s/%s' %
+                  (site_directory, main_addr, stations_file))
+
+    # Now open this file and look for our siteid
+    site_found = False
+    infile = open(stations_filename, 'r')
+    station_wbans = []
+    station_ghcns = []
+    for line in infile:
+        if stid.upper() in line:
+            linesp = line.split()
+            if (not linesp[0].startswith('99999') and not site_found
+                and not linesp[1].startswith('99999')):
+                try:
+                    site_wban = int(linesp[0])
+                    station_ghcn = int(linesp[1])
+                    #site_found = True
+                    print('get_ghcn_stid: site found for %s (%s)' %
+                          (stid, station_ghcn))
+                    station_wbans.append(site_wban)
+                    station_ghcns.append(station_ghcn)
+                except:
+                    continue
+    if len(station_wbans) == 0:
+        raise ValueError('get_ghcn_stid error: so station found for %s' % stid)
+
+    # Format station as USW...
+    format = 'USW000%05d'
+    return format % station_ghcns[0]
+        
+        

@@ -121,15 +121,15 @@ def historical(config, stid):
         # Verification and obs historical() need config, stid, start_date
         verification = _get_object(verif_driver).historical(config, stid, start_date)
     except BaseException as e:
-        print('getVerification: failed to get verification for %s' % stid)
+        print('getVerification: failed to get historical verification for %s' % stid)
         print("*** Reason: '%s'" % str(e))
     # Write to the database
     try:
         if int(config['debug']) > 9:
-            print('getVerification: writing verification to database')
+            print('getVerification: writing historical verification to database')
         db_writeDaily(config, verification, data_binding, 'verif')
     except BaseException as e:
-        print('getVerification: failed to write verification to database')
+        print('getVerification: failed to write historical verification to database')
         print("*** Reason: '%s'" % str(e))
 
     # Obs
@@ -146,15 +146,40 @@ def historical(config, stid):
         # Verification and obs historical() need config, stid, start_date
         obs = _get_object(obs_driver).historical(config, stid, start_date)
     except BaseException as e:
-        print('getVerification: failed to get obs for %s' % stid)
+        print('getVerification: failed to get historical obs for %s' % stid)
         print("*** Reason: '%s'" % str(e))
     # Write to the database
     try:
         if int(config['debug']) > 9:
-            print('getVerification: writing obs to database')
+            print('getVerification: writing historical obs to database')
         db_writeTimeSeries(config, obs, data_binding, 'obs')
     except BaseException as e:
-        print('getVerification: failed to write obs to database')
+        print('getVerification: failed to write historical obs to database')
+        print("*** Reason: '%s'" % str(e))
+
+    # Climo
+    # Find the obs driver
+    try:
+        climo_driver = config['Verify']['Climo']['driver']
+    except KeyError:
+        print('getVerification error: no driver specified for Climo!')
+        raise
+    # Get obs
+    if int(config['debug']) > 9:
+        print('getVerification: getting historical climatology')
+#    try:
+        # Verification and obs historical() need config, stid, start_date
+    climo = _get_object(climo_driver).historical(config, stid)
+#    except BaseException as e:
+#        print('getVerification: failed to get climo for %s' % stid)
+#        print("*** Reason: '%s'" % str(e))
+    # Write to the database
+    try:
+        if int(config['debug']) > 9:
+            print('getVerification: writing climo to database')
+        db_writeDaily(config, climo, data_binding, 'climo')
+    except BaseException as e:
+        print('getVerification: failed to write climo to database')
         print("*** Reason: '%s'" % str(e))
     
     return
