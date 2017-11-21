@@ -173,6 +173,7 @@ def historical(config, stid):
     except BaseException as e:
         print('getVerification: failed to get climo for %s' % stid)
         print("*** Reason: '%s'" % str(e))
+        return
     # Write to the database
     try:
         if int(config['debug']) > 9:

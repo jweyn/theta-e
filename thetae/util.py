@@ -212,7 +212,7 @@ def get_ghcn_stid(stid, THETAE_ROOT='.'):
     stations_file = 'isd-history.txt'
     stations_filename = '%s/%s' % (site_directory, stations_file)
     if not os.path.exists(stations_filename):
-        print "Downloading site name database..."
+        print('get_ghcn_stid: downloading site name database')
         os.system('wget --directory-prefix=%s %s/%s' %
                   (site_directory, main_addr, stations_file))
 
