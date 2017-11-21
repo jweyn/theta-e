@@ -323,7 +323,7 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
         hourly_sql = series
 
     # Write to the database
-    table = '%s_%s' % (stid.upper(), table_type)
+    table = '%s_%s' % (stid.upper(), table_type.upper())
     if int(config['debug']) > 9:
         print('db_writeTimeSeries: writing data to table %s' % table)
     _db_write(config, hourly_sql, database, table)
@@ -383,7 +383,7 @@ def db_writeDaily(config, daily, data_binding, table_type):
         daily_sql.append(row)
 
     # Write to the database
-    table = '%s_%s' % (stid.upper(), table_type)
+    table = '%s_%s' % (stid.upper(), table_type.upper())
     if int(config['debug']) > 9:
         print('db_writeDaily: writing data to table %s' % table)
     _db_write(config, daily_sql, database, table)
