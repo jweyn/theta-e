@@ -48,8 +48,6 @@ def main(config, model, stid, forecast_date):
     
     # Get forecast
     forecast = gfs_mos_forecast(stid, forecast_date)
-    # Overwrite the default model name
-    forecast.setModel(model)
 
     return forecast
 
@@ -61,7 +59,6 @@ def historical(config, model, stid, forecast_dates):
     forecasts = []
     for forecast_date in forecast_dates:
         forecast = gfs_mos_forecast(stid, forecast_date)
-        forecast.setModel(model)
         forecasts.append(forecast)
     
     return forecasts
