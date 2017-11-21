@@ -18,12 +18,18 @@ import pandas as pd
 # ==============================================================================
 
 class TimeSeries():
+    '''
+    TimeSeries object, which is really just a wrapper for a pandas DataFrame.
+    '''
     def __init__(self, stid):
         self.stid = stid
         self.model = None
         self.data = pd.DataFrame()
 
 class Daily():
+    '''
+    Daily object, which contains high, low, wind, and rain for a specific date.
+    '''
     def __init__(self, stid, date):
         self.stid = stid
         self.date = date
@@ -41,10 +47,10 @@ class Daily():
 
 class Forecast():
     '''
-        Forecast object for a single date. Contains both a timeseries and daily
-        values.
-        stid and model should be type str; date should be datetime object.
-        '''
+    Forecast object for a single date. Contains both a timeseries and daily
+    values.
+    stid and model should be type str; date should be datetime object.
+    '''
     
     def __init__(self, stid, model, date):
         self.stid = stid
@@ -57,9 +63,9 @@ class Forecast():
     
     def setModel(self, model):
         '''
-            Changes the model name in the Forecast object and in the embedded
-            TimeSeries and Daily.
-            '''
+        Changes the model name in the Forecast object and in the embedded
+        TimeSeries and Daily.
+        '''
         self.model = model
         self.timeseries.model = model
         self.daily.model = model
