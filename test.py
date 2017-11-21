@@ -13,6 +13,7 @@ import sys
 from optparse import OptionParser
 
 # Import the main engine
+import thetae
 import thetae.engine
 
 # ==============================================================================
@@ -32,7 +33,7 @@ def parseArgs():
     (options, args) = parser.parse_args()
     
     if options.version:
-        print weewx.__version__
+        print(thetae.__version__)
         sys.exit(0)
     
     if len(args) < 1:
