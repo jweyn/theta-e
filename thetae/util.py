@@ -9,12 +9,13 @@ Utility functions and classes for theta-e.
 '''
 
 from datetime import datetime, timedelta
+import urllib2
+import os
+import pandas as pd
 
 # ==============================================================================
 # Classes
 # ==============================================================================
-
-import pandas as pd
 
 class TimeSeries():
     def __init__(self, stid):
@@ -202,8 +203,6 @@ def get_ghcn_stid(stid, THETAE_ROOT='.'):
     Gets the GHCN station ID from the 4-letter station ID.
     '''
 
-    import urllib2
-    import os
     main_addr = 'ftp://ftp.ncdc.noaa.gov/pub/data/noaa'
 
     site_directory = '%s/site_data' % THETAE_ROOT
