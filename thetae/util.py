@@ -63,6 +63,7 @@ class Forecast():
         self.model = model
         self.timeseries.model = model
         self.daily.model = model
+        return self
 
 
 # ==============================================================================
