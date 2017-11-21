@@ -418,7 +418,7 @@ def main(config, stid):
     start, end = _meso_api_dates(start_date, end_date)
     
     # Download latest CF6 files, if necessary
-    if end_date.hour > 6 and end_date.hour < 18:
+    if end_date.hour >= 12 and end_date.hour < 20:
         if end_date.day < 3:
             num_files = 2
         else:
@@ -442,7 +442,7 @@ def historical(config, stid, start_date):
     start, end = _meso_api_dates(start_date, end_date)
     
     # Download CF6 files
-    get_cf6_files(config, stid, 12)
+    get_cf6_files(config, stid, 2)
 
     # Get the daily verification
     dailys = get_verification(config, stid, start, end)
