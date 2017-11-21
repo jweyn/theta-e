@@ -44,6 +44,8 @@ def main(config):
                 # Each forecast has a function 'main' which returns a Forecast
                 forecast = _get_object(driver).main(config, model, stid,
                                                     forecast_date)
+                # Set the model name
+                forecast.setModel(model)
             except BaseException as e:
                 print('getForecasts: failed to get forecast from %s for %s' %
                       (model, stid))
@@ -109,6 +111,8 @@ def historical(config, stid):
             print('getForecasts: getting historical forecasts from %s' % model)
             forecasts = _get_object(driver).historical(config, model, stid,
                                                        forecast_dates)
+            # Set the model name
+            forecasts = [f.setModel(model) for f in forecasts]
         except BaseException as e:
             print('getForecasts: failed to get historical forecasts from %s for %s' %
                   (model, stid))
