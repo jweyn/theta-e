@@ -442,7 +442,7 @@ def historical(config, stid, start_date):
     start, end = _meso_api_dates(start_date, end_date)
     
     # Download CF6 files
-    get_cf6_files(config, stid, 2)
+    get_cf6_files(config, stid, 12)
 
     # Get the daily verification
     dailys = get_verification(config, stid, start, end)
