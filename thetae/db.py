@@ -181,8 +181,7 @@ def _db_write(config, values, database, table, replace=True):
         if int(config['debug']) > 50:
             print('_db_write: calling SQL INSERT; will raise exception if existing')
     if int(config['debug']) > 9:
-        print('_db_write: committing values to %s table %s' % (database,
-                                                               table))
+        print('_db_write: committing values to %s table %s' % (database, table))
     if int(config['debug']) > 50:
         print(values)
     cursor.executemany("%s INTO %s VALUES %s;" % (sql_cmd, table, value_formatter),
@@ -222,12 +221,12 @@ def _db_read(config, database, table, model=None,
 
     # Fetch the data
     if model is None:
-        sql_line = ("SELECT * FROM %s WHERE DATETIME>=? AND DATETIME<=? " +
-                    "ORDER BY DATETIME ASC;") % table
+        sql_line = """SELECT * FROM %s WHERE DATETIME>=? AND DATETIME<=?
+                       ORDER BY DATETIME ASC;""" % table
         cursor.execute(sql_line, (start, end))
     else:
-        sql_line = ("SELECT * FROM %s WHERE DATETIME>=? AND DATETIME<=? " +
-                    "AND MODEL=? ORDER BY DATETIME ASC") % table
+        sql_line = """SELECT * FROM %s WHERE DATETIME>=? AND DATETIME<=?
+                       AND MODEL=? ORDER BY DATETIME ASC""" % table
         cursor.execute(sql_line, (start, end, model.upper()))
     values = cursor.fetchall()
     if int(config['debug']) > 50:
@@ -297,7 +296,7 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
     schema = _get_object(schema_name).schema
     columns = [c[0] for c in schema[table_type.upper()]]
     if int(config['debug']) > 50:
-        print('db_writeTimeSeries: converting hourly data to columns and ' +
+        print('db_writeTimeSeries: converting hourly data to columns and '
               'values as follows')
         print(columns)
     
@@ -307,7 +306,7 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
         stid = timeseries[0].stid
         for ts in timeseries:
             if stid != ts.stid:
-                raise ValueError('db_writeTimeSeries error: all forecasts in ' +
+                raise ValueError('db_writeTimeSeries error: all forecasts in '
                                  'list must have the same station id.')
             # Datetime must be derived from pandas dataframe of timeseries
             series = hourly_to_row(ts.data, ts.model, columns)
@@ -357,7 +356,7 @@ def db_writeDaily(config, daily, data_binding, table_type):
     schema = _get_object(schema_name).schema
     columns = [c[0] for c in schema[table_type.upper()]]
     if int(config['debug']) > 50:
-        print('db_writeDaily: converting hourly data to columns and ' +
+        print('db_writeDaily: converting hourly data to columns and '
               'values as follows')
         print(columns)
 
@@ -367,7 +366,7 @@ def db_writeDaily(config, daily, data_binding, table_type):
         stid = daily[0].stid
         for d in daily:
             if stid != d.stid:
-                raise ValueError('db_writeDaily error: all forecasts in list ' +
+                raise ValueError('db_writeDaily error: all forecasts in list '
                                  'must have the same station id.')
             datestr = _date_to_string(d.date)
             row = daily_to_row(d, datestr, d.model, columns)
@@ -502,10 +501,10 @@ def db_readForecast(config, stid, model, date, hour_start=6, hour_padding=6):
     
     # Basic sanity check for hour parameters
     if hour_start < 0 or hour_start > 23:
-        raise ValueError('db_readForecast error: hour_start must be between ' +
+        raise ValueError('db_readForecast error: hour_start must be between '
                          '0 and 23.')
     if hour_padding < 0 or hour_padding > 24:
-        raise ValueError('db_readForecast error: hour_padding must be between ' +
+        raise ValueError('db_readForecast error: hour_padding must be between '
                          '0 and 24.')
 
     # Set the default database configuration; create Forecast

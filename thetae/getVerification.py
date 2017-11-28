@@ -100,7 +100,7 @@ def historical(config, stid):
     try:
         start_date = _config_date_to_datetime(config['Stations'][stid]['start_date'])
     except:
-        print('getVerification warning: cannot get start_date in config for ' +
+        print('getVerification warning: cannot get start_date in config for '
               'station %s, setting to -30 days' % stid)
         start_date = (datetime(time_now.year, time_now.month, time_now.day) -
                       timedelta(days=30))

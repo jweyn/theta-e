@@ -119,9 +119,9 @@ def getConfig(config_path):
         if int(config_dict['debug']) > 1:
             print('Using configuration file %s' % config_path)
     except KeyError:
-        config_dict['debug'] = 100
+        config_dict['debug'] = 1
         print('Using configuration file %s' % config_path)
-        print("Setting debug level to 100 because apparently you didn't want " +
+        print("Setting debug level to 1 because apparently you didn't want "
               "to put it in the config file...")
 
     return config_dict
