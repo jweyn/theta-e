@@ -4,9 +4,9 @@
 # See the file LICENSE for your rights.
 #
 
-'''
+"""
 Initialize thetae.
-'''
+"""
 
 __version__ = '0.0.1'
 
@@ -29,6 +29,4 @@ from util import Forecast, Daily, TimeSeries
 # ==============================================================================
 
 all_service_groups = [
-    'retrieve_services', ]# 'calc_services', 'output_services']
-
-
+    'retrieve_services', ]  # 'calc_services', 'output_services']

@@ -4,7 +4,7 @@
 # See the file LICENSE for your rights.
 #
 
-'''
+"""
 Module containing forecast data parsers.
 
 Each sub-module should have a function main() which takes in arguments of
@@ -12,13 +12,14 @@ Each sub-module should have a function main() which takes in arguments of
 object. We pass 'model' to the driver so that it knows where in config it should
 look for any parameters specific to the model; this allows the use of a single
 driver for multiple models.
-'''
+"""
 
 # =============================================================================
 # Make sure we import everything in here.
 # =============================================================================
 
 import os
+
 for module in os.listdir(os.path.dirname(__file__)):
     if module == '__init__.py' or module[-3:] != '.py':
         continue
