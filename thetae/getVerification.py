@@ -4,24 +4,25 @@
 # See the file LICENSE for your rights.
 #
 
-'''
+"""
 Service to get verification data. The main process is used to get today and
 yesterday's verification in accordance with the main engine process, while
 the historical process is used in the engine historical function to produce
 historical observations.
-'''
+"""
 
 from thetae.db import db_writeTimeSeries, db_writeDaily
 from datetime import datetime, timedelta
-from thetae.util import _get_object, _config_date_to_datetime, to_bool
+from thetae.util import _get_object, _config_date_to_datetime
+
 
 def main(config):
-    '''
+    """
     Main function. Runs the obs and verification for the past 24 hours.
-    '''
+    """
 
     data_binding = 'forecast'
-    
+
     # Figure out which day we are forecasting for: the next UTC day.
     time_now = datetime.utcnow()
     verif_date = datetime(time_now.year, time_now.month, time_now.day)
@@ -82,6 +83,7 @@ def main(config):
             print('getVerification: failed to write obs to database')
             print("*** Reason: '%s'" % str(e))
 
+
 #    # TEST: READ SOME DATA
 #    from thetae.db import db_readTimeSeries
 #    timeseries = db_readTimeSeries(config, 'KSEA', data_binding, 'obs',
@@ -89,12 +91,12 @@ def main(config):
 #    print(timeseries.data)
 
 def historical(config, stid):
-    '''
+    """
     Retrive historical verification (and climo!) for a stid.
-    '''
-    
+    """
+
     data_binding = 'forecast'
-    
+
     # Figure out which days we want since config start_date
     time_now = datetime.utcnow()
     try:
@@ -182,5 +184,5 @@ def historical(config, stid):
     except BaseException as e:
         print('getVerification: failed to write climo to database')
         print("*** Reason: '%s'" % str(e))
-    
+
     return

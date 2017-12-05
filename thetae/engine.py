@@ -4,7 +4,7 @@
 # See the file LICENSE for your rights.
 #
 
-'''
+"""
 Main engine for the theta-e system.
 
 # Step 1: check the database; if database has no table for the stid or data are
@@ -15,16 +15,17 @@ Main engine for the theta-e system.
 # Step 4: retrieve verification data; save to db
 # Step 5: run manager to calculate verification statistics; save to db?
 # Step 6: run plotting scripts; theta-e website scripts
-'''
+"""
 
 import thetae
-from thetae.util import _get_object, getConfig, Forecast
+from thetae.util import _get_object, getConfig
+
 
 def main(options, args):
-    '''
+    """
     Main engine process.
-    '''
-    
+    """
+
     config = getConfig(args[0])
 
     # Step 1: check the database initialization
@@ -44,18 +45,20 @@ def main(options, args):
             continue
         for service in config['Engine']['Services'][service_group]:
             # Execute the service. Will have an exception catch in the future.
-#            try:
+            #            try:
             _get_object(service).main(config)
+
+
 #            except BaseException as e:
 #                print('engine warning: failed to run service %s' % service)
 #                print("*** Reason: '%s'" % str(e))
 
 
 def historical(config, stid):
-    '''
+    """
     Run services if they have a 'historical' attribute.
-    '''
-    
+    """
+
     for service_group in config['Engine']['Services'].keys():
         # Make sure we have defined a group to do what this asks
         if service_group not in thetae.all_service_groups:
@@ -64,7 +67,7 @@ def historical(config, stid):
             continue
         for service in config['Engine']['Services'][service_group]:
             # Execute the service. Will have an exception catch in the future.
-#            try:
+            #            try:
             _get_object(service).historical(config, stid)
 #            except AttributeError:
 #                if int(config['debug']) > 9:
@@ -75,4 +78,3 @@ def historical(config, stid):
 #                print('engine warning: failed to run historical for ' +
 #                      'service %s' % service)
 #                print("*** Reason: '%s'" % str(e))
-

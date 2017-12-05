@@ -145,9 +145,9 @@ class Meso(object):
         """
         http_error = 'Could not connect to the API. This could be because you have no internet connection, a parameter' \
                      ' was input incorrectly, or the API is currently down. Please try again.'
-        
+
         json_error = 'Could not retrieve JSON values. Try again with a shorter date range.'
-        
+
         # For python 3.4
         try:
             qsp = urllib.parse.urlencode(request_dict, doseq=True)
@@ -162,12 +162,12 @@ class Meso(object):
                 raise MesoPyError(http_error)
         except urllib.error.URLError:
             raise MesoPyError(http_error)
-        
+
         try:
             json_data = json.loads(resp.decode('utf-8'))
         except ValueError:
             raise MesoPyError(json_error)
-        
+
         return self._checkresponse(json_data)
 
     def _check_geo_param(self, arg_list):
@@ -979,4 +979,3 @@ class Meso(object):
         #     kwargs['token'] = self.token
         #
         #     return self._get_response('qctypes', kwargs)
-
