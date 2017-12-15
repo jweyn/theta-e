@@ -175,7 +175,7 @@ def _climo_wind(config, stid, dates=None):
     ghcn_stid = get_ghcn_stid(stid, config['THETAE_ROOT'])
 
     if int(config['debug']) > 0:
-        print('verification: fetching wind data from NCDC (may take a while)')
+        print('verification: fetching wind data for %s from NCDC (may take a while)' % ghcn_stid)
     v = 'WSF2'
     D = ulmo.ncdc.ghcn_daily.get_data(ghcn_stid, as_dataframe=True,
                                       elements=[v])
@@ -459,6 +459,6 @@ def historical(config, stid, start_date):
     get_cf6_files(config, stid, 12)
 
     # Get the daily verification
-    dailys = get_verification(config, stid, start, end)
+    dailys = get_verification(config, stid, start, end, use_climo=True)
 
     return dailys
