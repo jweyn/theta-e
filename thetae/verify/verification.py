@@ -5,7 +5,7 @@
 #
 
 """
-Retrieve verification from MesoWest and CF6 files.
+Retrieve verification from MesoWest, NWS CF6 files, and NCDC data.
 """
 
 from MesoPy import Meso
@@ -170,15 +170,14 @@ def _climo_wind(config, stid, dates=None):
     """
 
     import ulmo
-    try:
-        climo_station_id = config['Stations'][stid]['climo_id']
-    except:
-        raise KeyError("Key 'climo_id' missing from Station config for %s" % stid)
+    from thetae.util import get_ghcn_stid
+
+    ghcn_stid = get_ghcn_stid(stid, config['THETAE_ROOT'])
 
     if int(config['debug']) > 0:
         print('verification: fetching wind data from NCDC (may take a while)')
     v = 'WSF2'
-    D = ulmo.ncdc.ghcn_daily.get_data(climo_station_id, as_dataframe=True,
+    D = ulmo.ncdc.ghcn_daily.get_data(ghcn_stid, as_dataframe=True,
                                       elements=[v])
     wind_dict = {}
     if dates is None:
@@ -346,7 +345,12 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
                 count_rows += 1
                 obs_wind = row['wind_speed']
                 cf6_wind = climo_values[date]['wind']
-                obs_daily.loc[[index], 'wind_speed'] = max(obs_wind, cf6_wind)
+                if obs_wind - cf6_wind >= 5:
+                    if int(config['debug']) > 9:
+                        print('verification warning: obs wind for %s (%0.0f) much larger than '
+                              'cf6/climo wind (%0.0f); using obs' % (date, obs_wind, cf6_wind))
+                else:
+                    obs_daily.loc[index, 'wind_speed'] = cf6_wind
         if int(config['debug']) > 9:
             print('verification: found %d matching rows for wind' % count_rows)
 
