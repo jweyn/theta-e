@@ -61,11 +61,11 @@ def main(config):
                 print('getForecasts: failed to write forecast to database')
                 print("*** Reason: '%s'" % str(e))
 
-    # TEST: READ SOME DATA
-    from thetae.db import db_readForecast
-    forecast = db_readForecast(config, 'KSEA', 'GFS MOS', forecast_date)
-    print(forecast.daily.high)
-    print(forecast.timeseries.data)
+    # # TEST: READ SOME DATA
+    # from thetae.db import db_readForecast
+    # forecast = db_readForecast(config, 'KSEA', 'GFS MOS', forecast_date)
+    # print(forecast.daily.high)
+    # print(forecast.timeseries.data)
 
 
 def historical(config, stid):
