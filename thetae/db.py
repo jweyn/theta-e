@@ -237,6 +237,11 @@ def _db_read(config, database, table, model=None,
         print('_db_read: fetched the following values')
         print(values)
 
+    # Check that we have data
+    if len(values) == 0:
+        print('_db_read: warning: no valid data found, returning None')
+        return
+
     # Get column names
     cursor.execute("PRAGMA table_info(%s);" % table)
     columns = [c[1].upper() for c in cursor.fetchall()]
@@ -449,6 +454,10 @@ def db_readTimeSeries(config, stid, data_binding, table_type, model=None,
     data = _db_read(config, database, table, start_date=start_date,
                     end_date=end_date, model=model)
 
+    # Check that we have data
+    if data is None:
+        raise ValueError('db_readTimeSeries error: no data retrieved.')
+
     # Generate TimeSeries object
     timeseries = TimeSeries(stid)
     timeseries.data = data
@@ -479,6 +488,10 @@ def db_readDaily(config, stid, data_binding, table_type, model=None,
     # Get data from _db_read
     data = _db_read(config, database, table, start_date=start_date,
                     end_date=end_date, model=model)
+
+    # Check that we have data
+    if data is None:
+        raise ValueError('db_readTimeSeries error: no data retrieved.')
 
     # Generate Daily object(s)
     daily_list = []

@@ -11,7 +11,7 @@ Retrieve GFS or NAM MOS data.
 from thetae import Forecast
 from datetime import datetime, timedelta
 
-default_model_name = 'MOS'
+default_model_name = 'DUMMY'
 
 
 # For now, let's return some junk!
