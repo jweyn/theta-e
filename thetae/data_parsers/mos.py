@@ -156,7 +156,8 @@ def historical(config, model, stid, forecast_dates):
             forecast = get_mos_forecast(stid, mos_model, init_date, forecast_date)
             forecasts.append(forecast)
         except BaseException as e:
-            print('mos.py: failed to retrieve historical forecast for %s on %s' % (mos_model, init_date))
-            print("*** Reason: '%s'" % str(e))
+            if int(config['debug']) > 9:
+                print('mos.py: failed to retrieve historical forecast for %s on %s' % (mos_model, init_date))
+                print("*** Reason: '%s'" % str(e))
 
     return forecasts
