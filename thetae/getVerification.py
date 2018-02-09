@@ -37,7 +37,7 @@ def main(config):
         raise
     # Iterate over stations
     for stid in config['Stations'].keys():
-        if int(config['debug']) > 9:
+        if config['debug'] > 9:
             print('getVerification: getting verification for station %s' % stid)
         try:
             # Verification and obs main() only need to know the stid
@@ -45,15 +45,19 @@ def main(config):
         except BaseException as e:
             print('getVerification: failed to get verification for %s' % stid)
             print("*** Reason: '%s'" % str(e))
+            if config['traceback']:
+                raise
             continue
         # Write to the database
         try:
-            if int(config['debug']) > 9:
+            if config['debug'] > 9:
                 print('getVerification: writing verification to database')
             db_writeDaily(config, verification, data_binding, 'verif')
         except BaseException as e:
             print('getVerification: failed to write verification to database')
             print("*** Reason: '%s'" % str(e))
+            if config['traceback']:
+                raise
 
     # Obs
     # Find the obs driver
@@ -65,7 +69,7 @@ def main(config):
     # Iterate over stations
     for stid in config['Stations'].keys():
         # Get the obs
-        if int(config['debug']) > 9:
+        if config['debug'] > 9:
             print('getVerification: getting obs for station %s' % stid)
         try:
             # Verification and obs main() only need to know the stid
@@ -73,22 +77,20 @@ def main(config):
         except BaseException as e:
             print('getVerification: failed to get obs for %s' % stid)
             print("*** Reason: '%s'" % str(e))
+            if config['traceback']:
+                raise
             continue
         # Write to the database
         try:
-            if int(config['debug']) > 9:
+            if config['debug'] > 9:
                 print('getVerification: writing obs to database')
             db_writeTimeSeries(config, obs, data_binding, 'obs')
         except BaseException as e:
             print('getVerification: failed to write obs to database')
             print("*** Reason: '%s'" % str(e))
+            if config['traceback']:
+                raise
 
-
-#    # TEST: READ SOME DATA
-#    from thetae.db import db_readTimeSeries
-#    timeseries = db_readTimeSeries(config, 'KSEA', data_binding, 'obs',
-#                                   end_date=datetime.utcnow())
-#    print(timeseries.data)
 
 def historical(config, stid):
     """
@@ -117,7 +119,7 @@ def historical(config, stid):
         print('getVerification error: no driver specified for Verification!')
         raise
     # Get verification
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print('getVerification: getting historical verification')
     try:
         # Verification and obs historical() need config, stid, start_date
@@ -125,14 +127,18 @@ def historical(config, stid):
     except BaseException as e:
         print('getVerification: failed to get historical verification for %s' % stid)
         print("*** Reason: '%s'" % str(e))
+        if config['traceback']:
+            raise
     # Write to the database
     try:
-        if int(config['debug']) > 9:
+        if config['debug'] > 9:
             print('getVerification: writing historical verification to database')
         db_writeDaily(config, verification, data_binding, 'verif')
     except BaseException as e:
         print('getVerification: failed to write historical verification to database')
         print("*** Reason: '%s'" % str(e))
+        if config['traceback']:
+            raise
 
     # Obs
     # Find the obs driver
@@ -142,7 +148,7 @@ def historical(config, stid):
         print('getVerification error: no driver specified for Obs!')
         raise
     # Get obs
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print('getVerification: getting historical obs')
     try:
         # Verification and obs historical() need config, stid, start_date
@@ -150,24 +156,28 @@ def historical(config, stid):
     except BaseException as e:
         print('getVerification: failed to get historical obs for %s' % stid)
         print("*** Reason: '%s'" % str(e))
+        if config['traceback']:
+            raise
     # Write to the database
     try:
-        if int(config['debug']) > 9:
+        if config['debug'] > 9:
             print('getVerification: writing historical obs to database')
         db_writeTimeSeries(config, obs, data_binding, 'obs')
     except BaseException as e:
         print('getVerification: failed to write historical obs to database')
         print("*** Reason: '%s'" % str(e))
+        if config['traceback']:
+            raise
 
     # Climo
-    # Find the obs driver
+    # Find the climo driver
     try:
         climo_driver = config['Verify']['Climo']['driver']
     except KeyError:
         print('getVerification error: no driver specified for Climo!')
         raise
     # Get obs
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print('getVerification: getting historical climatology')
     try:
         # Verification and obs historical() need config, stid, start_date
@@ -175,14 +185,18 @@ def historical(config, stid):
     except BaseException as e:
         print('getVerification: failed to get climo for %s' % stid)
         print("*** Reason: '%s'" % str(e))
+        if config['traceback']:
+            raise
         return
     # Write to the database
     try:
-        if int(config['debug']) > 9:
+        if config['debug'] > 9:
             print('getVerification: writing climo to database')
         db_writeDaily(config, climo, data_binding, 'climo')
     except BaseException as e:
         print('getVerification: failed to write climo to database')
         print("*** Reason: '%s'" % str(e))
+        if config['traceback']:
+            raise
 
     return

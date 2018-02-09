@@ -54,7 +54,7 @@ def get_obs(config, stid, start, end):
     # MesoWest token and init
     meso_token = config['Verify']['api_key']
     m = Meso(token=meso_token)
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print('obs: MesoPy initialized for station %s' % stid)
 
     # Look for desired variables
@@ -110,7 +110,7 @@ def get_obs(config, stid, start, end):
     minute_count = np.bincount(np.array(minutes))
     rev_count = minute_count[::-1]
     minute_mode = minute_count.size - rev_count.argmax() - 1
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print('obs: mode of hourly data is minute %d' % minute_mode)
     # Subset only hourly data
     obs_hourly = obspd[pd.DatetimeIndex(obspd[datename]).minute == minute_mode]
@@ -141,7 +141,7 @@ def get_obs(config, stid, start, end):
     new_dates = _reformat_date(obs_hourly[datename])
     obs_hourly = obs_hourly.drop(datename, axis=1)
     obs_hourly[datename] = new_dates
-    if int(config['debug']) > 50:
+    if config['debug'] > 50:
         print('obs: here is the timeseries')
         print(obs_hourly)
 

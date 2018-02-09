@@ -28,7 +28,7 @@ def db_conn(config, database):
     """
 
     db_dir = '%s/archive' % config['THETAE_ROOT']
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print('db_conn: attempting to connect to database %s' % database)
     if not (os.path.isdir(db_dir)):
         try:
@@ -44,7 +44,7 @@ def db_conn(config, database):
     try:
         db_name = '%s/%s' % (db_dir,
                              config['Databases'][database]['database_name'])
-        if int(config['debug']) > 0:
+        if config['debug'] > 0:
             print('db_conn: using database at %s' % db_name)
     except:
         print('Error: database name error in config file')
@@ -88,12 +88,12 @@ def db_init(config):
             schema_table_structures = list(schema.values())
             # Schema must have primary (datetime) key listed first
             date_keys = [schema[key][0][0] for key in schema.keys()]
-            if int(config['debug']) > 50:
+            if config['debug'] > 50:
                 print('db_init: Found the following tables in schema:')
                 print(schema_table_names)
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
             sql_table_names = [table[0] for table in cursor.fetchall()]
-            if int(config['debug']) > 50:
+            if config['debug'] > 50:
                 print('db_init: Found the following tables in sql db:')
                 print(sql_table_names)
 
@@ -105,7 +105,7 @@ def db_init(config):
                     # the output list
                     add_site = True
                     # A string of all table columns and types
-                    if int(config['debug']) > 0:
+                    if config['debug'] > 0:
                         print('db_init: need to create table %s' % table)
                     sqltypestr = ', '.join(["%s %s" % _type for _type in
                                             schema_table_structures[t]])
@@ -128,7 +128,7 @@ def db_init(config):
                     if last_dt is None or (time_now - last_dt > recent):
                         # Old or missing data, drop table and recreate it
                         add_site = True
-                        if int(config['debug']) > 0:
+                        if config['debug'] > 0:
                             print('db_init: %s table missing or too old, resetting it'
                                   % table)
                         cursor.execute("DROP TABLE %s;" % table)
@@ -140,7 +140,7 @@ def db_init(config):
             # Lastly, add the site if we need to rerun historical data
             if add_site:
                 add_sites.append(stid)
-            elif int(config['debug']) > 0:
+            elif config['debug'] > 0:
                 print('db_init: nothing to do for station %s' % stid)
 
         conn.close()
@@ -177,15 +177,15 @@ def _db_write(config, values, database, table, replace=True):
     cursor = conn.cursor()
     if replace:
         sql_cmd = 'REPLACE'
-        if int(config['debug']) > 50:
+        if config['debug'] > 50:
             print('_db_write: calling SQL REPLACE to overwrite existing')
     else:
         sql_cmd = 'INSERT'
-        if int(config['debug']) > 50:
+        if config['debug'] > 50:
             print('_db_write: calling SQL INSERT; will raise exception if existing')
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print('_db_write: committing values to %s table %s' % (database, table))
-    if int(config['debug']) > 50:
+    if config['debug'] > 50:
         print(values)
     cursor.executemany("%s INTO %s VALUES %s;" % (sql_cmd, table, value_formatter),
                        values)
@@ -215,7 +215,7 @@ def _db_read(config, database, table, model=None,
         end_date = start_date + timedelta(hours=24)
     start = _date_to_string(start_date)
     end = _date_to_string(end_date)
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print('_db_read: getting data from %s for %s to %s' %
               (table, start, end))
 
@@ -233,7 +233,7 @@ def _db_read(config, database, table, model=None,
                        AND MODEL=? ORDER BY DATETIME ASC""" % table
         cursor.execute(sql_line, (start, end, model.upper()))
     values = cursor.fetchall()
-    if int(config['debug']) > 50:
+    if config['debug'] > 50:
         print('_db_read: fetched the following values')
         print(values)
 
@@ -245,7 +245,7 @@ def _db_read(config, database, table, model=None,
     # Get column names
     cursor.execute("PRAGMA table_info(%s);" % table)
     columns = [c[1].upper() for c in cursor.fetchall()]
-    if int(config['debug']) > 50:
+    if config['debug'] > 50:
         print('_db_read: fetched the following column names')
         print(columns)
     conn.close()  # Done with db
@@ -279,7 +279,7 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
         """
         Converts an hourly timeseries to sql rows
         """
-        if int(config['debug']) > 50:
+        if config['debug'] > 50:
             print('db_writeTimeSeries: converting timseries data to SQL rows')
         series = []
         hourly.columns = [c.upper() for c in hourly.columns]
@@ -305,7 +305,7 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
     schema_name = config['DataBinding'][data_binding]['schema']
     schema = _get_object(schema_name).schema
     columns = [c[0] for c in schema[table_type.upper()]]
-    if int(config['debug']) > 50:
+    if config['debug'] > 50:
         print('db_writeTimeSeries: converting hourly data to columns and '
               'values as follows')
         print(columns)
@@ -320,20 +320,20 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
                                  'list must have the same station id.')
             # Datetime must be derived from pandas dataframe of timeseries
             series = hourly_to_row(ts.data, ts.model, columns)
-            if int(config['debug']) > 50:
+            if config['debug'] > 50:
                 print(series)
             # Add the series (all lists)
             hourly_sql += series
     else:
         stid = timeseries.stid
         series = hourly_to_row(timeseries.data, timeseries.model, columns)
-        if int(config['debug']) > 50:
+        if config['debug'] > 50:
             print(series)
         hourly_sql = series
 
     # Write to the database
     table = '%s_%s' % (stid.upper(), table_type.upper())
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print('db_writeTimeSeries: writing data to table %s' % table)
     _db_write(config, hourly_sql, database, table)
 
@@ -366,7 +366,7 @@ def db_writeDaily(config, daily, data_binding, table_type):
     schema_name = config['DataBinding'][data_binding]['schema']
     schema = _get_object(schema_name).schema
     columns = [c[0] for c in schema[table_type.upper()]]
-    if int(config['debug']) > 50:
+    if config['debug'] > 50:
         print('db_writeDaily: converting hourly data to columns and '
               'values as follows')
         print(columns)
@@ -381,20 +381,20 @@ def db_writeDaily(config, daily, data_binding, table_type):
                                  'must have the same station id.')
             datestr = _date_to_string(d.date)
             row = daily_to_row(d, datestr, d.model, columns)
-            if int(config['debug']) > 50:
+            if config['debug'] > 50:
                 print(row)
             daily_sql.append(row)
     else:
         stid = daily.stid
         datestr = _date_to_string(daily.date)
         row = daily_to_row(daily, datestr, daily.model, columns)
-        if int(config['debug']) > 50:
+        if config['debug'] > 50:
             print(row)
         daily_sql.append(row)
 
     # Write to the database
     table = '%s_%s' % (stid.upper(), table_type.upper())
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print('db_writeDaily: writing data to table %s' % table)
     _db_write(config, daily_sql, database, table)
 
@@ -407,7 +407,7 @@ def db_writeForecast(config, forecast):
 
     # Set the default database configuration
     data_binding = 'forecast'
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print("db_writeForecast: writing forecast to '%s' data binding"
               % data_binding)
 
@@ -502,7 +502,7 @@ def db_readDaily(config, stid, data_binding, table_type, model=None,
         daily.model = model
         daily_list.append(daily)
     if len(data.index) > 1:
-        if int(config['debug']) > 9:
+        if config['debug'] > 9:
             print('db_readDaily: generating list of daily objects')
         return daily_list
     else:
@@ -532,7 +532,7 @@ def db_readForecast(config, stid, model, date, hour_start=6, hour_padding=6):
 
     # Set the default database configuration; create Forecast
     data_binding = 'forecast'
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print("db_readForecast: reading forecast from '%s' data binding"
               % data_binding)
     forecast = Forecast(stid, model, date)

@@ -43,11 +43,11 @@ def get_climo(config, stid, ghcn_stid, start_year=1980):
     ghcn = get_ghcn_data(ghcn_stid)
 
     # For each variable, use groupby to get yearly climo
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print('climo: grouping data into yearly climatology')
     aggregate = {'value': np.mean}
     ghcn_yearly = {}
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print('climo: averaging for years since %d' % start_year)
     for var, df in ghcn.items():
         # Apparently values are "object" type. Convert to floats
@@ -61,7 +61,7 @@ def get_climo(config, stid, ghcn_stid, start_year=1980):
     year = 4 * (datetime.utcnow().year // 4)
     # Create a list of Dailys
     dailys = []
-    if int(config['debug']) > 50:
+    if config['debug'] > 50:
         print('climo: here are the values')
     for index, row in ghcn_yearly['TMAX'].iterrows():
         date = datetime(year, index[0], index[1])
@@ -72,7 +72,7 @@ def get_climo(config, stid, ghcn_stid, start_year=1980):
         daily.low = ghcn_yearly['TMIN'].loc[index]['value'] / 10. * 9. / 5. + 32.
         daily.wind = ghcn_yearly['WSF2'].loc[index]['value'] / 10. * 1.94384
         daily.rain = ghcn_yearly['PRCP'].loc[index]['value'] / 254.
-        if int(config['debug']) > 50:
+        if config['debug'] > 50:
             print('%s %0.0f/%0.0f/%0.0f/%0.2f' % (daily.date, daily.high, daily.low,
                                                   daily.wind, daily.rain))
         dailys.append(daily)

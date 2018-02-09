@@ -44,9 +44,10 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     """
     Retrieve MOS data. No unit conversions, yay!
 
-    :param model: model name (GFS or NAM)
+    :param model: model name ('GFS' or 'NAM')
     :param init_date: datetime of model initialization
-    :return: dict of high, low, max wind, total rain for next 6Z--6Z
+    :param forecast_date: datetime of day to forecast
+    :return: Forecast object for forecast_date
     """
 
     # Create forecast object
@@ -57,9 +58,9 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     formatted_date = init_date.strftime('%Y-%m-%d%%20%H:00')
     url = base_url % (stid, formatted_date, mos_model)
     response = urllib2.urlopen(url)
-    # Create pandas dataframe
+    # Create pandas DataFrame
     df = pd.read_csv(response, index_col=False)
-    # Raise exception if dataframe is empty
+    # Raise exception if DataFrame is empty
     if len(df.index) == 0:
         raise ValueError('mos.py: empty DataFrame; data missing.')
     date_index = pd.to_datetime(df['ftime'])
@@ -134,13 +135,13 @@ def main(config, model, stid, forecast_date):
 
     # Get forecast
     forecast = get_mos_forecast(stid, mos_model, init_date, forecast_date)
-
+    raise ValueError('ha!')
     return forecast
 
 
 def historical(config, model, stid, forecast_dates):
     """
-    Produce a list of Forecast objects for each date in forecast_dates.
+    Produce a list of Forecast objects from MOS for each date in forecast_dates.
     """
 
     # Get the model name from the config

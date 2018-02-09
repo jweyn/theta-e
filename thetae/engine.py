@@ -18,7 +18,7 @@ Main engine for the theta-e system.
 """
 
 import thetae
-from thetae.util import _get_object, getConfig
+from thetae.util import _get_object, get_config
 
 
 def main(options, args):
@@ -26,7 +26,7 @@ def main(options, args):
     Main engine process.
     """
 
-    config = getConfig(args[0])
+    config = get_config(args[0])
 
     # Step 1: check the database initialization
     print('engine: running database initialization checks')
@@ -40,18 +40,17 @@ def main(options, args):
     for service_group in config['Engine']['Services'].keys():
         # Make sure we have defined a group to do what this asks
         if service_group not in thetae.all_service_groups:
-            print('engine warning: doing nothing for services in %s'
-                  % service_group)
+            print('engine warning: doing nothing for services in %s' % service_group)
             continue
         for service in config['Engine']['Services'][service_group]:
-            # Execute the service. Will have an exception catch in the future.
-            #            try:
-            _get_object(service).main(config)
-
-
-#            except BaseException as e:
-#                print('engine warning: failed to run service %s' % service)
-#                print("*** Reason: '%s'" % str(e))
+            # Execute the service
+            try:
+                _get_object(service).main(config)
+            except BaseException as e:
+                print('engine warning: failed to run service %s' % service)
+                print("*** Reason: '%s'" % str(e))
+                if config['traceback']:
+                    raise
 
 
 def historical(config, stid):
@@ -62,19 +61,20 @@ def historical(config, stid):
     for service_group in config['Engine']['Services'].keys():
         # Make sure we have defined a group to do what this asks
         if service_group not in thetae.all_service_groups:
-            print('engine warning: doing nothing for services in %s'
-                  % service_group)
+            print('engine warning: doing nothing for services in %s' % service_group)
             continue
         for service in config['Engine']['Services'][service_group]:
-            # Execute the service. Will have an exception catch in the future.
-            #            try:
-            _get_object(service).historical(config, stid)
-#            except AttributeError:
-#                if int(config['debug']) > 9:
-#                    print("engine warning: no 'historical' attribute for " +
-#                          "service %s" % service)
-#                    continue
-#            except BaseException as e:
-#                print('engine warning: failed to run historical for ' +
-#                      'service %s' % service)
-#                print("*** Reason: '%s'" % str(e))
+            # Execute the service.
+            try:
+                _get_object(service).historical(config, stid)
+            except AttributeError:
+                if config['debug'] > 9:
+                    print("engine warning: no 'historical' attribute for service %s" % service)
+                if config['traceback']:
+                    raise
+                continue
+            except BaseException as e:
+                print('engine warning: failed to run historical for service %s' % service)
+                print("*** Reason: '%s'" % str(e))
+                if config['traceback']:
+                    raise

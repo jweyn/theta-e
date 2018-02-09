@@ -39,7 +39,7 @@ def main(config):
 
         # Get the forecast from the driver at each site
         for stid in config['Stations'].keys():
-            if int(config['debug']) > 9:
+            if config['debug'] > 9:
                 print('getForecasts: getting forecast for station %s' % stid)
             try:
                 # Each forecast has a function 'main' which returns a Forecast
@@ -51,15 +51,19 @@ def main(config):
                 print('getForecasts: failed to get forecast from %s for %s' %
                       (model, stid))
                 print("*** Reason: '%s'" % str(e))
+                if config['traceback']:
+                    raise
                 continue
             # Write to the database
             try:
-                if int(config['debug']) > 9:
+                if config['debug'] > 9:
                     print('getForecasts: writing forecast to database')
                 db_writeForecast(config, forecast)
             except BaseException as e:
                 print('getForecasts: failed to write forecast to database')
                 print("*** Reason: '%s'" % str(e))
+                if config['traceback']:
+                    raise
 
     # # TEST: READ SOME DATA
     # from thetae.db import db_readForecast
@@ -91,13 +95,13 @@ def historical(config, stid):
     while date < time_now:
         forecast_dates.append(date)
         date = date + timedelta(hours=24)
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print('getForecasts: getting historical forecasts starting %s' % start_date)
 
     # Go through the models in config
     for model in config['Models'].keys():
         if not (to_bool(config['Models'][model].get('historical', False))):
-            if int(config['debug']) > 9:
+            if config['debug'] > 9:
                 print('getForecasts: no historical to do for model %s' % model)
             continue
         try:
@@ -119,14 +123,18 @@ def historical(config, stid):
             print('getForecasts: failed to get historical forecasts from %s for %s' %
                   (model, stid))
             print("*** Reason: '%s'" % str(e))
+            if config['traceback']:
+                raise
             continue
         # Write to the database
         try:
-            if int(config['debug']) > 9:
+            if config['debug'] > 9:
                 print('getForecasts: writing historical forecasts to database')
             db_writeForecast(config, forecasts)
         except BaseException as e:
             print('getForecasts: failed to write historical forecasts to database')
             print("*** Reason: '%s'" % str(e))
+            if config['traceback']:
+                raise
 
     return

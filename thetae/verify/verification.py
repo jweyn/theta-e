@@ -30,7 +30,7 @@ def get_cf6_files(config, stid, num_files=1):
 
     # Create directory if it does not exist
     site_directory = '%s/site_data' % config['THETAE_ROOT']
-    if int(config['debug']) > 50:
+    if config['debug'] > 50:
         print('get_cf6_files: accessing site data in %s' % site_directory)
     if not (os.path.isdir(site_directory)):
         os.system('mkdir -p %s' % site_directory)
@@ -57,7 +57,7 @@ def get_cf6_files(config, stid, num_files=1):
         version = 'version=%d&glossary=0' % r
         nws_site = '&'.join((nws_url, version))
         # Load the site
-        if int(config['debug']) > 50:
+        if config['debug'] > 50:
             print('get_cf6_files: fetching from %s' % nws_site)
         req = urllib2.Request(nws_site)
         response = urllib2.urlopen(req)
@@ -101,14 +101,14 @@ def get_cf6_files(config, stid, num_files=1):
             old_file_len = file_len(filename)
             new_file_len = file_len(temp_file)
             if old_file_len < new_file_len:
-                if int(config['debug']) > 9:
+                if config['debug'] > 9:
                     print('get_cf6_files: overwriting %s' % filename)
                 os.system('mv -f %s %s' % (temp_file, filename))
             else:
-                if int(config['debug']) > 9:
+                if config['debug'] > 9:
                     print('get_cf6_files: %s already exists' % filename)
         else:
-            if int(config['debug']) > 9:
+            if config['debug'] > 9:
                 print('get_cf6_files: writing %s' % filename)
             os.system('mv -f %s %s' % (temp_file, filename))
         os.system('rm -f %s' % temp_file)
@@ -125,7 +125,7 @@ def _cf6_wind(config, stid):
     """
 
     site_directory = '%s/site_data' % config['THETAE_ROOT']
-    if int(config['debug']) > 0:
+    if config['debug'] > 0:
         print('verification: searching for CF6 files in %s' % site_directory)
     allfiles = os.listdir(site_directory)
     filelist = [f for f in allfiles if f.startswith(stid.upper()) and
@@ -134,11 +134,11 @@ def _cf6_wind(config, stid):
     if len(filelist) == 0:
         raise IOError('No CF6 files found in %s for site %s.' % (site_directory,
                                                                  stid))
-    if int(config['debug']) > 50:
+    if config['debug'] > 50:
         print('verification: found %d CF6 files' % len(filelist))
 
     # Interpret CF6 files
-    if int(config['debug']) > 50:
+    if config['debug'] > 50:
         print('verification: reading CF6 files')
     cf6_values = {}
     for file in filelist:
@@ -174,7 +174,7 @@ def _climo_wind(config, stid, dates=None):
 
     ghcn_stid = get_ghcn_stid(stid, config['THETAE_ROOT'])
 
-    if int(config['debug']) > 0:
+    if config['debug'] > 0:
         print('verification: fetching wind data for %s from NCDC (may take a while)' % ghcn_stid)
     v = 'WSF2'
     D = ulmo.ncdc.ghcn_daily.get_data(ghcn_stid, as_dataframe=True,
@@ -201,7 +201,7 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
     # MesoWest token and init
     meso_token = config['Verify']['api_key']
     m = Meso(token=meso_token)
-    if int(config['debug']) > 9:
+    if config['debug'] > 9:
         print('verification: MesoPy initialized for station %s' % stid)
 
     # Look for desired variables
@@ -210,13 +210,13 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
                    'precip_accum_six_hour']
 
     # Add variables to the api request if they exist
-    if int(config['debug']) > 50:
+    if config['debug'] > 50:
         print('verification: searching for 6-hourly variables...')
     latest = m.latest(stid=stid)
     obs_list = list(latest['STATION'][0]['SENSOR_VARIABLES'].keys())
     for var in vars_option:
         if var in obs_list:
-            if int(config['debug']) > 9:
+            if config['debug'] > 9:
                 print('verification: using variable %s' % var)
             vars_request += [var]
     vars_api = ''
@@ -278,7 +278,7 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
     aggregate['wind_speed'] = np.max
     aggregate['precip_accum_one_hour'] = np.max
 
-    if int(config['debug']) > 50:
+    if config['debug'] > 50:
         print('verification: grouping data by hour')
     obs_hourly = obspd.groupby([pd.DatetimeIndex(obspd[datename]).year,
                                 pd.DatetimeIndex(obspd[datename]).month,
@@ -311,7 +311,7 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
     except:
         pass
 
-    if int(config['debug']) > 50:
+    if config['debug'] > 50:
         print('verification: grouping data by day')
     obs_daily = obs_hourly.groupby([pd.DatetimeIndex(obs_hourly[datename]).year,
                                     pd.DatetimeIndex(obs_hourly[datename]).month,
@@ -321,7 +321,7 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
     # verification
 
     if use_climo or use_cf6:
-        if int(config['debug']) > 9:
+        if config['debug'] > 9:
             print('verification: checking climo and/or CF6 for wind data')
         climo_values = {}
         cf6_values = {}
@@ -346,12 +346,12 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
                 obs_wind = row['wind_speed']
                 cf6_wind = climo_values[date]['wind']
                 if obs_wind - cf6_wind >= 5:
-                    if int(config['debug']) > 9:
+                    if config['debug'] > 9:
                         print('verification warning: obs wind for %s (%0.0f) much larger than '
                               'cf6/climo wind (%0.0f); using obs' % (date, obs_wind, cf6_wind))
                 else:
                     obs_daily.loc[index, 'wind_speed'] = cf6_wind
-        if int(config['debug']) > 9:
+        if config['debug'] > 9:
             print('verification: found %d matching rows for wind' % count_rows)
 
     # Round values to nearest degree, knot, and centi-inch
@@ -397,14 +397,14 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
 
     # Create list of Daily objects
     dailys = []
-    if int(config['debug']) > 50:
+    if config['debug'] > 50:
         print('verification: here are the values')
     for index, row in obs_daily.iterrows():
         date = index.to_pydatetime()
         daily = Daily(stid, date)
         for attr in export_cols:
             setattr(daily, attr, row[attr])
-        if int(config['debug']) > 50:
+        if config['debug'] > 50:
             print('%s %0.0f/%0.0f/%0.0f/%0.2f' % (daily.date, daily.high, daily.low,
                                                   daily.wind, daily.rain))
         dailys.append(daily)
