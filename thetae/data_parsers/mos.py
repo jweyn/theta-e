@@ -135,7 +135,7 @@ def main(config, model, stid, forecast_date):
 
     # Get forecast
     forecast = get_mos_forecast(stid, mos_model, init_date, forecast_date)
-    raise ValueError('ha!')
+
     return forecast
 
 
