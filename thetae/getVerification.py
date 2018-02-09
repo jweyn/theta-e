@@ -13,7 +13,7 @@ historical observations.
 
 from thetae.db import db_writeTimeSeries, db_writeDaily
 from datetime import datetime, timedelta
-from thetae.util import _get_object, _config_date_to_datetime
+from thetae.util import get_object, config_date_to_datetime
 
 
 def main(config):
@@ -41,7 +41,7 @@ def main(config):
             print('getVerification: getting verification for station %s' % stid)
         try:
             # Verification and obs main() only need to know the stid
-            verification = _get_object(verif_driver).main(config, stid)
+            verification = get_object(verif_driver).main(config, stid)
         except BaseException as e:
             print('getVerification: failed to get verification for %s' % stid)
             print("*** Reason: '%s'" % str(e))
@@ -73,7 +73,7 @@ def main(config):
             print('getVerification: getting obs for station %s' % stid)
         try:
             # Verification and obs main() only need to know the stid
-            obs = _get_object(obs_driver).main(config, stid)
+            obs = get_object(obs_driver).main(config, stid)
         except BaseException as e:
             print('getVerification: failed to get obs for %s' % stid)
             print("*** Reason: '%s'" % str(e))
@@ -102,7 +102,7 @@ def historical(config, stid):
     # Figure out which days we want since config start_date
     time_now = datetime.utcnow()
     try:
-        start_date = _config_date_to_datetime(config['Stations'][stid]['start_date'])
+        start_date = config_date_to_datetime(config['Stations'][stid]['start_date'])
     except:
         print('getVerification warning: cannot get start_date in config for '
               'station %s, setting to -30 days' % stid)
@@ -123,7 +123,7 @@ def historical(config, stid):
         print('getVerification: getting historical verification')
     try:
         # Verification and obs historical() need config, stid, start_date
-        verification = _get_object(verif_driver).historical(config, stid, start_date)
+        verification = get_object(verif_driver).historical(config, stid, start_date)
     except BaseException as e:
         print('getVerification: failed to get historical verification for %s' % stid)
         print("*** Reason: '%s'" % str(e))
@@ -152,7 +152,7 @@ def historical(config, stid):
         print('getVerification: getting historical obs')
     try:
         # Verification and obs historical() need config, stid, start_date
-        obs = _get_object(obs_driver).historical(config, stid, start_date)
+        obs = get_object(obs_driver).historical(config, stid, start_date)
     except BaseException as e:
         print('getVerification: failed to get historical obs for %s' % stid)
         print("*** Reason: '%s'" % str(e))
@@ -181,7 +181,7 @@ def historical(config, stid):
         print('getVerification: getting historical climatology')
     try:
         # Verification and obs historical() need config, stid, start_date
-        climo = _get_object(climo_driver).historical(config, stid)
+        climo = get_object(climo_driver).historical(config, stid)
     except BaseException as e:
         print('getVerification: failed to get climo for %s' % stid)
         print("*** Reason: '%s'" % str(e))

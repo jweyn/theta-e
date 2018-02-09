@@ -81,7 +81,7 @@ class Forecast():
 # ==============================================================================
 
 # noinspection PyUnboundLocalVariable
-def _get_object(module_class):
+def get_object(module_class):
     """
     Given a string with a module class name, it imports and returns the class.
     This function (c) Tom Keffer, weeWX.
@@ -145,7 +145,7 @@ def get_config(config_path):
     return config_dict
 
 
-def _date_to_datetime(date):
+def date_to_datetime(date):
     """
     Converts a date from string format to datetime object.
     """
@@ -156,7 +156,7 @@ def _date_to_datetime(date):
     return date
 
 
-def _date_to_string(date):
+def date_to_string(date):
     """
     Converts a date from datetime object to string format.
     """
@@ -167,16 +167,16 @@ def _date_to_string(date):
     return date
 
 
-def _config_date_to_datetime(datestr):
+def config_date_to_datetime(date_str):
     """
     Converts a string date from config formatting %Y%m%d to a datetime object.
     """
-    if datestr is None:
+    if date_str is None:
         return
-    return datetime.strptime(datestr, '%Y%m%d')
+    return datetime.strptime(date_str, '%Y%m%d')
 
 
-def _meso_api_dates(start_date, end_date):
+def meso_api_dates(start_date, end_date):
     """
     Return string-formatted start and end dates for the MesoPy api.
     """
@@ -245,8 +245,7 @@ def get_ghcn_stid(stid, THETAE_ROOT='.'):
     stations_filename = '%s/%s' % (site_directory, stations_file)
     if not os.path.exists(stations_filename):
         print('get_ghcn_stid: downloading site name database')
-        os.system('wget --directory-prefix=%s %s/%s' %
-                  (site_directory, main_addr, stations_file))
+        os.system('wget --directory-prefix=%s %s/%s' % (site_directory, main_addr, stations_file))
 
     # Now open this file and look for our siteid
     site_found = False

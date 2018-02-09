@@ -11,7 +11,7 @@ Retrieve observations from MesoWest.
 from MesoPy import Meso
 import pandas as pd
 import numpy as np
-from thetae.util import _meso_api_dates, _date_to_string, TimeSeries
+from thetae.util import meso_api_dates, date_to_string, TimeSeries
 from datetime import datetime, timedelta
 
 
@@ -41,7 +41,7 @@ def _reformat_date(series):
     """
     new_series = series.copy()
     for index, date in series.iteritems():
-        new_date = _date_to_string(datetime.strptime(date, '%Y-%m-%dT%H:%M:%SZ'))
+        new_date = date_to_string(datetime.strptime(date, '%Y-%m-%dT%H:%M:%SZ'))
         new_series.loc[index] = new_date
     return new_series
 
@@ -170,7 +170,7 @@ def main(config, stid):
 
     end_date = datetime.utcnow()
     start_date = end_date - timedelta(hours=24)
-    start, end = _meso_api_dates(start_date, end_date)
+    start, end = meso_api_dates(start_date, end_date)
 
     timeseries = get_obs(config, stid, start, end)
 
@@ -183,7 +183,7 @@ def historical(config, stid, start_date):
     """
 
     end_date = datetime.utcnow()
-    start, end = _meso_api_dates(start_date, end_date)
+    start, end = meso_api_dates(start_date, end_date)
 
     timeseries = get_obs(config, stid, start, end)
 

@@ -13,7 +13,7 @@ historical forecasts for valid sources.
 
 from thetae.db import db_writeForecast
 from datetime import datetime, timedelta
-from thetae.util import _get_object, _config_date_to_datetime, to_bool
+from thetae.util import get_object, config_date_to_datetime, to_bool
 
 
 def main(config):
@@ -43,8 +43,8 @@ def main(config):
                 print('getForecasts: getting forecast for station %s' % stid)
             try:
                 # Each forecast has a function 'main' which returns a Forecast
-                forecast = _get_object(driver).main(config, model, stid,
-                                                    forecast_date)
+                forecast = get_object(driver).main(config, model, stid,
+                                                   forecast_date)
                 # Set the model name
                 forecast.setModel(model)
             except BaseException as e:
@@ -85,7 +85,7 @@ def historical(config, stid):
     time_now = datetime.utcnow()
     forecast_dates = []
     try:
-        start_date = _config_date_to_datetime(config['Stations'][stid]['start_date'])
+        start_date = config_date_to_datetime(config['Stations'][stid]['start_date'])
     except:
         print('getForecasts warning: cannot get start_date in config for '
               'station %s, setting to -30 days' % stid)
@@ -115,8 +115,8 @@ def historical(config, stid):
             # Each driver should have a function 'historical' which returns a
             # list of Forecasts
             print('getForecasts: getting historical forecasts from %s' % model)
-            forecasts = _get_object(driver).historical(config, model, stid,
-                                                       forecast_dates)
+            forecasts = get_object(driver).historical(config, model, stid,
+                                                      forecast_dates)
             # Set the model name
             forecasts = [f.setModel(model) for f in forecasts]
         except BaseException as e:
