@@ -62,7 +62,7 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     df = pd.read_csv(response, index_col=False)
     # Raise exception if DataFrame is empty
     if len(df.index) == 0:
-        raise ValueError('mos.py: empty DataFrame; data missing.')
+        raise ValueError('mos.py: error: empty DataFrame; data missing.')
     date_index = pd.to_datetime(df['ftime'])
     df['datetime'] = date_index
     # Remove duplicate rows
@@ -95,12 +95,12 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
         iloc_start_include = df.index.get_loc(forecast_start)
         iloc_start_exclude = iloc_start_include + 1
     except BaseException:
-        print('Error getting start time index in db; check data.')
+        print('mos.py: error getting start time index in db; check data.')
         raise
     try:
         iloc_end = df.index.get_loc(forecast_end) + 1
     except BaseException:
-        print('Error getting end time index in db; check data.')
+        print('mos.py: error getting end time index in db; check data.')
         raise
     raw_high = df.iloc[iloc_start_include:iloc_end]['tmp'].max()
     raw_low = df.iloc[iloc_start_include:iloc_end]['tmp'].min()
