@@ -17,7 +17,7 @@ import pandas as pd
 # Classes
 # ==============================================================================
 
-class TimeSeries():
+class TimeSeries(object):
     """
     TimeSeries object, which is really just a wrapper for a pandas DataFrame.
     """
@@ -28,7 +28,7 @@ class TimeSeries():
         self.data = pd.DataFrame()
 
 
-class Daily():
+class Daily(object):
     """
     Daily object, which contains high, low, wind, and rain for a specific date.
     """
@@ -49,7 +49,7 @@ class Daily():
         self.rain = rain
 
 
-class Forecast():
+class Forecast(object):
     """
     Forecast object for a single date. Contains both a timeseries and daily
     values.

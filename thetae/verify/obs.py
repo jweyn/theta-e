@@ -58,10 +58,8 @@ def get_obs(config, stid, start, end):
         print('obs: MesoPy initialized for station %s' % stid)
 
     # Look for desired variables
-    vars_request = ['air_temp', 'dew_point_temperature', 'wind_speed',
-                    'wind_direction', 'cloud_layer_1_code',
-                    'cloud_layer_2_code', 'cloud_layer_3_code',
-                    'precip_accum_one_hour', 'weather_condition']
+    vars_request = ['air_temp', 'dew_point_temperature', 'wind_speed', 'wind_direction', 'cloud_layer_1_code',
+                    'cloud_layer_2_code', 'cloud_layer_3_code', 'precip_accum_one_hour', 'weather_condition']
 
     # Add variables to the api request
     vars_api = ''
@@ -74,8 +72,7 @@ def get_obs(config, stid, start, end):
 
     # Retrieve data
     print('obs: retrieving data from %s to %s...' % (start, end))
-    obs = m.timeseries(stid=stid, start=start, end=end, vars=vars_api,
-                       units=units, hfmetars='0')
+    obs = m.timeseries(stid=stid, start=start, end=end, vars=vars_api, units=units, hfmetars='0')
     obspd = pd.DataFrame.from_dict(obs['STATION'][0]['OBSERVATIONS'])
 
     # Rename columns to requested vars. This changes the columns in the
@@ -126,8 +123,7 @@ def get_obs(config, stid, start, end):
     obs_hourly['cloud_layer_3_code'].fillna(1.0, inplace=True)
 
     # Format cloud data
-    cloud = (_cloud(obspd['cloud_layer_1_code']) +
-             _cloud(obspd['cloud_layer_2_code']) +
+    cloud = (_cloud(obspd['cloud_layer_1_code']) + _cloud(obspd['cloud_layer_2_code']) +
              _cloud(obspd['cloud_layer_3_code']))
     # Cloud exceeding 100% set to 100
     cloud[cloud > 100.] = 100.

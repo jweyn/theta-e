@@ -47,8 +47,7 @@ def get_cf6_files(config, stid, num_files=1):
     if num_files == 1:
         print('get_cf6_files: retrieving latest CF6 file for %s' % stid)
     else:
-        print('get_cf6_files: retrieving %s archived CF6 files for %s' %
-              (num_files, stid))
+        print('get_cf6_files: retrieving %s archived CF6 files for %s' % (num_files, stid))
 
     # Fetch files
     for r in range(1, num_files + 1):
@@ -132,8 +131,7 @@ def _cf6_wind(config, stid):
                 f.endswith('.cli')]
     filelist.sort()
     if len(filelist) == 0:
-        raise IOError('No CF6 files found in %s for site %s.' % (site_directory,
-                                                                 stid))
+        raise IOError('No CF6 files found in %s for site %s.' % (site_directory, stid))
     if config['debug'] > 50:
         print('verification: found %d CF6 files' % len(filelist))
 
@@ -177,8 +175,7 @@ def _climo_wind(config, stid, dates=None):
     if config['debug'] > 0:
         print('verification: fetching wind data for %s from NCDC (may take a while)' % ghcn_stid)
     v = 'WSF2'
-    D = ulmo.ncdc.ghcn_daily.get_data(ghcn_stid, as_dataframe=True,
-                                      elements=[v])
+    D = ulmo.ncdc.ghcn_daily.get_data(ghcn_stid, as_dataframe=True, elements=[v])
     wind_dict = {}
     if dates is None:
         dates = list(D[v].index.to_timestamp().to_pydatetime())
@@ -206,8 +203,7 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
 
     # Look for desired variables
     vars_request = ['air_temp', 'wind_speed', 'precip_accum_one_hour']
-    vars_option = ['air_temp_low_6_hour', 'air_temp_high_6_hour',
-                   'precip_accum_six_hour']
+    vars_option = ['air_temp_low_6_hour', 'air_temp_high_6_hour', 'precip_accum_six_hour']
 
     # Add variables to the api request if they exist
     if config['debug'] > 50:
@@ -229,8 +225,7 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
 
     # Retrieve data
     print('verification: retrieving data from %s to %s...' % (start, end))
-    obs = m.timeseries(stid=stid, start=start, end=end, vars=vars_api,
-                       units=units)
+    obs = m.timeseries(stid=stid, start=start, end=end, vars=vars_api, units=units)
     obspd = pd.DataFrame.from_dict(obs['STATION'][0]['OBSERVATIONS'])
 
     # Rename columns to requested vars. This changes the columns in the

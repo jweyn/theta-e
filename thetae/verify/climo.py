@@ -21,8 +21,7 @@ def get_ghcn_data(ghcn_stid):
     """
 
     vars_used = ['TMAX', 'TMIN', 'WSF2', 'PRCP']
-    ghcn_data = ulmo.ncdc.ghcn_daily.get_data(ghcn_stid, elements=vars_used,
-                                              as_dataframe=True)
+    ghcn_data = ulmo.ncdc.ghcn_daily.get_data(ghcn_stid, elements=vars_used, as_dataframe=True)
 
     # Change dataframe Indexes to DatetimeIndex
     for var in ghcn_data.keys():
@@ -73,8 +72,7 @@ def get_climo(config, stid, ghcn_stid, start_year=1980):
         daily.wind = ghcn_yearly['WSF2'].loc[index]['value'] / 10. * 1.94384
         daily.rain = ghcn_yearly['PRCP'].loc[index]['value'] / 254.
         if config['debug'] > 50:
-            print('%s %0.0f/%0.0f/%0.0f/%0.2f' % (daily.date, daily.high, daily.low,
-                                                  daily.wind, daily.rain))
+            print('%s %0.0f/%0.0f/%0.0f/%0.2f' % (daily.date, daily.high, daily.low, daily.wind, daily.rain))
         dailys.append(daily)
 
     return dailys
