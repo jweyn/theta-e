@@ -18,7 +18,7 @@ Main engine for the theta-e system.
 """
 
 import thetae
-from thetae.util import _get_object, get_config
+from thetae.util import get_object, get_config
 
 
 def main(options, args):
@@ -45,7 +45,7 @@ def main(options, args):
         for service in config['Engine']['Services'][service_group]:
             # Execute the service
             try:
-                _get_object(service).main(config)
+                get_object(service).main(config)
             except BaseException as e:
                 print('engine warning: failed to run service %s' % service)
                 print("*** Reason: '%s'" % str(e))
@@ -66,7 +66,7 @@ def historical(config, stid):
         for service in config['Engine']['Services'][service_group]:
             # Execute the service.
             try:
-                _get_object(service).historical(config, stid)
+                get_object(service).historical(config, stid)
             except AttributeError:
                 if config['debug'] > 9:
                     print("engine warning: no 'historical' attribute for service %s" % service)

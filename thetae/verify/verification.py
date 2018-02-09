@@ -14,7 +14,7 @@ import numpy as np
 import os
 import urllib2
 import re
-from thetae.util import _meso_api_dates, Daily
+from thetae.util import meso_api_dates, Daily
 from datetime import datetime, timedelta
 
 
@@ -405,8 +405,7 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
         for attr in export_cols:
             setattr(daily, attr, row[attr])
         if config['debug'] > 50:
-            print('%s %0.0f/%0.0f/%0.0f/%0.2f' % (daily.date, daily.high, daily.low,
-                                                  daily.wind, daily.rain))
+            print('%s %0.0f/%0.0f/%0.0f/%0.2f' % (daily.date, daily.high, daily.low, daily.wind, daily.rain))
         dailys.append(daily)
 
     return dailys
@@ -427,10 +426,10 @@ def main(config, stid):
     end_date = datetime.utcnow()
     yesterday = end_date - timedelta(hours=24)
     start_date = datetime(yesterday.year, yesterday.month, yesterday.day, 6)
-    start, end = _meso_api_dates(start_date, end_date)
+    start, end = meso_api_dates(start_date, end_date)
 
     # Download latest CF6 files. There's no need to do this all the time
-    if end_date.hour >= 12 and end_date.hour < 20:
+    if 12 <= end_date.hour < 20:
         # If we're at the beginning of the month, get the last month too
         if end_date.day < 3:
             num_files = 2
@@ -453,7 +452,7 @@ def historical(config, stid, start_date):
     # Get dates
     start_date = start_date.replace(hour=6)
     end_date = datetime.utcnow()
-    start, end = _meso_api_dates(start_date, end_date)
+    start, end = meso_api_dates(start_date, end_date)
 
     # Download CF6 files
     get_cf6_files(config, stid, 12)

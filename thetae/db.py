@@ -11,8 +11,7 @@ Functions for interfacing with SQL databases.
 import sqlite3
 import os
 import pandas as pd
-from thetae.util import (_get_object, TimeSeries, Daily, Forecast,
-                         _date_to_datetime, _date_to_string)
+from thetae.util import (get_object, TimeSeries, Daily, Forecast, date_to_datetime, date_to_string)
 from datetime import datetime, timedelta
 
 
@@ -42,8 +41,7 @@ def db_conn(config, database):
         print('Error: database not defined in config file under "Databases"')
         return
     try:
-        db_name = '%s/%s' % (db_dir,
-                             config['Databases'][database]['database_name'])
+        db_name = '%s/%s' % (db_dir, config['Databases'][database]['database_name'])
         if config['debug'] > 0:
             print('db_conn: using database at %s' % db_name)
     except:
@@ -71,11 +69,10 @@ def db_init(config):
         # Open the database and schema
         schema_name = config['DataBinding'][data_binding]['schema']
         database = config['DataBinding'][data_binding]['database']
-        schema = _get_object(schema_name).schema
+        schema = get_object(schema_name).schema
         conn = db_conn(config, database)
         if conn is None:
-            raise IOError('Error: db_init cannot connect to database %s' %
-                          database)
+            raise IOError('Error: db_init cannot connect to database %s' % database)
         cursor = conn.cursor()
 
         # Iterate through stations in the config
@@ -83,8 +80,7 @@ def db_init(config):
         for stid in config['Stations'].keys():
             add_site = False
             # Find the tables in the db and requested by the schema
-            schema_table_names = ['%s_%s' % (stid.upper(), key) for key in
-                                  schema.keys()]
+            schema_table_names = ['%s_%s' % (stid.upper(), key) for key in schema.keys()]
             schema_table_structures = list(schema.values())
             # Schema must have primary (datetime) key listed first
             date_keys = [schema[key][0][0] for key in schema.keys()]
@@ -107,10 +103,8 @@ def db_init(config):
                     # A string of all table columns and types
                     if config['debug'] > 0:
                         print('db_init: need to create table %s' % table)
-                    sqltypestr = ', '.join(["%s %s" % _type for _type in
-                                            schema_table_structures[t]])
-                    cursor.execute("CREATE TABLE %s (%s);" %
-                                   (table, sqltypestr,))
+                    sqltypestr = ', '.join(["%s %s" % _type for _type in schema_table_structures[t]])
+                    cursor.execute("CREATE TABLE %s (%s);" % (table, sqltypestr,))
                 else:
                     # Check if data in table are recent
                     if table != stid.upper() + '_CLIMO':
@@ -120,22 +114,18 @@ def db_init(config):
                     time_now = datetime.utcnow()
                     key = date_keys[t]
                     try:
-                        cursor.execute("SELECT %s FROM %s ORDER BY %s DESC LIMIT 1;" %
-                                       (key, table, key))
-                        last_dt = _date_to_datetime(cursor.fetchone()[0])
+                        cursor.execute("SELECT %s FROM %s ORDER BY %s DESC LIMIT 1;" % (key, table, key))
+                        last_dt = date_to_datetime(cursor.fetchone()[0])
                     except:
                         last_dt = None
                     if last_dt is None or (time_now - last_dt > recent):
                         # Old or missing data, drop table and recreate it
                         add_site = True
                         if config['debug'] > 0:
-                            print('db_init: %s table missing or too old, resetting it'
-                                  % table)
+                            print('db_init: %s table missing or too old, resetting it' % table)
                         cursor.execute("DROP TABLE %s;" % table)
-                        sqltypestr = ', '.join(["%s %s" % _type for _type in
-                                                schema_table_structures[t]])
-                        cursor.execute("CREATE TABLE %s (%s);" %
-                                       (table, sqltypestr,))
+                        sqltypestr = ', '.join(["%s %s" % _type for _type in schema_table_structures[t]])
+                        cursor.execute("CREATE TABLE %s (%s);" % (table, sqltypestr,))
 
             # Lastly, add the site if we need to rerun historical data
             if add_site:
@@ -187,14 +177,12 @@ def _db_write(config, values, database, table, replace=True):
         print('_db_write: committing values to %s table %s' % (database, table))
     if config['debug'] > 50:
         print(values)
-    cursor.executemany("%s INTO %s VALUES %s;" % (sql_cmd, table, value_formatter),
-                       values)
+    cursor.executemany("%s INTO %s VALUES %s;" % (sql_cmd, table, value_formatter), values)
     conn.commit()
     conn.close()
 
 
-def _db_read(config, database, table, model=None,
-             start_date=None, end_date=None):
+def _db_read(config, database, table, model=None, start_date=None, end_date=None):
     """
     Return a pandas DataFrame from table in database.
     If start_date and end_date are None, then then the start is set to now and
@@ -204,8 +192,8 @@ def _db_read(config, database, table, model=None,
     """
 
     # Find the dates and make strings
-    start_date = _date_to_datetime(start_date)
-    end_date = _date_to_datetime(end_date)
+    start_date = date_to_datetime(start_date)
+    end_date = date_to_datetime(end_date)
     if start_date is None and end_date is not None:
         start_date = end_date - timedelta(hours=24)
     elif start_date is not None and end_date is None:
@@ -213,11 +201,10 @@ def _db_read(config, database, table, model=None,
     elif start_date is None and end_date is None:
         start_date = datetime.utcnow()
         end_date = start_date + timedelta(hours=24)
-    start = _date_to_string(start_date)
-    end = _date_to_string(end_date)
+    start = date_to_string(start_date)
+    end = date_to_string(end_date)
     if config['debug'] > 9:
-        print('_db_read: getting data from %s for %s to %s' %
-              (table, start, end))
+        print('_db_read: getting data from %s for %s to %s' % (table, start, end))
 
     # Open a database connection
     conn = db_conn(config, database)
@@ -285,7 +272,7 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
         hourly.columns = [c.upper() for c in hourly.columns]
         columns = [c.upper() for c in columns]
         for index, pdrow in hourly.iterrows():
-            datestr = _date_to_string(pdrow['DATETIME'])
+            datestr = date_to_string(pdrow['DATETIME'])
             row = []
             for column in columns:
                 if column == 'DATETIME':
@@ -303,11 +290,10 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
     # Get the database and the names of columns in the schema
     database = config['DataBinding'][data_binding]['database']
     schema_name = config['DataBinding'][data_binding]['schema']
-    schema = _get_object(schema_name).schema
+    schema = get_object(schema_name).schema
     columns = [c[0] for c in schema[table_type.upper()]]
     if config['debug'] > 50:
-        print('db_writeTimeSeries: converting hourly data to columns and '
-              'values as follows')
+        print('db_writeTimeSeries: converting hourly data to columns and values as follows')
         print(columns)
 
     # Format data to pass to _db_write
@@ -316,8 +302,7 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
         stid = timeseries[0].stid
         for ts in timeseries:
             if stid != ts.stid:
-                raise ValueError('db_writeTimeSeries error: all forecasts in '
-                                 'list must have the same station id.')
+                raise ValueError('db_writeTimeSeries error: all forecasts in list must have the same station id.')
             # Datetime must be derived from pandas dataframe of timeseries
             series = hourly_to_row(ts.data, ts.model, columns)
             if config['debug'] > 50:
@@ -364,11 +349,10 @@ def db_writeDaily(config, daily, data_binding, table_type):
     # Get the database and the names of columns in the schema
     database = config['DataBinding'][data_binding]['database']
     schema_name = config['DataBinding'][data_binding]['schema']
-    schema = _get_object(schema_name).schema
+    schema = get_object(schema_name).schema
     columns = [c[0] for c in schema[table_type.upper()]]
     if config['debug'] > 50:
-        print('db_writeDaily: converting hourly data to columns and '
-              'values as follows')
+        print('db_writeDaily: converting hourly data to columns and values as follows')
         print(columns)
 
     # Format data to pass to _db_write
@@ -377,16 +361,15 @@ def db_writeDaily(config, daily, data_binding, table_type):
         stid = daily[0].stid
         for d in daily:
             if stid != d.stid:
-                raise ValueError('db_writeDaily error: all forecasts in list '
-                                 'must have the same station id.')
-            datestr = _date_to_string(d.date)
+                raise ValueError('db_writeDaily error: all forecasts in list must have the same station id.')
+            datestr = date_to_string(d.date)
             row = daily_to_row(d, datestr, d.model, columns)
             if config['debug'] > 50:
                 print(row)
             daily_sql.append(row)
     else:
         stid = daily.stid
-        datestr = _date_to_string(daily.date)
+        datestr = date_to_string(daily.date)
         row = daily_to_row(daily, datestr, daily.model, columns)
         if config['debug'] > 50:
             print(row)
@@ -408,8 +391,7 @@ def db_writeForecast(config, forecast):
     # Set the default database configuration
     data_binding = 'forecast'
     if config['debug'] > 9:
-        print("db_writeForecast: writing forecast to '%s' data binding"
-              % data_binding)
+        print("db_writeForecast: writing forecast to '%s' data binding" % data_binding)
 
     # The daily forecast part
     table_type = 'DAILY_FORECAST'
@@ -432,8 +414,7 @@ def db_writeForecast(config, forecast):
 # Reading functions for Forecast, TimeSeries, and Daily objects
 # ==============================================================================
 
-def db_readTimeSeries(config, stid, data_binding, table_type, model=None,
-                      start_date=None, end_date=None, ):
+def db_readTimeSeries(config, stid, data_binding, table_type, model=None, start_date=None, end_date=None):
     """
     Read a TimeSeries from a specified data_binding at a certain station id and
     of a given table type.
@@ -451,8 +432,7 @@ def db_readTimeSeries(config, stid, data_binding, table_type, model=None,
     table = '%s_%s' % (stid.upper(), table_type.upper())
 
     # Get data from _db_read
-    data = _db_read(config, database, table, start_date=start_date,
-                    end_date=end_date, model=model)
+    data = _db_read(config, database, table, start_date=start_date, end_date=end_date, model=model)
 
     # Check that we have data
     if data is None:
@@ -467,8 +447,7 @@ def db_readTimeSeries(config, stid, data_binding, table_type, model=None,
     return timeseries
 
 
-def db_readDaily(config, stid, data_binding, table_type, model=None,
-                 start_date=None, end_date=None, ):
+def db_readDaily(config, stid, data_binding, table_type, model=None, start_date=None, end_date=None):
     """
     Read a Daily or list of Dailys from a specified data_binding at a certain
     station id and of a given table type.
@@ -486,8 +465,7 @@ def db_readDaily(config, stid, data_binding, table_type, model=None,
     table = '%s_%s' % (stid.upper(), table_type.upper())
 
     # Get data from _db_read
-    data = _db_read(config, database, table, start_date=start_date,
-                    end_date=end_date, model=model)
+    data = _db_read(config, database, table, start_date=start_date, end_date=end_date, model=model)
 
     # Check that we have data
     if data is None:
@@ -524,31 +502,26 @@ def db_readForecast(config, stid, model, date, hour_start=6, hour_padding=6):
 
     # Basic sanity check for hour parameters
     if hour_start < 0 or hour_start > 23:
-        raise ValueError('db_readForecast error: hour_start must be between '
-                         '0 and 23.')
+        raise ValueError('db_readForecast error: hour_start must be between 0 and 23.')
     if hour_padding < 0 or hour_padding > 24:
-        raise ValueError('db_readForecast error: hour_padding must be between '
-                         '0 and 24.')
+        raise ValueError('db_readForecast error: hour_padding must be between 0 and 24.')
 
     # Set the default database configuration; create Forecast
     data_binding = 'forecast'
     if config['debug'] > 9:
-        print("db_readForecast: reading forecast from '%s' data binding"
-              % data_binding)
+        print("db_readForecast: reading forecast from '%s' data binding" % data_binding)
     forecast = Forecast(stid, model, date)
 
     # The daily forecast part
     table_type = 'DAILY_FORECAST'
-    daily = db_readDaily(config, stid, data_binding, table_type, model,
-                         start_date=date, end_date=date)
+    daily = db_readDaily(config, stid, data_binding, table_type, model, start_date=date, end_date=date)
 
     # The hourly forecast part
     table_type = 'HOURLY_FORECAST'
-    date = _date_to_datetime(date)
+    date = date_to_datetime(date)
     start_date = date + timedelta(hours=hour_start - hour_padding)
     end_date = date + timedelta(hours=hour_start + 24 + hour_padding)
-    timeseries = db_readTimeSeries(config, stid, data_binding, table_type,
-                                   model, start_date, end_date)
+    timeseries = db_readTimeSeries(config, stid, data_binding, table_type, model, start_date, end_date)
 
     # Assign and return
     forecast.timeseries = timeseries
