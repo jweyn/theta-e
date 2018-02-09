@@ -105,7 +105,7 @@ def _get_object(module_class):
     return mod
 
 
-def getConfig(config_path):
+def get_config(config_path):
     """
     Retrieve the config dictionary from config_path.
     """
@@ -121,14 +121,26 @@ def getConfig(config_path):
         print("*** Reason: '%s'" % e)
         raise
 
+    # Make sure debug level is there
     try:
-        if int(config_dict['debug']) > 1:
-            print('Using configuration file %s' % config_path)
+        config_dict['debug'] = int(config_dict['debug'])
     except KeyError:
         config_dict['debug'] = 1
-        print('Using configuration file %s' % config_path)
         print("Setting debug level to 1 because apparently you didn't want "
               "to put it in the config file...")
+    except ValueError:
+        config_dict['debug'] = 1
+        print("Invalid debugging level specified; setting debug level to 1.")
+    if config_dict['debug'] > 1:
+        print('Using configuration file %s' % config_path)
+
+    # Make sure traceback is there
+    try:
+        config_dict['traceback'] = to_bool(config_dict['traceback'])
+    except KeyError:
+        config_dict['traceback'] = False
+    if int(config_dict['debug']) > 1 and config_dict['traceback']:
+        print('Using traceback option: program will crash upon exception raised.')
 
     return config_dict
 
