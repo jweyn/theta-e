@@ -273,3 +273,29 @@ def get_ghcn_stid(stid, THETAE_ROOT='.'):
     # Format station as USW...
     usw_format = 'USW000%05d'
     return usw_format % station_ghcns[0]
+
+# ==============================================================================
+# Unit conversions
+# Could be made into a single function
+# ==============================================================================
+
+def c_to_f(val):
+    '''
+    Converts celsius to integer fahrenheit, accepts float or string
+    '''
+    return int(float(val)*9/5+32)
+
+def mph_to_kt(val):
+    '''
+    Converts mph to knots, accepts float or string
+    '''
+    return int(float(val)*0.868976)
+
+def wind_dir_to_deg(val):
+    '''
+    Converts string winds to float degrees
+    '''
+    dirtxt = ('N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW')
+    dirdeg = [22.5* x for x in range(len(dirtxt))]
+    wdir_convert = dict(zip(dirtxt,dirdeg))
+    return wdir_convert[val]
