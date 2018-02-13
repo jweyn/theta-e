@@ -4,9 +4,12 @@ Forecast verification project
 
 ## Required Python packages
 
+bs4
 pandas
 ulmo
+selenium
 sqlite3  
+
 
 ## Running the program
 
