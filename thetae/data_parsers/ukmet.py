@@ -58,7 +58,7 @@ def get_ukmet_forecast(stid, ukmet_code, init_date, forecast_date):
     days = []
     highs = [] #this can be overwritten by hourly
     lows = [] #this can be overwritten by hourly
-    wspds = [] #this comes from hourly
+    winds = [] #this comes from hourly
 
     #Pull in daily data using li tabs
     tabids = ['tabDay1','tabDay2','tabDay3']
@@ -81,7 +81,7 @@ def get_ukmet_forecast(stid, ukmet_code, init_date, forecast_date):
     dewpoint = []
     windSpeed = []
     windGust = []
-    windDir = []
+    windDirection = []
     humidity = [] #this is temporary--converted to dew point below
 
     divids = ['divDayModule0','divDayModule1','divDayModule2','divDayModule3']
@@ -108,13 +108,13 @@ def get_ukmet_forecast(stid, ukmet_code, init_date, forecast_date):
         #add wind 
         speedels = pars.findAll("i",{ "data-type" : "windSpeed"})  
         for ele in speedels:
-            windSpeed.append(float(ele['data-value-raw'])*0.868976)
+            windSpeed.append(np.round(float(ele['data-value-raw'])*0.868976,2))
         gustels = pars.findAll("span",{ "class" : "gust"})  
         for ele in gustels:
             windGust.append(float(ele['data-value-raw'])*0.868976)
         direls = pars.findAll("span",{ "class" : "direction"})  
         for ele in direls:
-            windDir.append(wind_dir_to_deg(ele.text))
+            windDirection.append(wind_dir_to_deg(ele.text))
 
     #convert T and humidity to dewpt
     for ii,thum in enumerate(humidity):
@@ -126,7 +126,8 @@ def get_ukmet_forecast(stid, ukmet_code, init_date, forecast_date):
                         'dewpoint' : dewpoint,
                         'windSpeed' : windSpeed,
                         'windGust' : windGust,
-                        'windDir' : windDir},index = dateTime)
+                        'windDirection' : windDirection,
+                        'dateTime' : dateTime}, index = dateTime)
 
     #Correct the highs and lows with the hourly data, find max wind speed
     forecast_start = forecast_date.replace(hour=6)
@@ -145,7 +146,7 @@ def get_ukmet_forecast(stid, ukmet_code, init_date, forecast_date):
             break
         raw_high = df.iloc[iloc_start_include:iloc_end]['temperature'].max()
         raw_low = df.iloc[iloc_start_include:iloc_end]['temperature'].min()
-        wspds.append(int(np.round(df.iloc[iloc_start_include:iloc_end]['windSpeed'].max())))
+        winds.append(int(np.round(df.iloc[iloc_start_include:iloc_end]['windSpeed'].max())))
         if raw_high > highs[d]:
             highs[d] = raw_high
         if raw_low < lows[d]:
@@ -157,7 +158,7 @@ def get_ukmet_forecast(stid, ukmet_code, init_date, forecast_date):
     forecast.timeseries.data = df
     forecast.daily.high = highs[0]
     forecast.daily.low = lows[0]
-    forecast.daily.wspd = wspds[0]
+    forecast.daily.wind = winds[0]
 
     #Make list of forecast objects for future days--currently not implemented
     '''
