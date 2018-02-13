@@ -7,6 +7,7 @@ Forecast verification project
 bs4
 pandas
 ulmo
+selenium
 sqlite3  
 
 
