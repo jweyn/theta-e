@@ -15,7 +15,6 @@ from thetae.db import db_writeForecast
 from datetime import datetime, timedelta
 from thetae.util import get_object, config_date_to_datetime, to_bool
 
-
 def main(config):
     """
     Main function. Iterates through models and sites and writes each to the
