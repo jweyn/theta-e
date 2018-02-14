@@ -39,6 +39,7 @@ schema = {
         ('dewpoint', 'REAL'),
         ('cloud', 'REAL'),
         ('windSpeed', 'REAL'),
+        ('windGust', 'REAL'),
         ('windDirection', 'REAL'),
         ('rain', 'REAL'),
         ('condition', 'TEXT'),
