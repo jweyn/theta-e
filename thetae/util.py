@@ -77,7 +77,7 @@ class Forecast(object):
 
 
 # ==============================================================================
-# Functions
+# General utility functions
 # ==============================================================================
 
 # noinspection PyUnboundLocalVariable
@@ -274,27 +274,29 @@ def get_ghcn_stid(stid, THETAE_ROOT='.'):
     usw_format = 'USW000%05d'
     return usw_format % station_ghcns[0]
 
+
 # ==============================================================================
-# Unit conversions
-# Could be made into a single function
+# Unit conversion functions
 # ==============================================================================
 
 def c_to_f(val):
-    '''
-    Converts celsius to integer fahrenheit, accepts float or string
-    '''
+    """
+    Converts celsius to integer fahrenheit; accepts numeric or string
+    """
     return int(float(val)*9/5+32)
 
+
 def mph_to_kt(val):
-    '''
-    Converts mph to knots, accepts float or string
-    '''
+    """
+    Converts mph to knots; accepts numeric or string
+    """
     return int(float(val)*0.868976)
 
+
 def wind_dir_to_deg(val):
-    '''
+    """
     Converts string winds to float degrees
-    '''
+    """
     dirtxt = ('N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW')
     dirdeg = [22.5* x for x in range(len(dirtxt))]
     wdir_convert = dict(zip(dirtxt,dirdeg))
