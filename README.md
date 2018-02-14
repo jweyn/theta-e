@@ -4,11 +4,14 @@ Forecast verification project
 
 ## Required Python packages
 
-bs4
-pandas
-ulmo
-selenium
-sqlite3  
+### Core functions
+pandas 
+ulmo 
+sqlite3 
+
+### For specific modules
+bs4 
+selenium 
 
 
 ## Running the program
