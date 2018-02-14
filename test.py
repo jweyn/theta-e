@@ -21,7 +21,7 @@ import thetae.engine
 # Parse the input arguments
 # ==============================================================================
 
-def parseArgs():
+def parse_args():
     """
     Parse input arguments.
     """
@@ -45,7 +45,7 @@ def parseArgs():
     return options, args
 
 
-options, args = parseArgs()
+options, args = parse_args()
 
 # ==============================================================================
 # Run tests

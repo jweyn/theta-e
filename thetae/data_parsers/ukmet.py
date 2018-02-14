@@ -22,11 +22,15 @@ from selenium import webdriver
 
 default_model_name = 'UKMET'
 
+
 # needs ukmet code
 def get_ukmet_forecast(stid, ukmet_code, init_date, forecast_date):
     """
     Retrieve UKMET data. 
 
+    :param stid:
+    :param ukmet_code:
+    :param forecast_date:
     :param init_date: datetime of model initialization
     :return: dict of high, low, max wind for next 6Z--6Z. No precip.
     """
@@ -34,7 +38,9 @@ def get_ukmet_forecast(stid, ukmet_code, init_date, forecast_date):
     forecast = Forecast(stid, default_model_name, forecast_date)
 
     # Header that is needed for urllib2 to work properly
-    hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+    hdr = {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 '
+                      'Safari/537.11',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
         'Accept-Encoding': 'none',
@@ -44,7 +50,7 @@ def get_ukmet_forecast(stid, ukmet_code, init_date, forecast_date):
 
     # Retrieve the model data
     url = 'https://www.metoffice.gov.uk/public/weather/forecast/%s' % ukmet_code
-    req = urllib2.Request(url,headers=hdr) 
+    req = urllib2.Request(url, headers=hdr)
     response = urllib2.urlopen(req)
     page = response.read().decode('utf-8', 'ignore')
     soup = BeautifulSoup(page, 'lxml')
@@ -118,17 +124,20 @@ def get_ukmet_forecast(stid, ukmet_code, init_date, forecast_date):
             windDirection.append(wind_dir_to_deg(ele.text))
 
     # Convert T and humidity to dewpt
-    for ii,thum in enumerate(humidity):
-        td_tmp = 243.04*(np.log(thum/100)+((17.625*temperature_c[ii])/(243.04+temperature_c[ii])))/(17.625-np.log(thum/100)-((17.625*temperature_c[ii])/(243.04+temperature_c[ii])))
+    for ii, thum in enumerate(humidity):
+        td_tmp = (243.04*(np.log(thum/100)+((17.625*temperature_c[ii])/(243.04+temperature_c[ii]))) /
+                  (17.625-np.log(thum/100)-((17.625*temperature_c[ii])/(243.04+temperature_c[ii]))))
         dewpoint.append(c_to_f(td_tmp))
 
     # Make into dataframe
-    df = pd.DataFrame({'temperature': temperature,
-                       'dewpoint': dewpoint,
-                       'windSpeed': windSpeed,
-                       'windGust': windGust,
-                       'windDirection': windDirection,
-                       'dateTime': dateTime}, index=dateTime)
+    df = pd.DataFrame({
+        'temperature': temperature,
+        'dewpoint': dewpoint,
+        'windSpeed': windSpeed,
+        'windGust': windGust,
+        'windDirection': windDirection,
+        'dateTime': dateTime
+    }, index=dateTime)
 
     # Correct the highs and lows with the hourly data, find max wind speed
     forecast_start = forecast_date.replace(hour=6)
@@ -161,17 +170,17 @@ def get_ukmet_forecast(stid, ukmet_code, init_date, forecast_date):
     forecast.daily.low = lows[0]
     forecast.daily.wind = winds[0]
 
-    # Make list of forecast objects for future days--currently not implemented
-    '''
-    forecast = []
+    # # Make list of forecast objects for future days--currently not implemented
+    #
+    # forecast = []
+    #
+    # for i in range(0,len(days)):
+    #     forecast_tmp = Forecast(stid, default_model_name, days[i])
+    #     forecast_tmp.daily.date = days[i]
+    #     forecast_tmp.daily.high = highs[i]
+    #     forecast_tmp.daily.low = lows[i]
+    #     forecast.append(forecast_tmp)
 
-    for i in range(0,len(days)):
-        forecast_tmp = Forecast(stid, default_model_name, days[i])
-        forecast_tmp.daily.date = days[i]
-        forecast_tmp.daily.high = highs[i]
-        forecast_tmp.daily.low = lows[i]
-        forecast.append(forecast_tmp)
-    '''
     return forecast
 
 

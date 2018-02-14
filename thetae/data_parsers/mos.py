@@ -24,13 +24,15 @@ def mos_qpf_interpret(qpf):
     :param qpf: Series of q06 or q12 from MOS
     :return: precip: Series of average estimated precipitation
     """
-    translator = {0: 0.0,
-                  1: 0.05,
-                  2: 0.15,
-                  3: 0.35,
-                  4: 0.75,
-                  5: 1.5,
-                  6: 2.5}
+    translator = {
+        0: 0.0,
+        1: 0.05,
+        2: 0.15,
+        3: 0.35,
+        4: 0.75,
+        5: 1.5,
+        6: 2.5
+    }
     new_qpf = qpf.copy()
     for j in range(len(qpf)):
         try:
@@ -44,7 +46,8 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     """
     Retrieve MOS data. No unit conversions, yay!
 
-    :param model: model name ('GFS' or 'NAM')
+    :param stid: station ID
+    :param mos_model: model name ('GFS' or 'NAM')
     :param init_date: datetime of model initialization
     :param forecast_date: datetime of day to forecast
     :return: Forecast object for forecast_date
@@ -73,12 +76,14 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     # ### Format the DataFrame for the default schema
     # Dictionary for renaming columns
     ts = df.copy()
-    names_dict = {'datetime': 'DateTime',
-                  'tmp': 'temperature',
-                  'dpt': 'dewpoint',
-                  'wsp': 'windSpeed',
-                  'wdr': 'windDirection',
-                  'q06': 'rain'}
+    names_dict = {
+        'datetime': 'DateTime',
+        'tmp': 'temperature',
+        'dpt': 'dewpoint',
+        'wsp': 'windSpeed',
+        'wdr': 'windDirection',
+        'q06': 'rain'
+    }
     col_names = list(map(''.join, ts.columns.values))
     for col in col_names:
         if col not in names_dict.keys():
