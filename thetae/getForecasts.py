@@ -15,6 +15,7 @@ from thetae.db import db_writeForecast
 from datetime import datetime, timedelta
 from thetae.util import get_object, config_date_to_datetime, to_bool
 
+
 def main(config):
     """
     Main function. Iterates through models and sites and writes each to the
@@ -23,8 +24,7 @@ def main(config):
 
     # Figure out which day we are forecasting for: the next UTC day.
     time_now = datetime.utcnow()
-    forecast_date = (datetime(time_now.year, time_now.month, time_now.day) +
-                     timedelta(days=1))
+    forecast_date = (datetime(time_now.year, time_now.month, time_now.day) + timedelta(days=1))
     print('getForecasts: forecast date %s' % forecast_date)
 
     # Go through the models in config
@@ -42,13 +42,11 @@ def main(config):
                 print('getForecasts: getting forecast for station %s' % stid)
             try:
                 # Each forecast has a function 'main' which returns a Forecast
-                forecast = get_object(driver).main(config, model, stid,
-                                                   forecast_date)
+                forecast = get_object(driver).main(config, model, stid, forecast_date)
                 # Set the model name
                 forecast.setModel(model)
             except BaseException as e:
-                print('getForecasts: failed to get forecast from %s for %s' %
-                      (model, stid))
+                print('getForecasts: failed to get forecast from %s for %s' % (model, stid))
                 print("*** Reason: '%s'" % str(e))
                 if config['traceback']:
                     raise
@@ -86,10 +84,8 @@ def historical(config, stid):
     try:
         start_date = config_date_to_datetime(config['Stations'][stid]['start_date'])
     except:
-        print('getForecasts warning: cannot get start_date in config for '
-              'station %s, setting to -30 days' % stid)
-        start_date = (datetime(time_now.year, time_now.month, time_now.day) -
-                      timedelta(days=30))
+        print('getForecasts warning: cannot get start_date in config for station %s, setting to -30 days' % stid)
+        start_date = (datetime(time_now.year, time_now.month, time_now.day) - timedelta(days=30))
     date = start_date
     while date < time_now:
         forecast_dates.append(date)
@@ -114,13 +110,11 @@ def historical(config, stid):
             # Each driver should have a function 'historical' which returns a
             # list of Forecasts
             print('getForecasts: getting historical forecasts from %s' % model)
-            forecasts = get_object(driver).historical(config, model, stid,
-                                                      forecast_dates)
+            forecasts = get_object(driver).historical(config, model, stid, forecast_dates)
             # Set the model name
             forecasts = [f.setModel(model) for f in forecasts]
         except BaseException as e:
-            print('getForecasts: failed to get historical forecasts from %s for %s' %
-                  (model, stid))
+            print('getForecasts: failed to get historical forecasts from %s for %s' % (model, stid))
             print("*** Reason: '%s'" % str(e))
             if config['traceback']:
                 raise

@@ -42,7 +42,7 @@ def db_conn(config, database):
         return
     try:
         db_name = '%s/%s' % (db_dir, config['Databases'][database]['database_name'])
-        if config['debug'] > 0:
+        if config['debug'] > 9:
             print('db_conn: using database at %s' % db_name)
     except:
         print('Error: database name error in config file')

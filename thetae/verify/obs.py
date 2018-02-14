@@ -58,8 +58,9 @@ def get_obs(config, stid, start, end):
         print('obs: MesoPy initialized for station %s' % stid)
 
     # Look for desired variables
-    vars_request = ['air_temp', 'dew_point_temperature', 'wind_speed', 'wind_direction', 'cloud_layer_1_code',
-                    'cloud_layer_2_code', 'cloud_layer_3_code', 'precip_accum_one_hour', 'weather_condition']
+    vars_request = ['air_temp', 'dew_point_temperature', 'wind_speed', 'wind_gust', 'wind_direction',
+                    'cloud_layer_1_code', 'cloud_layer_2_code', 'cloud_layer_3_code', 'precip_accum_one_hour',
+                    'weather_condition']
 
     # Add variables to the api request
     vars_api = ''
@@ -146,6 +147,7 @@ def get_obs(config, stid, start, end):
         'air_temp': 'temperature',
         'dew_point_temperature': 'dewpoint',
         'wind_speed': 'windSpeed',
+        'wind_gust': 'windGust',
         'wind_direction': 'windDirection',
         'precip_accum_one_hour': 'rainHour',
         'weather_condition': 'condition'

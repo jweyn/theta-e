@@ -80,28 +80,34 @@ class Forecast(object):
 # General utility functions
 # ==============================================================================
 
-# noinspection PyUnboundLocalVariable
 def get_object(module_class):
     """
     Given a string with a module class name, it imports and returns the class.
-    This function (c) Tom Keffer, weeWX.
+    This function (c) Tom Keffer, weeWX; modified by Jonathan Weyn.
     """
 
     # Split the path into its parts
     parts = module_class.split('.')
-    # Strip off the classname:
-    module = '.'.join(parts[:-1])
+    # Get the top level module
+    module = parts[0]  # '.'.join(parts[:-1])
     # Import the top level module
     mod = __import__(module)
     # Recursively work down from the top level module to the class name.
     # Be prepared to catch an exception if something cannot be found.
     try:
         for part in parts[1:]:
+            module = '.'.join([module, part])
+            # Import each successive module
+            __import__(module)
             mod = getattr(mod, part)
+    except ImportError as e:
+        # Can't find a recursive module. Give a more informative error message:
+        raise ImportError("'%s' raised when searching for %s" % (str(e), module))
     except AttributeError:
-        # Can't find something. Give a more informative error message:
+        # Can't find the last attribute. Give a more informative error message:
         raise AttributeError("Module '%s' has no attribute '%s' when searching for '%s'" %
                              (mod.__name__, part, module_class))
+
     return mod
 
 
@@ -283,21 +289,21 @@ def c_to_f(val):
     """
     Converts celsius to integer fahrenheit; accepts numeric or string
     """
-    return int(float(val)*9/5+32)
+    return int(float(val) * 9 / 5 + 32)
 
 
 def mph_to_kt(val):
     """
     Converts mph to knots; accepts numeric or string
     """
-    return int(float(val)*0.868976)
+    return int(float(val) * 0.868976)
 
 
 def wind_dir_to_deg(val):
     """
     Converts string winds to float degrees
     """
-    dirtxt = ('N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW')
-    dirdeg = [22.5* x for x in range(len(dirtxt))]
-    wdir_convert = dict(zip(dirtxt,dirdeg))
+    dirtxt = ('N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW')
+    dirdeg = [22.5 * x for x in range(len(dirtxt))]
+    wdir_convert = dict(zip(dirtxt, dirdeg))
     return wdir_convert[val]

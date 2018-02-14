@@ -19,6 +19,7 @@ from . import db
 from . import engine
 from . import getForecasts
 from . import getVerification
+from . import schemas
 
 # Local module folders
 from . import util
