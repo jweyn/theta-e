@@ -167,12 +167,12 @@ def get_codes(codes_file, stid=None):
     num_sites, num_codes = codes_array.shape
     num_codes -= 1  # remove the column for stid
     codes_dict = {}
-    for site in range(num_sites):
-        stid = codes_array[site, 0].upper()
+    for s in range(num_sites):
+        site = codes_array[s, 0].upper()
         if num_codes == 1:
-            codes_dict[stid] = codes_array[site, 1]
+            codes_dict[site] = codes_array[s, 1]
         else:
-            codes_dict[stid] = tuple(codes_array[site, 1:])
+            codes_dict[site] = tuple(codes_array[s, 1:])
     if stid is not None:
         return codes_dict[stid]
     else:
@@ -345,6 +345,6 @@ def dewpoint_from_t_rh(t, rh):
     :param rh: relative humidity in %
     :return: dewpoint: dewpoint in C
     """
-    dewpoint = (243.04 * (np.log(rh/100) + ((17.625 * t) / (243.04 + t))) /
-                (17.625 - np.log(rh/100) - ((17.625 * t) / (243.04 + t))))
+    dewpoint = (243.04 * (np.log(rh/100.) + ((17.625 * t) / (243.04 + t))) /
+                (17.625 - np.log(rh/100.) - ((17.625 * t) / (243.04 + t))))
     return dewpoint

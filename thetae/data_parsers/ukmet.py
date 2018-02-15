@@ -18,36 +18,32 @@ import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
 from thetae.util import get_codes, c_to_f, mph_to_kt, wind_dir_to_deg, dewpoint_from_t_rh
-from selenium import webdriver 
+from selenium import webdriver
 
 default_model_name = 'UKMET'
 
+# Header that is needed for urllib2 to work properly
+hdr = {
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 '
+                  'Safari/537.11',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+    'Accept-Encoding': 'none',
+    'Accept-Language': 'en-US,en;q=0.8',
+    'Connection': 'keep-alive'
+}
+
 
 # needs ukmet code
-def get_ukmet_forecast(stid, ukmet_code, init_date, forecast_date):
+def get_ukmet_forecast(stid, ukmet_code, forecast_date):
     """
     Retrieve UKMET data. 
 
-    :param stid:
-    :param ukmet_code:
-    :param forecast_date:
-    :param init_date: datetime of model initialization
-    :return: dict of high, low, max wind for next 6Z--6Z. No precip.
+    :param stid: station ID
+    :param ukmet_code: site-specific URL code from ukmet.codes
+    :param forecast_date: datetime of day to forecast
+    :return: Forecast object for high, low, max wind for next 6Z--6Z. No precip.
     """
-    # Create forecast object
-    forecast = Forecast(stid, default_model_name, forecast_date)
-
-    # Header that is needed for urllib2 to work properly
-    hdr = {
-        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 '
-                      'Safari/537.11',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-        'Accept-Encoding': 'none',
-        'Accept-Language': 'en-US,en;q=0.8',
-        'Connection': 'keep-alive'
-    }
-
     # Retrieve the model data
     url = 'https://www.metoffice.gov.uk/public/weather/forecast/%s' % ukmet_code
     req = urllib2.Request(url, headers=hdr)
@@ -199,16 +195,7 @@ def main(config, model, stid, forecast_date):
         print("'ukmet.py: can't find code in %s for site %s!" % (ukmet_codes_file, stid))
         raise
 
-    # Init date, determined from current time
-    time_now = datetime.utcnow()
-    if time_now.hour >= 16:
-        init_date = forecast_date - timedelta(hours=12)
-    else:
-        init_date = forecast_date - timedelta(hours=24)
-
     # Get forecast
-    forecast = get_ukmet_forecast(stid, ukmet_code, init_date, forecast_date)
+    forecast = get_ukmet_forecast(stid, ukmet_code, forecast_date)
 
     return forecast
-
-
