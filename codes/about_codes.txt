@@ -1,0 +1,9 @@
+This directory contains *.codes files needed for certain data parsers that may have, for example, an obscure code
+representing a specific station ID in the URL for the data source. Files are comma-separated and are assumed to
+contain one header row giving a brief description of the columns (i.e., station ID and what the codes are). Each row
+should correspond to the 4-letter station ID (as used in theta-e.conf) in the first column and any necessary codes in
+the ensuing columns. For example, for UK Met Office, the file might look like:
+
+station ID,url_code
+KSEA,c23jbypb7
+KUIL,

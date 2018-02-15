@@ -30,4 +30,5 @@ from util import Forecast, Daily, TimeSeries
 # ==============================================================================
 
 all_service_groups = [
-    'retrieve_services', ]  # 'calc_services', 'output_services']
+    'retrieve_services', 'output_services'
+]

@@ -17,7 +17,7 @@ import urllib2
 import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
-from thetae.util import c_to_f, mph_to_kt, wind_dir_to_deg
+from thetae.util import get_codes, c_to_f, mph_to_kt, wind_dir_to_deg, dewpoint_from_t_rh
 from selenium import webdriver 
 
 default_model_name = 'UKMET'
@@ -124,9 +124,8 @@ def get_ukmet_forecast(stid, ukmet_code, init_date, forecast_date):
             windDirection.append(wind_dir_to_deg(ele.text))
 
     # Convert T and humidity to dewpt
-    for ii, thum in enumerate(humidity):
-        td_tmp = (243.04*(np.log(thum/100)+((17.625*temperature_c[ii])/(243.04+temperature_c[ii]))) /
-                  (17.625-np.log(thum/100)-((17.625*temperature_c[ii])/(243.04+temperature_c[ii]))))
+    for ii, rh in enumerate(humidity):
+        td_tmp = dewpoint_from_t_rh(temperature_c[ii], rh)
         dewpoint.append(c_to_f(td_tmp))
 
     # Make into dataframe
@@ -189,14 +188,18 @@ def main(config, model, stid, forecast_date):
     Produce a Forecast object from UKMET data.
     """
 
-    # Get the ukmet code from the config
+    # Get the codes file from config and the specific codes for stid
     try:
-        ukmet_code = config['Stations'][stid]['ukmet_code']
+        ukmet_codes_file = config['Models'][model]['codes_file']
     except KeyError:
-        raise KeyError('ukmet.py: no ukmet_code parameter defined for stid %s in config!' % stid)
+        raise KeyError('ukmet.py: no codes file specified for model %s in config!' % model)
+    try:
+        ukmet_code = get_codes(ukmet_codes_file, stid)
+    except BaseException as e:
+        print("'ukmet.py: can't find code in %s for site %s!" % (ukmet_codes_file, stid))
+        raise
 
     # Init date, determined from current time
-
     time_now = datetime.utcnow()
     if time_now.hour >= 16:
         init_date = forecast_date - timedelta(hours=12)
