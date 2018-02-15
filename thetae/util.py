@@ -86,7 +86,6 @@ def get_object(module_class):
     Given a string with a module class name, it imports and returns the class.
     This function (c) Tom Keffer, weeWX; modified by Jonathan Weyn.
     """
-
     # Split the path into its parts
     parts = module_class.split('.')
     # Get the top level module
@@ -116,7 +115,6 @@ def get_config(config_path):
     """
     Retrieve the config dictionary from config_path.
     """
-
     import configobj
     try:
         config_dict = configobj.ConfigObj(config_path, file_error=True)
@@ -244,7 +242,6 @@ def tobool(x):
     
     This function (c) Tom Keffer, weeWX.
     """
-
     try:
         if x.lower() in ['true', 'yes']:
             return True
@@ -268,7 +265,6 @@ def get_ghcn_stid(stid, THETAE_ROOT='.'):
 
     Gets the GHCN station ID from the 4-letter station ID.
     """
-
     main_addr = 'ftp://ftp.ncdc.noaa.gov/pub/data/noaa'
 
     site_directory = '%s/site_data' % THETAE_ROOT

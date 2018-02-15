@@ -21,11 +21,13 @@ from datetime import datetime, timedelta
 
 def db_conn(config, database):
     """
-    Initializes a connection to the database. We only need to check for errors
-    in the config file here, because the main program will try to establish
-    a connection before making any further progress.
-    """
+    Initializes a connection to the database. We only need to check for errors in the config file here, because the
+    main program will try to establish a connection before making any further progress.
 
+    :param config:
+    :param database: str: name of database
+    :return: sqlite3 database connection object
+    """
     db_dir = '%s/archive' % config['THETAE_ROOT']
     if config['debug'] > 9:
         print('db_conn: attempting to connect to database %s' % database)
@@ -60,11 +62,11 @@ def db_conn(config, database):
 
 def db_init(config):
     """
-    Initializes new station IDs in the databases. Returns a list of all sites
-    included in config that require historical data to be retrieved. Also
-    creates a database if it does not exist.
-    """
+    Initializes new station IDs in the databases. Returns a list of all sites included in config that require historical
+    data to be retrieved. Also creates a database if it does not exist.
 
+    :param config:
+    """
     for data_binding in config['DataBinding'].keys():
         # Open the database and schema
         schema_name = config['DataBinding'][data_binding]['schema']
@@ -144,11 +146,16 @@ def db_init(config):
 
 def _db_write(config, values, database, table, replace=True):
     """
-    Writes data in values to the table. Values is a list of tuples, each with
-    the appropriate number of elements to fill a row in table. IMPORTANT: the
-    appropriate number of row elements is NOT checked; will throw a SQL error.
-    """
+    Writes data in values to the table. Values is a list of tuples, each with the appropriate number of elements to
+    fill a row in table. IMPORTANT: the appropriate number of row elements is NOT checked; will throw a SQL error.
 
+    :param config:
+    :param values: list: list of tuples corresponding to rows of column values
+    :param database: str: name of database
+    :param table: str: name of table to write to
+    :param replace: bool: if True, calls SQL REPLACE rather than INSERT
+    :return:
+    """
     # Basic sanity checks on the data
     if type(values) not in [list, tuple]:
         raise TypeError('_db_write: values must be provided as a list or tuple.')
@@ -185,12 +192,18 @@ def _db_write(config, values, database, table, replace=True):
 def _db_read(config, database, table, model=None, start_date=None, end_date=None):
     """
     Return a pandas DataFrame from table in database.
-    If start_date and end_date are None, then then the start is set to now and
-    the end to 24 hours in the future. If start_date only is None, then it is
-    set to 24 hours before end_date. If end_date only is None, then it is set
-    to 24 hours after start_date.
-    """
+    If start_date and end_date are None, then then the start is set to now and the end to 24 hours in the future. If
+    start_date only is None, then it is set to 24 hours before end_date. If end_date only is None, then it is set to
+    24 hours after start_date.
 
+    :param config:
+    :param database: str: name of database
+    :param table: str: name of table to read from
+    :param model: str: specific model to read data from
+    :param start_date: datetime or str: starting date
+    :param end_date: datetime or str: ending date
+    :return: pandas DataFrame of requested data
+    """
     # Find the dates and make strings
     start_date = date_to_datetime(start_date)
     end_date = date_to_datetime(end_date)
@@ -253,15 +266,17 @@ def _db_read(config, database, table, model=None, start_date=None, end_date=None
 
 def db_writeTimeSeries(config, timeseries, data_binding, table_type):
     """
-    Writes a TimeSeries object or list of TimeSeries objects to the specified
-    data_binding and table.
-    table_type must be 'obs', 'verif', 'climo', 'hourly_forecast', or
-    'daily_forecast', or something defined in the schema of data_binding as
-    %(stid)_%(table_type).upper().
-    The structure of the timeseries pandas databases should match the schema
-    specified in the data_binding.
-    """
+    Writes a TimeSeries object or list of TimeSeries objects to the specified data_binding and table. table_type must
+    be 'obs', 'verif', 'climo', 'hourly_forecast', or 'daily_forecast', or something defined in the schema of
+    data_binding as %(stid)_%(table_type).upper().
+    The structure of the timeseries pandas databases should match the schema specified in the data_binding.
 
+    :param config:
+    :param timeseries: TimeSeries:
+    :param data_binding: str: name of database binding to write to
+    :param table_type: str: type of table
+    :return:
+    """
     def hourly_to_row(hourly, model, columns):
         """
         Converts an hourly timeseries to sql rows
@@ -325,13 +340,16 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
 
 def db_writeDaily(config, daily, data_binding, table_type):
     """
-    Writes a Daily object or list of Daily objects to the specified
-    data_binding and table.
-    table_type must be 'obs', 'verif', 'climo', 'hourly_forecast', or
-    'daily_forecast', or something defined in the schema of data_binding as
+    Writes a Daily object or list of Daily objects to the specified data_binding and table. table_type must be 'obs',
+    'verif', 'climo', 'hourly_forecast', or 'daily_forecast', or something defined in the schema of data_binding as
     %(stid)_%(table_type).upper().
-    """
 
+    :param config:
+    :param daily: Daily:
+    :param data_binding: str: name of database binding to write to
+    :param table_type: str: type of table
+    :return:
+    """
     def daily_to_row(daily, datestr, model, columns):
         """
         Converts a Daily object to a sql row
@@ -384,10 +402,12 @@ def db_writeDaily(config, daily, data_binding, table_type):
 
 def db_writeForecast(config, forecast):
     """
-    Function to write a Forecast object or list of Forecast objects to the main
-    theta-e database.
-    """
+    Function to write a Forecast object or list of Forecast objects to the main theta-e database.
 
+    :param config:
+    :param forecast: Forecast:
+    :return:
+    """
     # Set the default database configuration
     data_binding = 'forecast'
     if config['debug'] > 9:
@@ -416,17 +436,22 @@ def db_writeForecast(config, forecast):
 
 def db_readTimeSeries(config, stid, data_binding, table_type, model=None, start_date=None, end_date=None):
     """
-    Read a TimeSeries from a specified data_binding at a certain station id and
-    of a given table type.
-    table_type must be 'obs', 'hourly_forecast', or something defined in the
-    schema of data_binding as %(stid)_%(table_type).upper().
+    Read a TimeSeries from a specified data_binding at a certain station id and of a given table type. table_type must
+    be 'obs', 'hourly_forecast', or something defined in the schema of data_binding as %(stid)_%(table_type).upper().
     Model should be provided unless retrieving from obs.
-    If start_date and end_date are None, then then the start is set to now and
-    the end to 24 hours in the future. If start_date only is None, then it is
-    set to 24 hours before end_date. If end_date only is None, then it is set
-    to 24 hours after start_date.
-    """
+    If start_date and end_date are None, then then the start is set to now and the end to 24 hours in the future. If
+    start_date only is None, then it is set to 24 hours before end_date. If end_date only is None, then it is set to
+    24 hours after start_date.
 
+    :param config:
+    :param stid: str: station ID
+    :param data_binding: str: name of database binding to write to
+    :param table_type: str: type of table
+    :param model: str: model name
+    :param start_date: datetime or str: starting date
+    :param end_date: datetime or str: ending date
+    :return: TimeSeries of requested data
+    """
     # Get the database and table names
     database = config['DataBinding'][data_binding]['database']
     table = '%s_%s' % (stid.upper(), table_type.upper())
@@ -449,17 +474,22 @@ def db_readTimeSeries(config, stid, data_binding, table_type, model=None, start_
 
 def db_readDaily(config, stid, data_binding, table_type, model=None, start_date=None, end_date=None):
     """
-    Read a Daily or list of Dailys from a specified data_binding at a certain
-    station id and of a given table type.
-    table_type must be 'verif', 'climo', 'daily_forecast', or something defined
-    in the schema of data_binding as %(stid)_%(table_type).upper().
-    Model should be provided unless retrieving from verif or climo.
-    If start_date and end_date are None, then then the start is set to now and
-    the end to 24 hours in the future. If start_date only is None, then it is
-    set to 24 hours before end_date. If end_date only is None, then it is set
-    to 24 hours after start_date.
-    """
+    Read a Daily or list of Dailys from a specified data_binding at a certain station id and of a given table type.
+    table_type must be 'verif', 'climo', 'daily_forecast', or something defined in the schema of data_binding as
+    %(stid)_%(table_type).upper(). Model should be provided unless retrieving from verif or climo.
+    If start_date and end_date are None, then then the start is set to now and the end to 24 hours in the future. If
+    start_date only is None, then it is set to 24 hours before end_date. If end_date only is None, then it is set to
+    24 hours after start_date.
 
+    :param config:
+    :param stid: str: station ID
+    :param data_binding: str: name of database binding to write to
+    :param table_type: str: type of table
+    :param model: str: model name
+    :param start_date: datetime or str: starting date
+    :param end_date: datetime or str: ending date
+    :return: Daily or list of Dailys of requested data
+    """
     # Get the database and table names
     database = config['DataBinding'][data_binding]['database']
     table = '%s_%s' % (stid.upper(), table_type.upper())
@@ -496,10 +526,17 @@ def db_readForecast(config, stid, model, date, hour_start=6, hour_padding=6):
     and date. This is specifically designed to return a Forecast for a single
     model and a single day.
     hour_start is the starting hour for the 24-hour forecast period.
-    hous_padding is the number of hours on either side of the forecast period
+    hour_padding is the number of hours on either side of the forecast period
     to include in the timeseries.
-    """
 
+    :param config:
+    :param stid: str: station ID
+    :param model: str: model name
+    :param date: datetime or str: date to retrieve
+    :param hour_start: int: starting hour of the day in UTC
+    :param hour_padding: int: added hours around the 24-hour TimeSeries
+    :return: Forecast
+    """
     # Basic sanity check for hour parameters
     if hour_start < 0 or hour_start > 23:
         raise ValueError('db_readForecast error: hour_start must be between 0 and 23.')
