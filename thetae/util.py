@@ -10,6 +10,7 @@ Utility functions and classes for theta-e.
 
 from datetime import datetime, timedelta
 import os
+import numpy as np
 import pandas as pd
 
 
@@ -149,6 +150,33 @@ def get_config(config_path):
         print('Using traceback option: program will crash upon exception raised.')
 
     return config_dict
+
+
+def get_codes(codes_file, stid=None):
+    """
+    Return a dict-format index of codes in codes_file for data sources where necessary. The file is expected to be
+    comma-separated values with one header row. If more than one code (i.e. column) per site is given, then the value
+    of the exported dictionary is a tuple of all the codes. Codes values are returned as string types. If stid is
+    provided, then only the codes for that station ID are returned; otherwise, the entire dictionary is returned.
+
+    :param codes_file: str: CSV file path
+    :param stid: str: if given, only returns the codes for a specific stid
+    :return: codes_dict or codes: dictionary of codes, or code values for a station ID
+    """
+    codes_array = np.genfromtxt(codes_file, dtype='str', delimiter=',', skip_header=1)
+    num_sites, num_codes = codes_array.shape
+    num_codes -= 1  # remove the column for stid
+    codes_dict = {}
+    for site in range(num_sites):
+        stid = codes_array[site, 0].upper()
+        if num_codes == 1:
+            codes_dict[stid] = codes_array[site, 1]
+        else:
+            codes_dict[stid] = tuple(codes_array[site, 1:])
+    if stid is not None:
+        return codes_dict[stid]
+    else:
+        return codes_dict
 
 
 def date_to_datetime(date):
@@ -307,3 +335,16 @@ def wind_dir_to_deg(val):
     dirdeg = [22.5 * x for x in range(len(dirtxt))]
     wdir_convert = dict(zip(dirtxt, dirdeg))
     return wdir_convert[val]
+
+
+def dewpoint_from_t_rh(t, rh):
+    """
+    Calculate dewpoint in C from temperature in C and relative humidity in %.
+
+    :param t: temperature in C
+    :param rh: relative humidity in %
+    :return: dewpoint: dewpoint in C
+    """
+    dewpoint = (243.04 * (np.log(rh/100) + ((17.625 * t) / (243.04 + t))) /
+                (17.625 - np.log(rh/100) - ((17.625 * t) / (243.04 + t))))
+    return dewpoint

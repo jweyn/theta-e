@@ -9,7 +9,7 @@ Controls construction and uploading of files to theta-e website.
 """
 
 
-def main():
+def main(config):
     """
     Main website process.
     """

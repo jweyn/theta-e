@@ -9,7 +9,7 @@ Generates plots from theta-e database.
 """
 
 
-def main():
+def main(config):
     """
     Run all necessary plots.
     """
