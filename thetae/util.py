@@ -52,8 +52,7 @@ class Daily(object):
 
 class Forecast(object):
     """
-    Forecast object for a single date. Contains both a timeseries and daily
-    values.
+    Forecast object for a single date. Contains both a timeseries and daily objects.
     stid and model should be type str; date should be datetime object.
     """
 
