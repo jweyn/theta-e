@@ -1,15 +1,15 @@
 #
-# Copyright (c) 2017 Jonathan Weyn <jweyn@uw.edu>
+# Copyright (c) 2018 Jonathan Weyn <jweyn@uw.edu>
 #
 # See the file LICENSE for your rights.
 #
 
 """
-Module containing plotting functions.
+Module containing web output functions.
 
 Each sub-module should have a function main() which takes in arguments of (config, model, stid, forecast_date). The
-module 'all' calls all of the plotting modules specified in the config, and also contains a historical function to
-execute any historical plots.
+module 'all' calls all of the web modules specified in the config, and also contains a historical function to
+produce any historical output.
 """
 
 # =============================================================================
