@@ -5,7 +5,11 @@
 #
 
 """
-Module containing various output functions.
+Module containing plotting functions.
+
+Each sub-module should have a function main() which takes in arguments of (config, model, stid, forecast_date). The
+module 'all' calls all of the plotting modules specified in the config, and also contains a historical function to
+execute any historical plots.
 """
 
 # =============================================================================
