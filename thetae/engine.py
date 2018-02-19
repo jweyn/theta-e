@@ -70,8 +70,6 @@ def historical(config, stid):
             except AttributeError:
                 if config['debug'] > 9:
                     print("engine warning: no 'historical' attribute for service %s" % service)
-                if config['traceback']:
-                    raise
                 continue
             except BaseException as e:
                 print('engine warning: failed to run historical for service %s' % service)

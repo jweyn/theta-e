@@ -5,9 +5,8 @@
 #
 
 """
-Service to get all forecasts specified in config. The main process is used to
-get the next day's forecast in accordance with the main engine process, while
-the historical process is used in the engine historical function to produce
+Service to get all forecasts specified in config. The main process is used to get the next day's forecast in accordance
+with the main engine process, while the historical process is used in the engine historical function to produce
 historical forecasts for valid sources.
 """
 
@@ -18,8 +17,7 @@ from thetae.util import get_object, config_date_to_datetime, to_bool
 
 def main(config):
     """
-    Main function. Iterates through models and sites and writes each to the
-    'forecast' database.
+    Main function. Iterates through models and sites and writes each to the 'forecast' database.
     """
 
     # Figure out which day we are forecasting for: the next UTC day.
@@ -62,18 +60,11 @@ def main(config):
                 if config['traceback']:
                     raise
 
-    # # TEST: READ SOME DATA
-    # from thetae.db import db_readForecast
-    # forecast = db_readForecast(config, 'KSEA', 'GFS MOS', forecast_date)
-    # print(forecast.daily.high)
-    # print(forecast.timeseries.data)
-
 
 def historical(config, stid):
     """
-    Function to obtain historical forecast data, for a specific site. Iterates
-    over models which have the 'historical' parameter set to True, and begins
-    at the config start_date.
+    Function to obtain historical forecast data, for a specific site. Iterates over models which have the 'historical'
+    parameter set to True, and begins at the config start_date.
     """
 
     print('getForecasts: getting historical forecasts for station %s' % stid)
@@ -107,8 +98,7 @@ def historical(config, stid):
 
         # Get the forecasts from the driver
         try:
-            # Each driver should have a function 'historical' which returns a
-            # list of Forecasts
+            # Each driver should have a function 'historical' which returns a list of Forecasts
             print('getForecasts: getting historical forecasts from %s' % model)
             forecasts = get_object(driver).historical(config, model, stid, forecast_dates)
             # Set the model name
