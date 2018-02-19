@@ -1,18 +1,15 @@
 #
+# Copyright (c) 2018 Jonathan Weyn + Joe Zagrodnik <jweyn@uw.edu>
 #
+# See the file LICENSE for your rights.
 #
-#
+
+"""
+Generates timeseries plots for various models.
+"""
 
 from datetime import datetime, timedelta
-from highcharts import Highchart
-#import sqlite3
-import pandas as pd
-import pdb
-from thetae.db import db_readTimeSeries
 
-"""
-Generates timeseries plot for various models
-"""
 
 def plot_timeseries(config, stid, models, forecast_date, variable):
     """
@@ -21,9 +18,10 @@ def plot_timeseries(config, stid, models, forecast_date, variable):
 
     return
 
+
 def main(config, stid, forecast_date):
     """
-    Make a timeseries plot
+    Make timeseries plots for a given station.
     """
 
     # Get list of models

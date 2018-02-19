@@ -5,10 +5,9 @@
 #
 
 """
-Service to get verification data. The main process is used to get today and
-yesterday's verification in accordance with the main engine process, while
-the historical process is used in the engine historical function to produce
-historical observations.
+Service to get verification data. The main process is used to get today and yesterday's verification in accordance with
+the main engine process, while the historical process is used in the engine historical function to produce historical
+observations.
 """
 
 from thetae.db import db_writeTimeSeries, db_writeDaily
@@ -106,8 +105,7 @@ def historical(config, stid):
     except:
         print('getVerification warning: cannot get start_date in config for '
               'station %s, setting to -30 days' % stid)
-        start_date = (datetime(time_now.year, time_now.month, time_now.day) -
-                      timedelta(days=30))
+        start_date = (datetime(time_now.year, time_now.month, time_now.day) - timedelta(days=30))
     print('getVerification: getting historical data for %s starting %s' %
           (stid, start_date))
 
