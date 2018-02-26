@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 import os
 import numpy as np
 import pandas as pd
+import urllib2
 
 
 # ==============================================================================
@@ -267,14 +268,20 @@ def get_ghcn_stid(stid, THETAE_ROOT='.'):
     main_addr = 'ftp://ftp.ncdc.noaa.gov/pub/data/noaa'
 
     site_directory = '%s/site_data' % THETAE_ROOT
-    if not (os.path.isdir(site_directory)):
-        os.system('mkdir -p %s' % site_directory)
+    if not(os.path.isdir(site_directory)):
+        os.makedirs(site_directory)
     # Check to see that ish-history.txt exists
     stations_file = 'isd-history.txt'
     stations_filename = '%s/%s' % (site_directory, stations_file)
     if not os.path.exists(stations_filename):
         print('get_ghcn_stid: downloading site name database')
-        os.system('wget --directory-prefix=%s %s/%s' % (site_directory, main_addr, stations_file))
+        try:
+            response = urllib2.urlopen('%s/%s' % (main_addr, stations_file))
+            with open(stations_filename, 'w') as f:
+                f.write(response.read())
+        except BaseException as e:
+            print('get)ghcn_stid: unable to download stie name database')
+            print("*** Reason: '%s'" % str(e))
 
     # Now open this file and look for our siteid
     site_found = False

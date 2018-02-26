@@ -33,7 +33,7 @@ def db_conn(config, database):
         print('db_conn: attempting to connect to database %s' % database)
     if not (os.path.isdir(db_dir)):
         try:
-            os.system('mkdir -p %s' % db_dir)
+            os.makedirs(db_dir)
         except:
             print('Error: could not access database directory')
             return
