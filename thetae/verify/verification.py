@@ -32,8 +32,8 @@ def get_cf6_files(config, stid, num_files=1):
     site_directory = '%s/site_data' % config['THETAE_ROOT']
     if config['debug'] > 50:
         print('get_cf6_files: accessing site data in %s' % site_directory)
-    if not (os.path.isdir(site_directory)):
-        os.system('mkdir -p %s' % site_directory)
+    if not(os.path.isdir(site_directory)):
+        os.makedirs(site_directory)
 
     # Construct the web url address, checking for pacific sites
     nws_url = 'http://forecast.weather.gov/product.php?site=NWS&issuedby=%s&product=CF6&format=TXT'
