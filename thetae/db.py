@@ -159,6 +159,8 @@ def _db_write(config, values, database, table, replace=True):
     # Basic sanity checks on the data
     if type(values) not in [list, tuple]:
         raise TypeError('_db_write: values must be provided as a list or tuple.')
+    if len(values) == 0:
+        raise ValueError('_db_write: no values to write.')
     row_len = 0
     for row in values:
         if type(row) is not tuple:
@@ -184,8 +186,7 @@ def _db_write(config, values, database, table, replace=True):
         print('_db_write: committing values to %s table %s' % (database, table))
     if config['debug'] > 50:
         print(values)
-    if len(values) > 0:
-        cursor.executemany("%s INTO %s VALUES %s;" % (sql_cmd, table, value_formatter), values)
+    cursor.executemany("%s INTO %s VALUES %s;" % (sql_cmd, table, value_formatter), values)
     conn.commit()
     conn.close()
 
