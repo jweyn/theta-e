@@ -18,6 +18,7 @@ GEFS MOS does not account for the 06-06 UTC time frame.
 
 import re
 from thetae import Forecast
+from thetae.util import write_ensemble_daily
 from datetime import datetime, timedelta
 import urllib2
 import numpy as np
@@ -67,6 +68,7 @@ def get_gefs_mos_forecast(stid, forecast_date):
     ens_highs = []  
     ens_lows = []  
     ens_precips = []
+    forecasts = []
 
     # 22 total model runs
     pars = soup.find_all('pre')
@@ -103,18 +105,23 @@ def get_gefs_mos_forecast(stid, forecast_date):
         # the 24 hour precip for the next day is always the first value
         ens_precips.append(mos_qpf_interpret(forecast_precip[0]))
 
-    # get ensemble mean:
+        # Add to the list of Forecasts, for writing to a file
+        forecast = Forecast(stid, 'GEFS MOS %d' % ii, forecast_date)
+        forecast.daily.setValues(ens_highs[-1], ens_lows[-1], None, ens_precips[-1])
+        forecasts.append(forecast)
+
+    # Get ensemble mean
     high_mean = np.round(np.mean(ens_highs))
     low_mean = np.round(np.mean(ens_lows))
     precip_mean = np.round(np.mean(ens_precips), 2)
 
-    # create forecast object 
-    forecast = Forecast(stid, default_model_name, forecast_date)        
-    forecast.daily.high = high_mean
-    forecast.daily.low = low_mean
-    forecast.daily.rain = precip_mean
+    # Create ensemble mean Forecast object
+    mean_forecast = Forecast(stid, default_model_name, forecast_date)
+    mean_forecast.daily.high = high_mean
+    mean_forecast.daily.low = low_mean
+    mean_forecast.daily.rain = precip_mean
 
-    return forecast
+    return mean_forecast, forecasts
 
 
 def main(config, model, stid, forecast_date):
@@ -123,6 +130,19 @@ def main(config, model, stid, forecast_date):
     """
 
     # Get forecast
-    forecast = get_gefs_mos_forecast(stid, forecast_date)
+    mean_forecast, forecasts = get_gefs_mos_forecast(stid, forecast_date)
 
-    return forecast
+    # Write the ensemble to a file
+    try:
+        ensemble_file = config['Models'][model]['ensemble_file']
+    except KeyError:
+        if config['debug'] > 9:
+            print("gefs_mos warning: 'ensemble_file' not found in config; not writing ensemble values")
+        ensemble_file = None
+    try:
+        write_ensemble_daily(config, forecasts, ensemble_file)
+    except BaseException as e:
+        if config['debug'] > 9:
+            print("gefs_mos warning: unable to write ensemble file ('%s')" % e)
+
+    return mean_forecast
