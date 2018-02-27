@@ -50,6 +50,9 @@ class Daily(object):
         self.wind = wind
         self.rain = rain
 
+    def getValues(self):
+        return self.high, self.low, self.wind, self.rain
+
 
 class Forecast(object):
     """
@@ -150,18 +153,20 @@ def get_config(config_path):
     return config_dict
 
 
-def get_codes(codes_file, stid=None):
+def get_codes(config, codes_file, stid=None):
     """
     Return a dict-format index of codes in codes_file for data sources where necessary. The file is expected to be
     comma-separated values with one header row. If more than one code (i.e. column) per site is given, then the value
     of the exported dictionary is a tuple of all the codes. Codes values are returned as string types. If stid is
     provided, then only the codes for that station ID are returned; otherwise, the entire dictionary is returned.
 
-    :param codes_file: str: CSV file path
+    :param config:
+    :param codes_file: str: CSV file name (located within THETAE_ROOT/codes)
     :param stid: str: if given, only returns the codes for a specific stid
     :return: codes_dict or codes: dictionary of codes, or code values for a station ID
     """
-    codes_array = np.genfromtxt(codes_file, dtype='str', delimiter=',', skip_header=1)
+    codes_file_name = '%s/codes/%s' % (config['THETAE_ROOT'], codes_file)
+    codes_array = np.genfromtxt(codes_file_name, dtype='str', delimiter=',', skip_header=1)
     num_sites, num_codes = codes_array.shape
     num_codes -= 1  # remove the column for stid
     codes_dict = {}
@@ -175,6 +180,28 @@ def get_codes(codes_file, stid=None):
         return codes_dict[stid]
     else:
         return codes_dict
+
+
+def write_ensemble_daily(config, forecasts, ensemble_file):
+    """
+    Writes ensemble daily forecast data, provided in the form of a list of Forecast objects, for tomorrow's forecast.
+    The specific file should be provided in the 'Models' section of config. The function read_ensemble_daily can be
+    used to read the file generated from this function, e.g. to generate plots.
+
+    :param config:
+    :param forecasts: list: list of Forecast objects
+    :param ensemble_file: str: CSV file name (located within THETAE_ROOT/site_data)
+    :return:
+    """
+    ensemble_file_name = '%s/site_data/%s' % (config['THETAE_ROOT'], ensemble_file)
+    header = 'model,high,low,wind,rain'
+    num_forecasts = len(forecasts)
+    daily_array = np.empty((num_forecasts, 5), dtype=object)
+    for f in range(num_forecasts):
+        daily_array[f, 0] = forecasts[f].model
+        daily_array[f, 1:] = forecasts[f].daily.getValues()
+    print(daily_array)
+    np.savetxt(ensemble_file_name, daily_array, fmt='%s', delimiter=',', header=header)
 
 
 def date_to_datetime(date):
@@ -259,7 +286,7 @@ def tobool(x):
 to_bool = tobool
 
 
-def get_ghcn_stid(stid, THETAE_ROOT='.'):
+def get_ghcn_stid(config, stid):
     """
     After code by Luke Madaus.
 
@@ -267,7 +294,7 @@ def get_ghcn_stid(stid, THETAE_ROOT='.'):
     """
     main_addr = 'ftp://ftp.ncdc.noaa.gov/pub/data/noaa'
 
-    site_directory = '%s/site_data' % THETAE_ROOT
+    site_directory = '%s/site_data' % config['THETAE_ROOT']
     if not(os.path.isdir(site_directory)):
         os.makedirs(site_directory)
     # Check to see that ish-history.txt exists

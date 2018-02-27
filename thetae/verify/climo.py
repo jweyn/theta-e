@@ -83,7 +83,7 @@ def historical(config, stid, start_year=1980):
     Get historical climatology data
     """
 
-    ghcn_stid = get_ghcn_stid(stid, config['THETAE_ROOT'])
+    ghcn_stid = get_ghcn_stid(config, stid)
 
     dailys = get_climo(config, stid, ghcn_stid, start_year)
 
