@@ -429,7 +429,13 @@ def db_writeForecast(config, forecast):
         timeseries = [f.timeseries for f in forecast]
     else:
         timeseries = forecast.timeseries
-    db_writeTimeSeries(config, timeseries, data_binding, table_type)
+    # Allow for timeseries to be empty
+    try:
+        db_writeTimeSeries(config, timeseries, data_binding, table_type)
+    except ValueError as e:
+        if config['debug'] > 9:
+            print("db_writeForecast warning: did not write timeseries ('%s')" % str(e))
+        pass
 
 
 # ==============================================================================
