@@ -184,7 +184,8 @@ def _db_write(config, values, database, table, replace=True):
         print('_db_write: committing values to %s table %s' % (database, table))
     if config['debug'] > 50:
         print(values)
-    cursor.executemany("%s INTO %s VALUES %s;" % (sql_cmd, table, value_formatter), values)
+    if len(values) > 0:
+        cursor.executemany("%s INTO %s VALUES %s;" % (sql_cmd, table, value_formatter), values)
     conn.commit()
     conn.close()
 
