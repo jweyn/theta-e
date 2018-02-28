@@ -31,6 +31,7 @@ schema = {
         ('windGust', 'REAL'),
         ('windDirection', 'REAL'),
         ('rainHour', 'REAL'),
+        ('pressure', 'REAL'),
         ('condition', 'TEXT')
     ],
     'HOURLY_FORECAST': [
@@ -43,6 +44,7 @@ schema = {
         ('windGust', 'REAL'),
         ('windDirection', 'REAL'),
         ('rain', 'REAL'),
+        ('pressure', 'REAL'),
         ('condition', 'TEXT'),
         ('PRIMARY KEY', '(DateTime, Model)')  # make composite key
     ],
