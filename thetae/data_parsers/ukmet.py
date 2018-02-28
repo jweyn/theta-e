@@ -190,7 +190,7 @@ def main(config, model, stid, forecast_date):
     except KeyError:
         raise KeyError('ukmet.py: no codes file specified for model %s in config!' % model)
     try:
-        ukmet_code = get_codes(ukmet_codes_file, stid)
+        ukmet_code = get_codes(config, ukmet_codes_file, stid)
     except BaseException as e:
         print("'ukmet.py: can't find code in %s for site %s!" % (ukmet_codes_file, stid))
         raise
