@@ -170,7 +170,7 @@ def _climo_wind(config, stid, dates=None):
     import ulmo
     from thetae.util import get_ghcn_stid
 
-    ghcn_stid = get_ghcn_stid(stid, config['THETAE_ROOT'])
+    ghcn_stid = get_ghcn_stid(config, stid)
 
     if config['debug'] > 0:
         print('verification: fetching wind data for %s from NCDC (may take a while)' % ghcn_stid)

@@ -7,8 +7,7 @@
 """
 Main engine for the theta-e system.
 
-# Step 1: check the database; if database has no table for the stid or data are
-#         old, reset the table
+# Step 1: check the database; if database has no table for the stid or data are old, reset the table
 # Step 2: if applicable, run db_init for site: retrieves historical
 #   We may need to write a separate script to initialize a new model
 # Step 3: retrieve forecast data; save to db
@@ -25,7 +24,6 @@ def main(options, args):
     """
     Main engine process.
     """
-
     config = get_config(args[0])
 
     # Step 1: check the database initialization
@@ -57,7 +55,6 @@ def historical(config, stid):
     """
     Run services if they have a 'historical' attribute.
     """
-
     for service_group in config['Engine']['Services'].keys():
         # Make sure we have defined a group to do what this asks
         if service_group not in thetae.all_service_groups:
