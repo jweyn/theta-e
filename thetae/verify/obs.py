@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 
 def _cloud(series):
     """
-    Changes the cloud code to a fractional converage.
+    Changes the cloud code to a fractional coverage.
     """
     translator = {1: 0.,
                   2: 50.,
@@ -60,7 +60,7 @@ def get_obs(config, stid, start, end):
     # Look for desired variables
     vars_request = ['air_temp', 'dew_point_temperature', 'wind_speed', 'wind_gust', 'wind_direction',
                     'cloud_layer_1_code', 'cloud_layer_2_code', 'cloud_layer_3_code', 'precip_accum_one_hour',
-                    'weather_condition']
+                    'sea_level_pressure', 'weather_condition']
 
     # Add variables to the api request
     vars_api = ''
@@ -69,7 +69,7 @@ def get_obs(config, stid, start, end):
     vars_api = vars_api[:-1]
 
     # Units
-    units = 'temp|f,precip|in,speed|kts'
+    units = 'temp|f,precip|in,speed|kts,pres|mb'
 
     # Retrieve data
     print('obs: retrieving data from %s to %s...' % (start, end))
@@ -150,7 +150,8 @@ def get_obs(config, stid, start, end):
         'wind_gust': 'windGust',
         'wind_direction': 'windDirection',
         'precip_accum_one_hour': 'rainHour',
-        'weather_condition': 'condition'
+        'weather_condition': 'condition',
+        'sea_level_pressure': 'pressure',
     }
     obs_hourly = obs_hourly.rename(columns=rename_dict)
 
