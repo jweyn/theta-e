@@ -194,12 +194,12 @@ def write_ensemble_daily(config, forecasts, ensemble_file):
     :return:
     """
     ensemble_file_name = '%s/site_data/%s' % (config['THETAE_ROOT'], ensemble_file)
-    header = 'model,date,high,low,wind,rain'
+    header = 'date,model,high,low,wind,rain'
     num_forecasts = len(forecasts)
     daily_array = np.empty((num_forecasts, 6), dtype=object)
     for f in range(num_forecasts):
-        daily_array[f, 0] = forecasts[f].model
-        daily_array[f, 1] = forecasts[f].date.strftime('%Y-%m-%d')
+        daily_array[f, 0] = date_to_string(forecasts[f].date)
+        daily_array[f, 1] = forecasts[f].model
         try:
             daily_array[f, 2:] = forecasts[f].daily.getValues()
         except AttributeError:
@@ -218,19 +218,16 @@ def read_ensemble_daily(config, ensemble_file, stid=None, forecast_date=None):
     """
     ensemble_file_name = '%s/site_data/%s' % (config['THETAE_ROOT'], ensemble_file)
     daily_array = np.genfromtxt(ensemble_file_name, dtype='str', delimiter=',', skip_header=1)
+    ensemble_date = date_to_datetime(daily_array[0][0])
     dailys = []
     if stid is None:
         stid = config['current_stid']
     if forecast_date is None:
-        forecast_date = datetime.strptime(daily_array[0][1],'%Y-%m-%d')
-        
-    # make sure forecast_date matches the date in the file
-    try:
-        if forecast_date != datetime.strptime(daily_array[0][1],'%Y-%m-%d'):
-            raise ValueError('Ensemble forecast date does not match')
-    except ValueError, e:
-        print(e)
-        return 
+        forecast_date = ensemble_date
+    else:
+        # Raise an error if the requested forecast date is not the one in the file
+        if date_to_datetime(forecast_date) != ensemble_date:
+            raise ValueError('Requested forecast date does not match that in file (%s)' % ensemble_date)
         
     for day in range(daily_array.shape[0]):
         daily = Daily(stid, forecast_date)

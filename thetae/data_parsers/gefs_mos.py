@@ -105,7 +105,7 @@ def get_gefs_mos_forecast(stid, forecast_date):
         # the 24 hour precip for the next day is always the first value
         ens_precips.append(mos_qpf_interpret(forecast_precip[0]))
 
-        # Add to the list of Daily objects, for writing to a file
+        # Add each member to the list of Daily objects, for writing to a file
         daily = Daily(stid, forecast_date)
         daily.model = 'GEFS MOS %d' % ii
         daily.setValues(ens_highs[-1], ens_lows[-1], None, ens_precips[-1])
@@ -146,7 +146,7 @@ def main(config, model, stid, forecast_date):
         try:
             write_ensemble_daily(config, dailys, ensemble_file)
         except BaseException as e:
-            if config['debug'] > 9:
+            if config['debug'] > 0:
                 print("gefs_mos warning: unable to write ensemble file ('%s')" % e)
 
     return mean_forecast
