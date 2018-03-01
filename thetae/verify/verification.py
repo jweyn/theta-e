@@ -102,15 +102,15 @@ def get_cf6_files(config, stid, num_files=1):
             if old_file_len < new_file_len:
                 if config['debug'] > 9:
                     print('get_cf6_files: overwriting %s' % filename)
-                os.system('mv -f %s %s' % (temp_file, filename))
+                os.remove(filename)
+                os.rename(temp_file, filename)
             else:
                 if config['debug'] > 9:
                     print('get_cf6_files: %s already exists' % filename)
         else:
             if config['debug'] > 9:
                 print('get_cf6_files: writing %s' % filename)
-            os.system('mv -f %s %s' % (temp_file, filename))
-        os.system('rm -f %s' % temp_file)
+            os.rename(temp_file, filename)
 
 
 def _cf6_wind(config, stid):
