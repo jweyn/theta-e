@@ -20,7 +20,7 @@ import re
 from thetae import Forecast, Daily
 from thetae.util import write_ensemble_daily
 from datetime import datetime, timedelta
-import urllib2
+from urllib.request import Request, urlopen
 import numpy as np
 from bs4 import BeautifulSoup
 
@@ -59,8 +59,8 @@ def get_gefs_mos_forecast(stid, forecast_date):
 
     # Retrieve the model data
     url = 'http://www.nws.noaa.gov/cgi-bin/mos/getens.pl?sta=%s' % stid
-    req = urllib2.Request(url) 
-    response = urllib2.urlopen(req)
+    req = Request(url)
+    response = urlopen(req)
     page = response.read().decode('utf-8', 'ignore')
     soup = BeautifulSoup(page, 'html.parser')
 
@@ -118,9 +118,7 @@ def get_gefs_mos_forecast(stid, forecast_date):
 
     # Create ensemble mean Forecast object
     mean_forecast = Forecast(stid, default_model_name, forecast_date)
-    mean_forecast.daily.high = high_mean
-    mean_forecast.daily.low = low_mean
-    mean_forecast.daily.rain = precip_mean
+    mean_forecast.daily.setValues(high_mean, low_mean, None, precip_mean)
 
     return mean_forecast, dailys
 

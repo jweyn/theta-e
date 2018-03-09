@@ -331,7 +331,7 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
         hourly.columns = [c.upper() for c in hourly.columns]
         columns = [c.upper() for c in columns]
         for index, pdrow in hourly.iterrows():
-            datestr = date_to_string(pdrow['DATETIME'])
+            datestr = date_to_string(pdrow['DATETIME'].to_pydatetime())
             row = []
             for column in columns:
                 if column == 'DATETIME':

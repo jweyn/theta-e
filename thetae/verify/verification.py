@@ -8,11 +8,11 @@
 Retrieve verification from MesoWest, NWS CF6 files, and NCDC data.
 """
 
-from MesoPy import Meso
+from .MesoPy import Meso
 import pandas as pd
 import numpy as np
 import os
-import urllib2
+from urllib.request import Request, urlopen
 import re
 from thetae.util import meso_api_dates, Daily
 from datetime import datetime, timedelta
@@ -58,18 +58,18 @@ def get_cf6_files(config, stid, num_files=1):
         # Load the site
         if config['debug'] > 50:
             print('get_cf6_files: fetching from %s' % nws_site)
-        req = urllib2.Request(nws_site)
-        response = urllib2.urlopen(req)
+        req = Request(nws_site)
+        response = urlopen(req)
         data = response.read()
         # Look for the header
         try:
-            first_split = data.split('CXAK')[1]  # CXAK for Alaska
+            first_split = str(data.split(b'CXAK')[1])  # CXAK for Alaska
         except:
-            first_split = data.split('CXUS')[1]  # CXUS for lower-48
+            first_split = str(data.split(b'CXUS')[1])  # CXUS for lower-48
         first_lines = first_split.splitlines()
         if len(first_lines) <= 2:
-            first_split = data.split('000')[2]
-        second_split = first_split.split('[REMARKS]')[0]
+            first_split = str(data.split(b'000')[2])
+        second_split = str(first_split.split(b'[REMARKS]')[0])
         curyear = re.search('YEAR:      (\d{4})', second_split).groups()[0]
         try:
             curmonth = re.search('MONTH:     (\D{3,9})', second_split).groups()[0]
