@@ -45,10 +45,10 @@ class Daily(object):
         self.rain = None
 
     def setValues(self, high, low, wind, rain):
-        self.high = high
-        self.low = low
-        self.wind = wind
-        self.rain = rain
+        self.high = to_float(high)
+        self.low = to_float(low)
+        self.wind = to_float(wind)
+        self.rain = to_float(rain)
 
     def getValues(self):
         return self.high, self.low, self.wind, self.rain
@@ -282,26 +282,26 @@ def meso_api_dates(start_date, end_date):
     return start, end
 
 
-def tobool(x):
+def to_bool(x):
     """Convert an object to boolean.
     
     Examples:
-    >>> print tobool('TRUE')
+    >>> print to_bool('TRUE')
     True
-    >>> print tobool(True)
+    >>> print to_bool(True)
     True
-    >>> print tobool(1)
+    >>> print to_bool(1)
     True
-    >>> print tobool('FALSE')
+    >>> print to_bool('FALSE')
     False
-    >>> print tobool(False)
+    >>> print to_bool(False)
     False
-    >>> print tobool(0)
+    >>> print to_bool(0)
     False
-    >>> print tobool('Foo')
+    >>> print to_bool('Foo')
     Traceback (most recent call last):
     ValueError: Unknown boolean specifier: 'Foo'.
-    >>> print tobool(None)
+    >>> print to_bool(None)
     Traceback (most recent call last):
     ValueError: Unknown boolean specifier: 'None'.
     
@@ -321,7 +321,11 @@ def tobool(x):
     raise ValueError("Unknown boolean specifier: '%s'." % x)
 
 
-to_bool = tobool
+def to_float(x):
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return None
 
 
 def get_ghcn_stid(config, stid):
