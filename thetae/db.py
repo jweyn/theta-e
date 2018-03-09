@@ -60,13 +60,15 @@ def db_conn(config, database):
     return conn
 
 
-def db_init(config):
+def db_init(config, reset_old=False):
     """
     Initializes new station IDs in the databases. Returns a list of all sites included in config that require historical
     data to be retrieved. Also creates a database if it does not exist.
 
     :param config:
+    :param reset_old: if True, erases tables if they are too old
     """
+    add_sites = []
     for data_binding in config['DataBinding'].keys():
         # Open the database and schema
         schema_name = config['DataBinding'][data_binding]['schema']
@@ -78,7 +80,6 @@ def db_init(config):
         cursor = conn.cursor()
 
         # Iterate through stations in the config
-        add_sites = []
         for stid in config['Stations'].keys():
             add_site = False
             # Find the tables in the db and requested by the schema
@@ -87,20 +88,19 @@ def db_init(config):
             # Schema must have primary (datetime) key listed first
             date_keys = [schema[key][0][0] for key in schema.keys()]
             if config['debug'] > 50:
-                print('db_init: Found the following tables in schema:')
+                print('db_init: found the following tables in schema:')
                 print(schema_table_names)
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
             sql_table_names = [table[0] for table in cursor.fetchall()]
             if config['debug'] > 50:
-                print('db_init: Found the following tables in sql db:')
+                print('db_init: found the following tables in sql db:')
                 print(sql_table_names)
 
             # For each requested table, create it if it doesn't exist
             for t in range(len(schema_table_names)):
                 table = schema_table_names[t]
                 if not (table in sql_table_names):
-                    # Something was missing, so we need to add the site to
-                    # the output list
+                    # Something was missing, so we need to add the site to the output list
                     add_site = True
                     # A string of all table columns and types
                     if config['debug'] > 0:
@@ -123,14 +123,18 @@ def db_init(config):
                     if last_dt is None or (time_now - last_dt > recent):
                         # Old or missing data, drop table and recreate it
                         add_site = True
-                        if config['debug'] > 0:
-                            print('db_init: %s table missing or too old, resetting it' % table)
-                        cursor.execute("DROP TABLE %s;" % table)
-                        sqltypestr = ', '.join(["%s %s" % _type for _type in schema_table_structures[t]])
-                        cursor.execute("CREATE TABLE %s (%s);" % (table, sqltypestr,))
+                        if reset_old:
+                            if config['debug'] > 0:
+                                print('db_init: %s table too old, resetting it' % table)
+                            cursor.execute("DROP TABLE %s;" % table)
+                            sqltypestr = ', '.join(["%s %s" % _type for _type in schema_table_structures[t]])
+                            cursor.execute("CREATE TABLE %s (%s);" % (table, sqltypestr,))
+                        else:
+                            if config['debug'] > 0:
+                                print('db_init: %s table is old, adding to historical' % table)
 
             # Lastly, add the site if we need to rerun historical data
-            if add_site:
+            if add_site and stid not in add_sites:
                 add_sites.append(stid)
             elif config['debug'] > 0:
                 print('db_init: nothing to do for station %s' % stid)
@@ -138,6 +142,44 @@ def db_init(config):
         conn.close()
 
     return add_sites
+
+
+def db_remove(config, stid):
+    """
+    Remove the database tables for a given station ID.
+    :param config:
+    :param stid: str: station ID
+    :return:
+    """
+    for data_binding in config['DataBinding'].keys():
+        # Open the database and schema
+        schema_name = config['DataBinding'][data_binding]['schema']
+        database = config['DataBinding'][data_binding]['database']
+        schema = get_object(schema_name).schema
+        conn = db_conn(config, database)
+        if conn is None:
+            raise IOError('Error: db_remove cannot connect to database %s' % database)
+        cursor = conn.cursor()
+
+        # Find the tables in the db and requested by the schema
+        schema_table_names = ['%s_%s' % (stid.upper(), key) for key in schema.keys()]
+        if config['debug'] > 50:
+            print('db_remove: found the following tables in schema:')
+            print(schema_table_names)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        sql_table_names = [table[0] for table in cursor.fetchall()]
+        if config['debug'] > 50:
+            print('db_remove: found the following tables in sql db:')
+            print(sql_table_names)
+
+        # For each table, check if it exists, and if so, delete it
+        for table in schema_table_names:
+            if table in sql_table_names:
+                if config['debug'] > 50:
+                    print('db_remove: deleting table %s' % table)
+                cursor.execute("DROP TABLE %s;" % table)
+
+        conn.close()
 
 
 # ==================================================================================================================== #

@@ -20,10 +20,10 @@ def _cloud(series):
     Changes the cloud code to a fractional coverage.
     """
     translator = {1: 0.,
-                  2: 50.,
-                  3: 75.,
-                  4: 100.,
-                  6: 25.
+                  2: 0.5,
+                  3: 0.75,
+                  4: 1.,
+                  6: 0.25
                   }
     new_series = series.copy()
     for index, value in series.iteritems():
@@ -124,8 +124,8 @@ def get_obs(config, stid, start, end):
     obs_hourly['cloud_layer_3_code'].fillna(1.0, inplace=True)
 
     # Format cloud data
-    cloud = (_cloud(obspd['cloud_layer_1_code']) + _cloud(obspd['cloud_layer_2_code']) +
-             _cloud(obspd['cloud_layer_3_code']))
+    cloud = 100. - 100. * ((1-_cloud(obspd['cloud_layer_1_code'])) * (1-_cloud(obspd['cloud_layer_2_code'])) *
+                           (1-_cloud(obspd['cloud_layer_3_code'])))
     # Cloud exceeding 100% set to 100
     cloud[cloud > 100.] = 100.
     # Drop old cloud columns and replace with only total cloud
