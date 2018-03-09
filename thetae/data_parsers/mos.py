@@ -10,7 +10,7 @@ Retrieve GFS or NAM MOS data.
 
 from thetae import Forecast
 from datetime import datetime, timedelta
-import urllib2
+from urllib.request import urlopen
 import pandas as pd
 import numpy as np
 
@@ -60,7 +60,7 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     base_url = 'http://mesonet.agron.iastate.edu/mos/csv.php?station=%s&runtime=%s&model=%s'
     formatted_date = init_date.strftime('%Y-%m-%d%%20%H:00')
     url = base_url % (stid, formatted_date, mos_model)
-    response = urllib2.urlopen(url)
+    response = urlopen(url)
     # Create pandas DataFrame
     df = pd.read_csv(response, index_col=False)
     # Raise exception if DataFrame is empty
@@ -112,10 +112,9 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     nx_high = df.iloc[iloc_start_exclude:iloc_end]['n_x'].max()
     nx_low = df.iloc[iloc_start_exclude:iloc_end]['n_x'].max()
     # Set the daily
-    forecast.daily.high = np.nanmax([raw_high, nx_high])
-    forecast.daily.low = np.nanmin([raw_low, nx_low])
-    forecast.daily.wind = df.iloc[iloc_start_include:iloc_end]['wsp'].max()
-    forecast.daily.rain = df.iloc[iloc_start_exclude:iloc_end]['q06'].sum()
+    forecast.daily.setValues(np.nanmax([raw_high, nx_high]), np.nanmin([raw_low, nx_low]),
+                             df.iloc[iloc_start_include:iloc_end]['wsp'].max(),
+                             df.iloc[iloc_start_exclude:iloc_end]['q06'].sum())
 
     return forecast
 

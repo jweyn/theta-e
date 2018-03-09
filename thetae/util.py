@@ -12,7 +12,8 @@ from datetime import datetime, timedelta
 import os
 import numpy as np
 import pandas as pd
-import urllib2
+from urllib.request import urlopen
+from builtins import str
 
 
 # ==================================================================================================================== #
@@ -45,10 +46,10 @@ class Daily(object):
         self.rain = None
 
     def setValues(self, high, low, wind, rain):
-        self.high = high
-        self.low = low
-        self.wind = wind
-        self.rain = rain
+        self.high = to_float(high)
+        self.low = to_float(low)
+        self.wind = to_float(wind)
+        self.rain = to_float(rain)
 
     def getValues(self):
         return self.high, self.low, self.wind, self.rain
@@ -246,10 +247,8 @@ def date_to_datetime(date):
     """
     Converts a date from string format to datetime object.
     """
-    if date is None:
-        return
-    if type(date) is str or type(date) is unicode:  # UNICODE only in Python 2
-        date = datetime.strptime(date, '%Y-%m-%d %H:%M')
+    if type(date) is str:
+        date = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
     return date
 
 
@@ -257,10 +256,8 @@ def date_to_string(date):
     """
     Converts a date from datetime object to string format.
     """
-    if date is None:
-        return
-    if type(date) is not str and type(date) is not unicode:
-        date = datetime.strftime(date, '%Y-%m-%d %H:%M')
+    if type(date) is datetime:
+        date = str(date)
     return date
 
 
@@ -277,31 +274,31 @@ def meso_api_dates(start_date, end_date):
     """
     Return string-formatted start and end dates for the MesoPy api.
     """
-    start = datetime.strftime(start_date, '%Y%m%d%H%M')
-    end = datetime.strftime(end_date, '%Y%m%d%H%M')
+    start = str(datetime.strftime(start_date, '%Y%m%d%H%M'))
+    end = str(datetime.strftime(end_date, '%Y%m%d%H%M'))
     return start, end
 
 
-def tobool(x):
+def to_bool(x):
     """Convert an object to boolean.
     
     Examples:
-    >>> print tobool('TRUE')
+    >>> print to_bool('TRUE')
     True
-    >>> print tobool(True)
+    >>> print to_bool(True)
     True
-    >>> print tobool(1)
+    >>> print to_bool(1)
     True
-    >>> print tobool('FALSE')
+    >>> print to_bool('FALSE')
     False
-    >>> print tobool(False)
+    >>> print to_bool(False)
     False
-    >>> print tobool(0)
+    >>> print to_bool(0)
     False
-    >>> print tobool('Foo')
+    >>> print to_bool('Foo')
     Traceback (most recent call last):
     ValueError: Unknown boolean specifier: 'Foo'.
-    >>> print tobool(None)
+    >>> print to_bool(None)
     Traceback (most recent call last):
     ValueError: Unknown boolean specifier: 'None'.
     
@@ -321,7 +318,11 @@ def tobool(x):
     raise ValueError("Unknown boolean specifier: '%s'." % x)
 
 
-to_bool = tobool
+def to_float(x):
+    try:
+        return float(x)
+    except ValueError:
+        return None
 
 
 def get_ghcn_stid(config, stid):
@@ -341,11 +342,11 @@ def get_ghcn_stid(config, stid):
     if not os.path.exists(stations_filename):
         print('get_ghcn_stid: downloading site name database')
         try:
-            response = urllib2.urlopen('%s/%s' % (main_addr, stations_file))
+            response = urlopen('%s/%s' % (main_addr, stations_file))
             with open(stations_filename, 'w') as f:
                 f.write(response.read())
         except BaseException as e:
-            print('get)ghcn_stid: unable to download stie name database')
+            print('get_ghcn_stid: unable to download site name database')
             print("*** Reason: '%s'" % str(e))
 
     # Now open this file and look for our siteid
