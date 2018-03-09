@@ -9,7 +9,7 @@ Launching script for the theta-e forecast verification system.
 """
 
 import sys
-from optparse import OptionParser
+from argparse import ArgumentParser
 
 # Import the main engine
 import thetae
@@ -25,30 +25,32 @@ def parse_args():
     Parse input arguments.
     """
 
-    parser = OptionParser()
-    parser.add_option("-n", "--no-output", action="store_true", dest="no_output",
-                      help="Suppress all plot and web output")
-    parser.add_option("-v", "--version", action="store_true", dest="version",
-                      help="Display version number then exit")
-    (options, args) = parser.parse_args()
+    parser = ArgumentParser()
+    parser.add_argument("config", help="Path to theta-e config file")
+    parser.add_argument("-n", "--no-output", action="store_true", dest="no_output",
+                        help="Suppress all plot and web output")
+    parser.add_argument("-v", "--version", action="store_true", dest="version",
+                        help="Display version number then exit")
+    parser.add_argument("--backfill-historical", action="store", dest="b_stid", nargs='*',
+                        help="Backfill the historical data for any number of stations; if no stations are specified, "
+                             "backfill all stations in the config file.")
+    parser.add_argument("--remove", action="store", dest="r_stid", nargs='*',
+                        help="Remove the database tables for any number of stations; if no stations are specified, "
+                             "nothing is done.")
+    arguments = parser.parse_args()
 
-    if options.version:
-        print(thetae.__version__)
+    if arguments.version:
+        print('thetae module version: %s' % thetae.__version__)
         sys.exit(0)
 
-    if len(args) < 1:
-        print("Missing argument(s).\n")
-        print(parser.parse_args(["--help"]))
-        sys.exit(1)
-
-    return options, args
+    return arguments
 
 
-options, args = parse_args()
+args = parse_args()
 
 
 # ==================================================================================================================== #
 # Launch the main engine
 # ==================================================================================================================== #
 
-thetae.engine.main(options, args)
+thetae.engine.main(args)

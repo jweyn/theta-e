@@ -7,24 +7,47 @@
 """
 Main engine for the theta-e system.
 
-# Step 1: check the database; if database has no table for the stid or data are old, reset the table
-# Step 2: if applicable, run db_init for site: retrieves historical
-#   We may need to write a separate script to initialize a new model
-# Step 3: retrieve forecast data; save to db
-# Step 4: retrieve verification data; save to db
-# Step 5: run manager to calculate verification statistics; save to db?
-# Step 6: run plotting scripts; theta-e website scripts
+Step 0: check if the user has requested a utility operation, such as filling out historical data
+Step 1: check the database; if database has no tables for the stid create the tables
+Step 2: if applicable, run db_init for site: retrieves historical
+Step 3: retrieve forecast data; save to database
+Step 4: retrieve verification data; save to database
+Step 5: run any calculation services, such as calculations for verification scores
+Step 6: run plotting scripts, theta-e website scripts
 """
 
+import sys
 import thetae
 from thetae.util import get_object, get_config
 
 
-def main(options, args):
+def main(args):
     """
     Main engine process.
     """
-    config = get_config(args[0])
+    config = get_config(args.config)
+
+    # Check for backfill-historical sites
+    if args.b_stid is not None:
+        print('engine: running backfill of historical data')
+        if len(args.b_stid) == 0:
+            print('engine: all sites selected')
+            sites = config['Stations'].keys()
+        else:
+            sites = args.b_stid
+        for stid in sites:
+            historical(config, stid)
+        sys.exit(0)
+
+    # Check for database resets
+    if args.r_stid is not None:
+        print('engine: performing database reset')
+        if len(args.r_stid) == 0:
+            print('engine: error: no sites selected!')
+            sys.exit(1)
+        for stid in args.r_stid:
+            thetae.db.db_remove(config, stid)
+        sys.exit(0)
 
     # Step 1: check the database initialization
     print('engine: running database initialization checks')
