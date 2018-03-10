@@ -134,6 +134,8 @@ def main(config, model, stid, forecast_date):
     time_now = datetime.utcnow()
     if time_now.hour >= 16:
         init_date = forecast_date - timedelta(hours=12)
+    elif time_now.hour < 6:
+        init_date = forecast_date - timedelta(hours=36)
     else:
         init_date = forecast_date - timedelta(hours=24)
 

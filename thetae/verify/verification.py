@@ -24,8 +24,6 @@ def get_cf6_files(config, stid, num_files=1):
 
     Retrieves CF6 climate verification data released by the NWS. Parameter
     num_files determines how many recent files are downloaded.
-
-    Some of the string functions here may not work with Python 3.
     """
 
     # Create directory if it does not exist
@@ -35,11 +33,11 @@ def get_cf6_files(config, stid, num_files=1):
     if not(os.path.isdir(site_directory)):
         os.makedirs(site_directory)
 
-    # Construct the web url address, checking for pacific sites
+    # Construct the web url address. Check if a special 3-letter station ID is provided.
     nws_url = 'http://forecast.weather.gov/product.php?site=NWS&issuedby=%s&product=CF6&format=TXT'
-    if stid == 'pafa':
-        stid3 = 'FAI'
-    else:
+    try:
+        stid3 = config['Stations'][stid]['station_id3']
+    except KeyError:
         stid3 = stid[1:].upper()
     nws_url = nws_url % stid3
 
@@ -51,47 +49,52 @@ def get_cf6_files(config, stid, num_files=1):
 
     # Fetch files
     for r in range(1, num_files + 1):
-        # Format the web address: goes through 'versions' on NWS site which
-        # correspond to increasingly older files
+        # Format the web address: goes through 'versions' on NWS site which correspond to increasingly older files
         version = 'version=%d&glossary=0' % r
         nws_site = '&'.join((nws_url, version))
-        # Load the site
         if config['debug'] > 50:
             print('get_cf6_files: fetching from %s' % nws_site)
         req = Request(nws_site)
         response = urlopen(req)
-        data = response.read()
-        # Look for the header
-        try:
-            first_split = str(data.split(b'CXAK')[1])  # CXAK for Alaska
-        except:
-            first_split = str(data.split(b'CXUS')[1])  # CXUS for lower-48
-        first_lines = first_split.splitlines()
-        if len(first_lines) <= 2:
-            first_split = str(data.split(b'000')[2])
-        second_split = str(first_split.split(b'[REMARKS]')[0])
-        curyear = re.search('YEAR:      (\d{4})', second_split).groups()[0]
-        try:
-            curmonth = re.search('MONTH:     (\D{3,9})', second_split).groups()[0]
-            curmonth = curmonth.strip()  # Gets rid of newlines and whitespace
-            datestr = '%s %s' % (curmonth, curyear)
-            filedate = datetime.strptime(datestr, '%B %Y')
-        except:  # Joe added this section to deal with weird PADQ (Kodiak) files)
-            curmonth = re.search('MONTH:     (\d{2})', second_split).groups()[0]
-            curmonth = curmonth.strip()
-            datestr = '%s %s' % (curmonth, curyear)
-            filedate = datetime.strptime(datestr, '%m %Y')
+        cf6_data = response.read().decode(response.headers.get_content_charset())
 
-        # Write to a temporary file, check if output file exists, and if so,
-        # make sure the new one is better
-        datestr = filedate.strftime('%Y%m')
+        # Remove the header
+        try:
+            body_and_footer = cf6_data.split('CXUS')[1]  # Mainland US
+        except IndexError:
+            try:
+                body_and_footer = cf6_data.split('CXHW')[1]  # Hawaii
+            except IndexError:
+                body_and_footer = cf6_data.split('CXAK')[1]  # Alaska
+        body_and_footer_lines = body_and_footer.splitlines()
+        if len(body_and_footer_lines) <= 2:
+            body_and_footer = cf6_data.split('000')[2]
+
+        # Remove the footer
+        body = body_and_footer.split('[REMARKS]')[0]
+
+        # Find the month and year of the file
+        current_year = re.search('YEAR: *(\d{4})', body).groups()[0]
+        try:
+            current_month = re.search('MONTH: *(\D{3,9})', body).groups()[0]
+            current_month = current_month.strip()  # Gets rid of newlines and whitespace
+            datestr = '%s %s' % (current_month, current_year)
+            file_date = datetime.strptime(datestr, '%B %Y')
+        except:  # Some files have a different formatting, although this may be fixed now.
+            current_month = re.search('MONTH: *(\d{2})', body).groups()[0]
+            current_month = current_month.strip()
+            datestr = '%s %s' % (current_month, current_year)
+            file_date = datetime.strptime(datestr, '%m %Y')
+
+        # Write to a temporary file, check if output file exists, and if so, make sure the new one has more data
+        datestr = file_date.strftime('%Y%m')
         filename = '%s/%s_%s.cli' % (site_directory, stid.upper(), datestr)
         temp_file = '%s/temp.cli' % site_directory
         with open(temp_file, 'w') as out:
-            out.write(second_split)
+            out.write(body)
 
-        def file_len(filename):
-            with open(filename) as f:
+        def file_len(file_name):
+            with open(file_name) as f:
                 for i, l in enumerate(f):
                     pass
                 return i + 1
@@ -126,35 +129,34 @@ def _cf6_wind(config, stid):
     site_directory = '%s/site_data' % config['THETAE_ROOT']
     if config['debug'] > 0:
         print('verification: searching for CF6 files in %s' % site_directory)
-    allfiles = os.listdir(site_directory)
-    filelist = [f for f in allfiles if f.startswith(stid.upper()) and
-                f.endswith('.cli')]
-    filelist.sort()
-    if len(filelist) == 0:
+    listing = os.listdir(site_directory)
+    file_list = [f for f in listing if f.startswith(stid.upper()) and f.endswith('.cli')]
+    file_list.sort()
+    if len(file_list) == 0:
         raise IOError('No CF6 files found in %s for site %s.' % (site_directory, stid))
     if config['debug'] > 50:
-        print('verification: found %d CF6 files' % len(filelist))
+        print('verification: found %d CF6 files' % len(file_list))
 
     # Interpret CF6 files
     if config['debug'] > 50:
         print('verification: reading CF6 files')
     cf6_values = {}
-    for file in filelist:
+    for file in file_list:
         year, month = re.search('(\d{4})(\d{2})', file).groups()
-        infile = open('%s/%s' % (site_directory, file), 'r')
-        for line in infile:
-            matcher = re.compile('( \d{1}|\d{2}) ( \d{2}|-\d{2}|  \d{1}| -\d{1}|\d{3})')
+        open_file = open('%s/%s' % (site_directory, file), 'r')
+        for line in open_file:
+            matcher = re.compile('( \d|\d{2}) ( \d{2}|-\d{2}|  \d| -\d|\d{3})')
             if matcher.match(line):
-                # We've found an ob line!
+                # We've found an obs line!
                 lsp = line.split()
                 day = int(lsp[0])
-                curdt = datetime(int(year), int(month), day)
-                cf6_values[curdt] = {}
-                # Wind
+                date = datetime(int(year), int(month), day)
+                cf6_values[date] = {}
+                # Get only the wind value
                 if lsp[11] == 'M':
-                    cf6_values[curdt]['wind'] = 0.0
+                    cf6_values[date]['wind'] = 0.0
                 else:
-                    cf6_values[curdt]['wind'] = float(lsp[11]) * 0.868976
+                    cf6_values[date]['wind'] = float(lsp[11]) * 0.868976
 
     return cf6_values
 

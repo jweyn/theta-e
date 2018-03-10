@@ -50,3 +50,9 @@ options, args = parse_args()
 # ==============================================================================
 # Run tests
 # ==============================================================================
+
+from thetae.util import get_config, get_object
+
+config = get_config(args[0])
+
+get_object('thetae.getVerification').historical(config, 'KSEA')

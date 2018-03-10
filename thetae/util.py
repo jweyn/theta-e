@@ -321,7 +321,7 @@ def to_bool(x):
 def to_float(x):
     try:
         return float(x)
-    except ValueError:
+    except (TypeError, ValueError):
         return None
 
 
@@ -399,10 +399,10 @@ def wind_dir_to_deg(val):
     """
     Converts string winds to float degrees
     """
-    dirtxt = ('N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW')
-    dirdeg = [22.5 * x for x in range(len(dirtxt))]
-    wdir_convert = dict(zip(dirtxt, dirdeg))
-    return wdir_convert[val]
+    dir_text = ('N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW')
+    dir_deg = [22.5 * x for x in range(len(dir_text))]
+    conversion = dict(zip(dir_text, dir_deg))
+    return conversion[val]
 
 
 def dewpoint_from_t_rh(t, rh):
