@@ -330,8 +330,11 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
         series = []
         hourly.columns = [c.upper() for c in hourly.columns]
         columns = [c.upper() for c in columns]
-        for index, pdrow in hourly.iterrows():
-            datestr = date_to_string(pdrow['DATETIME'].to_pydatetime())
+        for index, pd_row in hourly.iterrows():
+            try:
+                datestr = date_to_string(pd_row['DATETIME'].to_pydatetime())
+            except TypeError:
+                datestr = pd_row['DATETIME']
             row = []
             for column in columns:
                 if column == 'DATETIME':
@@ -340,7 +343,7 @@ def db_writeTimeSeries(config, timeseries, data_binding, table_type):
                     row.append(model)
                 elif column != 'PRIMARY KEY':
                     try:
-                        row.append(pdrow[column])
+                        row.append(pd_row[column])
                     except:
                         row.append(None)
             series.append(tuple(row))

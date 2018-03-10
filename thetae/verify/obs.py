@@ -8,7 +8,7 @@
 Retrieve observations from MesoWest.
 """
 
-from MesoPy import Meso
+from .MesoPy import Meso
 import pandas as pd
 import numpy as np
 from thetae.util import meso_api_dates, date_to_string, TimeSeries
@@ -134,10 +134,9 @@ def get_obs(config, stid, start, end):
     obs_hourly = obs_hourly.drop('cloud_layer_3_code', axis=1)
     obs_hourly['cloud'] = cloud
 
-    # Reformat dates, replacing pandas default string format with SQL format
-    new_dates = _reformat_date(obs_hourly[datename])
-    obs_hourly = obs_hourly.drop(datename, axis=1)
-    obs_hourly[datename] = new_dates
+    # Reformat dates, using pandas Timestamp
+    date_obj = pd.to_datetime(obs_hourly[datename])
+    obs_hourly[datename] = date_obj
     if config['debug'] > 50:
         print('obs: here is the timeseries')
         print(obs_hourly)
