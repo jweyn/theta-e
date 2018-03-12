@@ -168,14 +168,14 @@ def remove(config, stid):
             print(schema_table_names)
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         sql_table_names = [table[0] for table in cursor.fetchall()]
-        if config['debug'] > 50:
+        if config['debug'] > 0:
             print('db.remove: found the following tables in sql db:')
             print(sql_table_names)
 
         # For each table, check if it exists, and if so, delete it
         for table in schema_table_names:
             if table in sql_table_names:
-                if config['debug'] > 50:
+                if config['debug'] > 0:
                     print('db.remove: deleting table %s' % table)
                 cursor.execute("DROP TABLE %s;" % table)
 
