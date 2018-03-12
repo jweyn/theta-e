@@ -27,7 +27,7 @@ from bs4 import BeautifulSoup
 default_model_name = 'GEFS MOS'
 
 
-def mos_qpf_interpret(qpf):
+def qpf_interpreter(qpf):
     """
     Interprets a QPF value average estimates
 
@@ -103,7 +103,7 @@ def get_gefs_mos_forecast(stid, forecast_date):
         ens_highs.append(np.max(temps[valid_dates]))
         ens_lows.append(np.min(temps[valid_dates]))
         # the 24 hour precip for the next day is always the first value
-        ens_precips.append(mos_qpf_interpret(forecast_precip[0]))
+        ens_precips.append(qpf_interpreter(forecast_precip[0]))
 
         # Add each member to the list of Daily objects, for writing to a file
         daily = Daily(stid, forecast_date)

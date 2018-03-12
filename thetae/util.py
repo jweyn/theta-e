@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017 Jonathan Weyn <jweyn@uw.edu>
+# Copyright (c) 2017-18 Jonathan Weyn <jweyn@uw.edu>
 #
 # See the file LICENSE for your rights.
 #
@@ -9,6 +9,7 @@ Utility functions and classes for theta-e.
 """
 
 from datetime import datetime, timedelta
+import pytz
 import os
 import numpy as np
 import pandas as pd
@@ -279,6 +280,15 @@ def meso_api_dates(start_date, end_date):
     return start, end
 
 
+def localized_date_to_utc(date):
+    """
+    Return a timezone-unaware UTC time from a timezone-aware localized datetime object.
+    """
+    if not isinstance(date, datetime):
+        return date
+    return date.astimezone(pytz.utc).replace(tzinfo=None)
+
+
 def to_bool(x):
     """Convert an object to boolean.
     
@@ -385,19 +395,26 @@ def c_to_f(val):
     """
     Converts celsius to integer fahrenheit; accepts numeric or string
     """
-    return int(float(val) * 9 / 5 + 32)
+    try:
+        return int(float(val) * 9. / 5 + 32)
+    except TypeError:
+        return val * 9. / 5 + 32
+
 
 
 def mph_to_kt(val):
     """
     Converts mph to knots; accepts numeric or string
     """
-    return int(float(val) * 0.868976)
+    try:
+        return int(float(val) * 0.868976)
+    except TypeError:
+        return val * 0.868976
 
 
 def wind_dir_to_deg(val):
     """
-    Converts string winds to float degrees
+    Converts string wind to float degrees
     """
     dir_text = ('N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW')
     dir_deg = [22.5 * x for x in range(len(dir_text))]
