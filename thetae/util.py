@@ -289,6 +289,19 @@ def localized_date_to_utc(date):
     return date.astimezone(pytz.utc).replace(tzinfo=None)
 
 
+def epoch_time_to_datetime(timestamp, timezone=None):
+    """
+    Return a timezone-unaware datetime from an epoch time representation. If timezone string is provided, then
+    localized_date_to_utc will be applied on the resulting datetime object.
+    """
+    date = datetime.fromtimestamp(timestamp)
+    if timezone is not None:
+        tz = pytz.timezone(timezone)
+        date = tz.localize(date)
+        return date.astimezone(pytz.utc).replace(tzinfo=None)
+    return date
+
+
 def to_bool(x):
     """Convert an object to boolean.
     
