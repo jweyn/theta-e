@@ -401,7 +401,6 @@ def c_to_f(val):
         return val * 9. / 5 + 32
 
 
-
 def mph_to_kt(val):
     """
     Converts mph to knots; accepts numeric or string
