@@ -91,11 +91,11 @@ def wind_speed_interpreter(wind):
     """
     Interprets a pandas Series of NWS wind speed to return the maximum.
     """
-    pattern = re.compile(r'(\d*) to (\d*)')
+    pattern = re.compile(r'(\d{1,3})')
     new_wind = wind.copy()
     for j in range(len(wind)):
         try:
-            new_wind.iloc[j] = float(pattern.match(wind.iloc[j]).groups()[1])
+            new_wind.iloc[j] = float(pattern.findall(wind.iloc[j])[-1])
         except:
             new_wind.iloc[j] = np.nan
     return new_wind

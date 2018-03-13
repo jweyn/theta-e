@@ -397,7 +397,7 @@ def c_to_f(val):
     """
     try:
         return int(float(val) * 9. / 5 + 32)
-    except TypeError:
+    except (TypeError, ValueError):
         return val * 9. / 5 + 32
 
 
@@ -407,7 +407,7 @@ def mph_to_kt(val):
     """
     try:
         return int(float(val) * 0.868976)
-    except TypeError:
+    except (TypeError, ValueError):
         return val * 0.868976
 
 
