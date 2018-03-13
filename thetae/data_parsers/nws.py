@@ -49,7 +49,7 @@ def etree_to_dict(t):
 
 def xml_to_values(l):
     """
-    Return a pandas Series from a list of XML data in l potentially including null values.
+    Return a list of values from a list of XML data potentially including null values.
     """
     new = []
     for element in l:
@@ -62,7 +62,7 @@ def xml_to_values(l):
 
 def xml_to_condition(l):
     """
-    Returns a pandas Series from a list of 'weather-condition' XML data.
+    Returns a list of values from a list of 'weather-condition' XML data.
     """
     new = []
     for element in l:
@@ -81,7 +81,7 @@ def xml_to_condition(l):
                 new.append(None)
         else:
             try:
-                new.append(str(element))
+                new.append(str(element)[:20])
             except:
                 new.append(None)
     return new
