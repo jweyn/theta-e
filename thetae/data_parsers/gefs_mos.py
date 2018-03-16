@@ -10,10 +10,8 @@ Retrieve GEFS MOS data (ensemble means)
 Daily: high, low, precip (no wind speed)
 Hourly: none
 
-Does not currently store information from the individual ensemble members but this feature could easily be added in the
-future.
-
-GEFS MOS does not account for the 06-06 UTC time frame.
+GEFS MOS does not account for the 06-06 UTC time frame. Ensemble values are saved to 'ensemble_file' with the util
+function write_ensemble_daily.
 """
 
 import re
@@ -21,11 +19,8 @@ from thetae import Forecast, Daily
 from thetae.util import write_ensemble_daily
 from datetime import datetime, timedelta
 import numpy as np
+import requests
 from bs4 import BeautifulSoup
-try:
-    from urllib.request import urlopen
-except ImportError:
-    from urllib import urlopen
 
 default_model_name = 'GEFS MOS'
 
@@ -62,8 +57,8 @@ def get_gefs_mos_forecast(stid, forecast_date):
 
     # Retrieve the model data
     url = 'http://www.nws.noaa.gov/cgi-bin/mos/getens.pl?sta=%s' % stid
-    response = urlopen(url)
-    page = response.read().decode('utf-8', 'ignore')
+    response = requests.get(url)
+    page = response.text
     soup = BeautifulSoup(page, 'html.parser')
 
     # Lists for tomorrow's ensemble data

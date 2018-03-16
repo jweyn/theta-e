@@ -19,10 +19,6 @@ import pandas as pd
 import numpy as np
 import re
 from builtins import str
-try:
-    from urllib.request import urlopen
-except ImportError:
-    from urllib import urlopen
 
 default_model_name = 'NWS'
 
@@ -117,8 +113,8 @@ def get_nws_forecast(stid, lat, lon, forecast_date):
     :return:
     """
     hourly_url = 'http://forecast.weather.gov/MapClick.php?lat=%f&lon=%f&FcstType=digitalDWML'
-    response = urlopen(hourly_url % (lat, lon))
-    hourly_xml = eTree.fromstring(response.read())
+    response = requests.get(hourly_url % (lat, lon))
+    hourly_xml = eTree.fromstring(response.text)
     hourly_dict = etree_to_dict(hourly_xml)
 
     # Create a DataFrame for hourly data
