@@ -55,4 +55,4 @@ from thetae.util import get_config, get_object
 
 config = get_config(args[0])
 
-get_object('thetae.getVerification').historical(config, 'KSEA')
+get_object('thetae.util').get_ghcn_stid(config, 'KSEA')

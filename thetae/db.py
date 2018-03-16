@@ -13,6 +13,7 @@ import os
 import pandas as pd
 from thetae.util import (get_object, TimeSeries, Daily, Forecast, date_to_datetime, date_to_string)
 from datetime import datetime, timedelta
+from builtins import str
 
 
 # ==================================================================================================================== #

@@ -13,6 +13,7 @@ observations.
 from thetae.db import writeTimeSeries, writeDaily
 from datetime import datetime, timedelta
 from thetae.util import get_object, config_date_to_datetime
+from builtins import str
 
 
 def main(config):
