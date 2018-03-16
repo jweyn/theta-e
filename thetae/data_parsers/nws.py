@@ -13,12 +13,16 @@ from thetae.util import to_float, localized_date_to_utc, mph_to_kt
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_iso
 import requests
-from urllib.request import urlopen
 from collections import defaultdict
 from xml.etree import cElementTree as eTree
 import pandas as pd
 import numpy as np
 import re
+from builtins import str
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib import urlopen
 
 default_model_name = 'NWS'
 

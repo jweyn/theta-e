@@ -13,6 +13,7 @@ historical forecasts for valid sources.
 from thetae.db import writeForecast
 from datetime import datetime, timedelta
 from thetae.util import get_object, config_date_to_datetime, to_bool
+from builtins import str
 
 
 def main(config):

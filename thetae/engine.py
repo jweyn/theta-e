@@ -19,6 +19,7 @@ Step 6: run plotting scripts, theta-e website scripts
 import sys
 import thetae
 from thetae.util import get_object, get_config
+from builtins import str
 
 
 def main(args):

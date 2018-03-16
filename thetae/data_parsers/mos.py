@@ -10,9 +10,13 @@ Retrieve GFS or NAM MOS data.
 
 from thetae import Forecast
 from datetime import datetime, timedelta
-from urllib.request import urlopen
 import pandas as pd
 import numpy as np
+from builtins import str
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib import urlopen
 
 default_model_name = 'MOS'
 

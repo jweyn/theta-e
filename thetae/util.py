@@ -13,8 +13,11 @@ import pytz
 import os
 import numpy as np
 import pandas as pd
-from urllib.request import urlopen
 from builtins import str
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib import urlopen
 
 
 # ==================================================================================================================== #
@@ -248,18 +251,20 @@ def date_to_datetime(date):
     """
     Converts a date from string format to datetime object.
     """
-    if type(date) is str:
-        date = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
-    return date
+    try:
+        return datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
+    except:
+        return date
 
 
 def date_to_string(date):
     """
     Converts a date from datetime object to string format.
     """
-    if type(date) is datetime:
-        date = str(date)
-    return date
+    try:
+        return str(date)
+    except:
+        return date
 
 
 def config_date_to_datetime(date_str):
@@ -371,6 +376,8 @@ def get_ghcn_stid(config, stid):
         except BaseException as e:
             print('get_ghcn_stid: unable to download site name database')
             print("*** Reason: '%s'" % str(e))
+            if config['traceback']:
+                raise
 
     # Now open this file and look for our siteid
     site_found = False

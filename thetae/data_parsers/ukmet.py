@@ -13,12 +13,15 @@ Hourly: temp, dewpt, wind speed, wind gust, wind direction
 
 from thetae import Forecast
 from datetime import datetime, timedelta
-import urllib2
 import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
 from thetae.util import get_codes, c_to_f, mph_to_kt, wind_dir_to_deg, dewpoint_from_t_rh
 from selenium import webdriver
+try:
+    from urllib.request import Request, urlopen
+except ImportError:
+    from urllib2 import Request, urlopen
 
 default_model_name = 'UKMET'
 
@@ -46,8 +49,8 @@ def get_ukmet_forecast(stid, ukmet_code, forecast_date):
     """
     # Retrieve the model data
     url = 'https://www.metoffice.gov.uk/public/weather/forecast/%s' % ukmet_code
-    req = urllib2.Request(url, headers=hdr)
-    response = urllib2.urlopen(req)
+    req = Request(url, headers=hdr)
+    response = urlopen(req)
     page = response.read().decode('utf-8', 'ignore')
     soup = BeautifulSoup(page, 'lxml')
 

@@ -12,10 +12,11 @@ from .MesoPy import Meso
 import pandas as pd
 import numpy as np
 import os
-from urllib.request import Request, urlopen
 import re
 from thetae.util import meso_api_dates, Daily
 from datetime import datetime, timedelta
+import requests
+from builtins import str
 
 
 def get_cf6_files(config, stid, num_files=1):
@@ -54,9 +55,8 @@ def get_cf6_files(config, stid, num_files=1):
         nws_site = '&'.join((nws_url, version))
         if config['debug'] > 50:
             print('get_cf6_files: fetching from %s' % nws_site)
-        req = Request(nws_site)
-        response = urlopen(req)
-        cf6_data = response.read().decode(response.headers.get_content_charset())
+        response = requests.get(nws_site)
+        cf6_data = response.text
 
         # Remove the header
         try:

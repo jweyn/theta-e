@@ -12,6 +12,7 @@ import ulmo
 import numpy as np
 from thetae.util import get_ghcn_stid, Daily
 from datetime import datetime, timedelta
+from builtins import str
 
 
 def get_ghcn_data(ghcn_stid):
