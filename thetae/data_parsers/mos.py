@@ -12,11 +12,8 @@ from thetae import Forecast
 from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
+import requests
 from builtins import str
-try:
-    from urllib.request import urlopen
-except ImportError:
-    from urllib import urlopen
 
 default_model_name = 'MOS'
 
@@ -63,9 +60,9 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     base_url = 'http://mesonet.agron.iastate.edu/mos/csv.php?station=%s&runtime=%s&model=%s'
     formatted_date = init_date.strftime('%Y-%m-%d%%20%H:00')
     url = base_url % (stid, formatted_date, mos_model)
-    response = urlopen(url)
+    response = requests.get(url, stream=True)
     # Create pandas DataFrame
-    df = pd.read_csv(response, index_col=False)
+    df = pd.read_csv(response.raw, index_col=False)
     # Raise exception if DataFrame is empty
     if len(df.index) == 0:
         raise ValueError('mos.py: error: empty DataFrame; data missing.')
