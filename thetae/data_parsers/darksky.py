@@ -72,7 +72,7 @@ def main(config, model, stid, forecast_date):
         lat = float(config['Stations'][stid]['latitude'])
         lon = float(config['Stations'][stid]['longitude'])
     except KeyError:
-        raise (KeyError('nws.py: missing or invalid latitude or longitude for station %s' % stid))
+        raise (KeyError('darksky.py: missing or invalid latitude or longitude for station %s' % stid))
 
     # Get the API key from the config
     try:

@@ -158,6 +158,36 @@ def get_config(config_path):
     return config_dict
 
 
+def write_codes(config, codes_dict, codes_file, header='station ID,'):
+    """
+    Write a codes dictionary to a file of comma-separated values with one header row, given by 'header'. For use when a
+    data source can provide a needed code but a cache is useful. The dictionary is expected to have station IDs as keys
+    and either strings or tuples of strings as items, just like the output of get_codes().
+
+    :param config:
+    :param codes_dict: dict: dictionary of codes to write, where keys are station IDs
+    :param codes_file: str: CSV file name (located within THETAE_ROOT/codes)
+    :param header: str: the descriptive header row
+    :return:
+    """
+    codes_directory = '%s/codes' % config['THETAE_ROOT']
+    if not(os.path.isdir(codes_directory)):
+        os.makedirs(codes_directory)
+    codes_file_name = '%s/%s' % (codes_directory, codes_file)
+    num_keys = len(list(codes_dict.keys()))
+    if type(codes_dict[list(codes_dict.keys())[0]]) is tuple:
+        num_codes = len(codes_dict[list(codes_dict.keys())[0]])
+    else:
+        num_codes = 1
+    codes_array = np.empty((num_keys, num_codes + 1), dtype=object)
+    row = 0
+    for key, code in codes_dict.items():
+        codes_array[row, 0] = key
+        codes_array[row, 1:] = code
+        row += 1
+    np.savetxt(codes_file_name, codes_array, fmt='%s', delimiter=',', header=header)
+
+
 def get_codes(config, codes_file, stid=None):
     """
     Return a dict-format index of codes in codes_file for data sources where necessary. The file is expected to be
@@ -172,6 +202,8 @@ def get_codes(config, codes_file, stid=None):
     """
     codes_file_name = '%s/codes/%s' % (config['THETAE_ROOT'], codes_file)
     codes_array = np.genfromtxt(codes_file_name, dtype='str', delimiter=',', skip_header=1)
+    if len(codes_array.shape) == 1:
+        codes_array = np.expand_dims(codes_array, axis=0)
     num_sites, num_codes = codes_array.shape
     num_codes -= 1  # remove the column for stid
     codes_dict = {}
@@ -243,6 +275,87 @@ def read_ensemble_daily(config, ensemble_file, stid=None, forecast_date=None):
     return dailys
 
 
+def get_ghcn_stid(config, stid):
+    """
+    After code by Luke Madaus.
+
+    Gets the GHCN station ID from the 4-letter station ID.
+    """
+    main_addr = 'ftp://ftp.ncdc.noaa.gov/pub/data/noaa'
+
+    site_directory = '%s/site_data' % config['THETAE_ROOT']
+    # Check to see that ish-history.txt exists
+    stations_file = 'isd-history.txt'
+    stations_filename = '%s/%s' % (site_directory, stations_file)
+    if not os.path.exists(stations_filename):
+        print('get_ghcn_stid: downloading site name database')
+        try:
+            response = urlopen('%s/%s' % (main_addr, stations_file))
+            with open(stations_filename, 'w') as f:
+                f.write(response.read())
+        except BaseException as e:
+            print('get_ghcn_stid: unable to download site name database')
+            print("*** Reason: '%s'" % str(e))
+            if config['traceback']:
+                raise
+
+    # Now open this file and look for our siteid
+    site_found = False
+    infile = open(stations_filename, 'r')
+    station_wbans = []
+    station_ghcns = []
+    for line in infile:
+        if stid.upper() in line:
+            linesp = line.split()
+            if (not linesp[0].startswith('99999') and not site_found
+                    and not linesp[1].startswith('99999')):
+                try:
+                    site_wban = int(linesp[0])
+                    station_ghcn = int(linesp[1])
+                    # site_found = True
+                    print('get_ghcn_stid: site found for %s (%s)' %
+                          (stid, station_ghcn))
+                    station_wbans.append(site_wban)
+                    station_ghcns.append(station_ghcn)
+                except:
+                    continue
+    if len(station_wbans) == 0:
+        raise ValueError('get_ghcn_stid error: so station found for %s' % stid)
+
+    # Format station as USW...
+    usw_format = 'USW000%05d'
+    return usw_format % station_ghcns[0]
+
+
+def check_cache_file(config, file_name, interval=12, get_23z=True):
+    """
+    Check that a cache file (such as for an API) exists and is recent enough to be used.
+
+    :param config:
+    :param file_name: str: name of file located within THETAE_ROOT/site_data
+    :param interval: int: caching interval in hours, i.e., maximum allowed age of file
+    :param get_23z: bool: if True, sets the maximum age of the cache to 1 hour if the time is past 23Z
+    :return:
+    """
+    time_now = datetime.utcnow()
+    if time_now.hour == 23 and get_23z:
+        recent = timedelta(hours=1)
+    else:
+        recent = timedelta(hours=interval)
+    cache_ok = False
+    try:
+        modified_time = file_mtime_utc(file_name)
+        if time_now - modified_time > recent:
+            if config['debug'] > 9:
+                print('check_cache_file: %s too old' % file_name)
+        else:
+            cache_ok = True
+    except BaseException as e:
+        if config['debug'] > 9:
+            print("check_cache_file: '%s'" % str(e))
+    return cache_ok
+
+
 # ==================================================================================================================== #
 # Type conversion functions
 # ==================================================================================================================== #
@@ -307,6 +420,15 @@ def epoch_time_to_datetime(timestamp, timezone=None):
     return date
 
 
+def file_mtime_utc(file_name):
+    """
+    Return a timezone-unaware datetime in UTC for the last modified time of a file.
+    """
+    mtime = os.path.getmtime(file_name)
+    date = datetime.utcfromtimestamp(mtime)
+    return date.replace(tzinfo=None)
+
+
 def to_bool(x):
     """Convert an object to boolean.
     
@@ -351,60 +473,6 @@ def to_float(x):
         return float(x)
     except (TypeError, ValueError):
         return None
-
-
-def get_ghcn_stid(config, stid):
-    """
-    After code by Luke Madaus.
-
-    Gets the GHCN station ID from the 4-letter station ID.
-    """
-    main_addr = 'ftp://ftp.ncdc.noaa.gov/pub/data/noaa'
-
-    site_directory = '%s/site_data' % config['THETAE_ROOT']
-    if not(os.path.isdir(site_directory)):
-        os.makedirs(site_directory)
-    # Check to see that ish-history.txt exists
-    stations_file = 'isd-history.txt'
-    stations_filename = '%s/%s' % (site_directory, stations_file)
-    if not os.path.exists(stations_filename):
-        print('get_ghcn_stid: downloading site name database')
-        try:
-            response = urlopen('%s/%s' % (main_addr, stations_file))
-            with open(stations_filename, 'w') as f:
-                f.write(response.read())
-        except BaseException as e:
-            print('get_ghcn_stid: unable to download site name database')
-            print("*** Reason: '%s'" % str(e))
-            if config['traceback']:
-                raise
-
-    # Now open this file and look for our siteid
-    site_found = False
-    infile = open(stations_filename, 'r')
-    station_wbans = []
-    station_ghcns = []
-    for line in infile:
-        if stid.upper() in line:
-            linesp = line.split()
-            if (not linesp[0].startswith('99999') and not site_found
-                    and not linesp[1].startswith('99999')):
-                try:
-                    site_wban = int(linesp[0])
-                    station_ghcn = int(linesp[1])
-                    # site_found = True
-                    print('get_ghcn_stid: site found for %s (%s)' %
-                          (stid, station_ghcn))
-                    station_wbans.append(site_wban)
-                    station_ghcns.append(station_ghcn)
-                except:
-                    continue
-    if len(station_wbans) == 0:
-        raise ValueError('get_ghcn_stid error: so station found for %s' % stid)
-
-    # Format station as USW...
-    usw_format = 'USW000%05d'
-    return usw_format % station_ghcns[0]
 
 
 # ==================================================================================================================== #

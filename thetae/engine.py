@@ -17,6 +17,7 @@ Step 6: run plotting scripts, theta-e website scripts
 """
 
 import sys
+import os
 import thetae
 from thetae.util import get_object, get_config
 from builtins import str
@@ -26,7 +27,13 @@ def main(args):
     """
     Main engine process.
     """
+    # Get the config file.
     config = get_config(args.config)
+
+    # Create the site_data archive directory, if necessary.
+    site_directory = '%s/site_data' % config['THETAE_ROOT']
+    if not(os.path.isdir(site_directory)):
+        os.makedirs(site_directory)
 
     # Check for backfill-historical sites
     if args.b_stid is not None:
