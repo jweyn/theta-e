@@ -8,7 +8,7 @@
 Retrieve observations from MesoWest.
 """
 
-from MesoPy import Meso
+from .MesoPy import Meso
 import pandas as pd
 import numpy as np
 from thetae.util import meso_api_dates, date_to_string, TimeSeries
@@ -76,9 +76,8 @@ def get_obs(config, stid, start, end):
     obs = m.timeseries(stid=stid, start=start, end=end, vars=vars_api, units=units, hfmetars='0')
     obspd = pd.DataFrame.from_dict(obs['STATION'][0]['OBSERVATIONS'])
 
-    # Rename columns to requested vars. This changes the columns in the
-    # DataFrame to corresponding names in vars_request, because otherwise the
-    # columns returned by MesoPy are weird.
+    # Rename columns to requested vars. This changes the columns in the DataFrame to corresponding names in
+    # vars_request, because otherwise the columns returned by MesoPy are weird.
     obs_var_names = obs['STATION'][0]['SENSOR_VARIABLES']
     obs_var_keys = list(obs_var_names.keys())
     col_names = list(map(''.join, obspd.columns.values))
@@ -92,15 +91,14 @@ def get_obs(config, stid, start, end):
     datename = 'DATETIME'
     obspd = obspd.rename(columns={'date_time': datename})
 
-    # Let's add a check here to make sure that we do indeed have all of the
-    # variables we want
+    # Let's add a check here to make sure that we do indeed have a column for every variable we want
     for var in vars_request:
         if var not in col_names:
-            obspd[var] = np.nan
+            obspd = obspd.assign(**{var: np.nan})
 
     # Reformat data into hourly obs
-    # Find mode of minute data: where the hourly metars are. Sometimes there are
-    # additional obs at odd times that would mess with rain totals.
+    # Find mode of minute data: where the hourly metars are. Sometimes there are additional obs at odd times that would
+    # mess with rain totals.
     minutes = []
     for row in obspd.iterrows():
         date = row[1][datename]
@@ -113,11 +111,10 @@ def get_obs(config, stid, start, end):
     # Subset only hourly data
     obs_hourly = obspd[pd.DatetimeIndex(obspd[datename]).minute == minute_mode]
 
-    # Check for all requested variables, otherwise set them to null, or 0
-    # for precipitation, or 1.0 for cloud layers
+    # Check for all requested variables, otherwise set them to null, or 0 for precipitation, or 1.0 for cloud layers
     for var in vars_request:
-        if not (var in col_names):
-            obs_hourly[var] = np.nan
+        if var not in col_names:
+            obs_hourly = obs_hourly.assign(**{var: np.nan})
     obs_hourly['precip_accum_one_hour'].fillna(0.0, inplace=True)
     obs_hourly['cloud_layer_1_code'].fillna(1.0, inplace=True)
     obs_hourly['cloud_layer_2_code'].fillna(1.0, inplace=True)
@@ -134,10 +131,9 @@ def get_obs(config, stid, start, end):
     obs_hourly = obs_hourly.drop('cloud_layer_3_code', axis=1)
     obs_hourly['cloud'] = cloud
 
-    # Reformat dates, replacing pandas default string format with SQL format
-    new_dates = _reformat_date(obs_hourly[datename])
-    obs_hourly = obs_hourly.drop(datename, axis=1)
-    obs_hourly[datename] = new_dates
+    # Reformat dates, using pandas Timestamp
+    date_obj = pd.to_datetime(obs_hourly[datename])
+    obs_hourly[datename] = date_obj
     if config['debug'] > 50:
         print('obs: here is the timeseries')
         print(obs_hourly)

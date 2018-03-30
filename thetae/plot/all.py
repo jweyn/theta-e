@@ -11,6 +11,7 @@ with the main engine process. The historical function generates past plots or pl
 
 from datetime import datetime, timedelta
 from thetae.util import get_object, config_date_to_datetime, to_bool
+from builtins import str
 
 
 def main(config):

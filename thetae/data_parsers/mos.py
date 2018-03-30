@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017 Jonathan Weyn <jweyn@uw.edu>
+# Copyright (c) 2017-18 Jonathan Weyn <jweyn@uw.edu>
 #
 # See the file LICENSE for your rights.
 #
@@ -10,14 +10,15 @@ Retrieve GFS or NAM MOS data.
 
 from thetae import Forecast
 from datetime import datetime, timedelta
-import urllib2
 import pandas as pd
 import numpy as np
+import requests
+from builtins import str
 
 default_model_name = 'MOS'
 
 
-def mos_qpf_interpret(qpf):
+def qpf_interpreter(qpf):
     """
     Interprets a pandas Series of QPF by average estimates
 
@@ -52,7 +53,6 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     :param forecast_date: datetime of day to forecast
     :return: Forecast object for forecast_date
     """
-
     # Create forecast object
     forecast = Forecast(stid, default_model_name, forecast_date)
 
@@ -60,9 +60,9 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     base_url = 'http://mesonet.agron.iastate.edu/mos/csv.php?station=%s&runtime=%s&model=%s'
     formatted_date = init_date.strftime('%Y-%m-%d%%20%H:00')
     url = base_url % (stid, formatted_date, mos_model)
-    response = urllib2.urlopen(url)
+    response = requests.get(url, stream=True)
     # Create pandas DataFrame
-    df = pd.read_csv(response, index_col=False)
+    df = pd.read_csv(response.raw, index_col=False)
     # Raise exception if DataFrame is empty
     if len(df.index) == 0:
         raise ValueError('mos.py: error: empty DataFrame; data missing.')
@@ -71,9 +71,9 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     # Remove duplicate rows
     df = df.drop_duplicates()
     # Fix rain
-    df['q06'] = mos_qpf_interpret(df['q06'])
+    df['q06'] = qpf_interpreter(df['q06'])
 
-    # ### Format the DataFrame for the default schema
+    # Format the DataFrame for the default schema
     # Dictionary for renaming columns
     ts = df.copy()
     names_dict = {
@@ -91,7 +91,7 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     # Set the timeseries
     forecast.timeseries.data = ts.rename(columns=names_dict)
 
-    # ### Now do the daily forecast part
+    # Now do the daily forecast part
     df = df.set_index('datetime')
     forecast_start = forecast_date.replace(hour=6)
     forecast_end = forecast_start + timedelta(days=1)
@@ -123,7 +123,6 @@ def main(config, model, stid, forecast_date):
     """
     Produce a Forecast object from MOS.
     """
-
     # Get the model name from the config
     try:
         mos_model = config['Models'][model]['mos_model']
@@ -134,6 +133,8 @@ def main(config, model, stid, forecast_date):
     time_now = datetime.utcnow()
     if time_now.hour >= 16:
         init_date = forecast_date - timedelta(hours=12)
+    elif time_now.hour < 6:
+        init_date = forecast_date - timedelta(hours=36)
     else:
         init_date = forecast_date - timedelta(hours=24)
 
@@ -147,7 +148,6 @@ def historical(config, model, stid, forecast_dates):
     """
     Produce a list of Forecast objects from MOS for each date in forecast_dates.
     """
-
     # Get the model name from the config
     try:
         mos_model = config['Models'][model]['mos_model']

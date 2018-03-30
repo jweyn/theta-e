@@ -8,38 +8,35 @@
 Retrieve verification from MesoWest, NWS CF6 files, and NCDC data.
 """
 
-from MesoPy import Meso
+from .MesoPy import Meso
 import pandas as pd
 import numpy as np
 import os
-import urllib2
 import re
 from thetae.util import meso_api_dates, Daily
 from datetime import datetime, timedelta
+import requests
+from builtins import str
 
 
 def get_cf6_files(config, stid, num_files=1):
     """
     After code by Luke Madaus
 
-    Retrieves CF6 climate verification data released by the NWS. Parameter
-    num_files determines how many recent files are downloaded.
-
-    Some of the string functions here may not work with Python 3.
+    Retrieves CF6 climate verification data released by the NWS. Parameter num_files determines how many recent files
+    are downloaded.
     """
 
     # Create directory if it does not exist
     site_directory = '%s/site_data' % config['THETAE_ROOT']
     if config['debug'] > 50:
         print('get_cf6_files: accessing site data in %s' % site_directory)
-    if not(os.path.isdir(site_directory)):
-        os.makedirs(site_directory)
 
-    # Construct the web url address, checking for pacific sites
+    # Construct the web url address. Check if a special 3-letter station ID is provided.
     nws_url = 'http://forecast.weather.gov/product.php?site=NWS&issuedby=%s&product=CF6&format=TXT'
-    if stid == 'pafa':
-        stid3 = 'FAI'
-    else:
+    try:
+        stid3 = config['Stations'][stid]['station_id3']
+    except KeyError:
         stid3 = stid[1:].upper()
     nws_url = nws_url % stid3
 
@@ -51,47 +48,51 @@ def get_cf6_files(config, stid, num_files=1):
 
     # Fetch files
     for r in range(1, num_files + 1):
-        # Format the web address: goes through 'versions' on NWS site which
-        # correspond to increasingly older files
+        # Format the web address: goes through 'versions' on NWS site which correspond to increasingly older files
         version = 'version=%d&glossary=0' % r
         nws_site = '&'.join((nws_url, version))
-        # Load the site
         if config['debug'] > 50:
             print('get_cf6_files: fetching from %s' % nws_site)
-        req = urllib2.Request(nws_site)
-        response = urllib2.urlopen(req)
-        data = response.read()
-        # Look for the header
-        try:
-            first_split = data.split('CXAK')[1]  # CXAK for Alaska
-        except:
-            first_split = data.split('CXUS')[1]  # CXUS for lower-48
-        first_lines = first_split.splitlines()
-        if len(first_lines) <= 2:
-            first_split = data.split('000')[2]
-        second_split = first_split.split('[REMARKS]')[0]
-        curyear = re.search('YEAR:      (\d{4})', second_split).groups()[0]
-        try:
-            curmonth = re.search('MONTH:     (\D{3,9})', second_split).groups()[0]
-            curmonth = curmonth.strip()  # Gets rid of newlines and whitespace
-            datestr = '%s %s' % (curmonth, curyear)
-            filedate = datetime.strptime(datestr, '%B %Y')
-        except:  # Joe added this section to deal with weird PADQ (Kodiak) files)
-            curmonth = re.search('MONTH:     (\d{2})', second_split).groups()[0]
-            curmonth = curmonth.strip()
-            datestr = '%s %s' % (curmonth, curyear)
-            filedate = datetime.strptime(datestr, '%m %Y')
+        response = requests.get(nws_site)
+        cf6_data = response.text
 
-        # Write to a temporary file, check if output file exists, and if so,
-        # make sure the new one is better
-        datestr = filedate.strftime('%Y%m')
+        # Remove the header
+        try:
+            body_and_footer = cf6_data.split('CXUS')[1]  # Mainland US
+        except IndexError:
+            try:
+                body_and_footer = cf6_data.split('CXHW')[1]  # Hawaii
+            except IndexError:
+                body_and_footer = cf6_data.split('CXAK')[1]  # Alaska
+        body_and_footer_lines = body_and_footer.splitlines()
+        if len(body_and_footer_lines) <= 2:
+            body_and_footer = cf6_data.split('000')[2]
+
+        # Remove the footer
+        body = body_and_footer.split('[REMARKS]')[0]
+
+        # Find the month and year of the file
+        current_year = re.search('YEAR: *(\d{4})', body).groups()[0]
+        try:
+            current_month = re.search('MONTH: *(\D{3,9})', body).groups()[0]
+            current_month = current_month.strip()  # Gets rid of newlines and whitespace
+            datestr = '%s %s' % (current_month, current_year)
+            file_date = datetime.strptime(datestr, '%B %Y')
+        except:  # Some files have a different formatting, although this may be fixed now.
+            current_month = re.search('MONTH: *(\d{2})', body).groups()[0]
+            current_month = current_month.strip()
+            datestr = '%s %s' % (current_month, current_year)
+            file_date = datetime.strptime(datestr, '%m %Y')
+
+        # Write to a temporary file, check if output file exists, and if so, make sure the new one has more data
+        datestr = file_date.strftime('%Y%m')
         filename = '%s/%s_%s.cli' % (site_directory, stid.upper(), datestr)
         temp_file = '%s/temp.cli' % site_directory
         with open(temp_file, 'w') as out:
-            out.write(second_split)
+            out.write(body)
 
-        def file_len(filename):
-            with open(filename) as f:
+        def file_len(file_name):
+            with open(file_name) as f:
                 for i, l in enumerate(f):
                     pass
                 return i + 1
@@ -119,42 +120,41 @@ def _cf6_wind(config, stid):
 
     This function is used internally only.
 
-    Generates wind verification values from climate CF6 files stored in
-    site_directory. These files can be generated by _get_cf6_files.
+    Generates wind verification values from climate CF6 files stored in site_directory. These files can be generated
+    by _get_cf6_files.
     """
 
     site_directory = '%s/site_data' % config['THETAE_ROOT']
     if config['debug'] > 0:
         print('verification: searching for CF6 files in %s' % site_directory)
-    allfiles = os.listdir(site_directory)
-    filelist = [f for f in allfiles if f.startswith(stid.upper()) and
-                f.endswith('.cli')]
-    filelist.sort()
-    if len(filelist) == 0:
+    listing = os.listdir(site_directory)
+    file_list = [f for f in listing if f.startswith(stid.upper()) and f.endswith('.cli')]
+    file_list.sort()
+    if len(file_list) == 0:
         raise IOError('No CF6 files found in %s for site %s.' % (site_directory, stid))
     if config['debug'] > 50:
-        print('verification: found %d CF6 files' % len(filelist))
+        print('verification: found %d CF6 files' % len(file_list))
 
     # Interpret CF6 files
     if config['debug'] > 50:
         print('verification: reading CF6 files')
     cf6_values = {}
-    for file in filelist:
+    for file in file_list:
         year, month = re.search('(\d{4})(\d{2})', file).groups()
-        infile = open('%s/%s' % (site_directory, file), 'r')
-        for line in infile:
-            matcher = re.compile('( \d{1}|\d{2}) ( \d{2}|-\d{2}|  \d{1}| -\d{1}|\d{3})')
+        open_file = open('%s/%s' % (site_directory, file), 'r')
+        for line in open_file:
+            matcher = re.compile('( \d|\d{2}) ( \d{2}|-\d{2}|  \d| -\d|\d{3})')
             if matcher.match(line):
-                # We've found an ob line!
+                # We've found an obs line!
                 lsp = line.split()
                 day = int(lsp[0])
-                curdt = datetime(int(year), int(month), day)
-                cf6_values[curdt] = {}
-                # Wind
+                date = datetime(int(year), int(month), day)
+                cf6_values[date] = {}
+                # Get only the wind value
                 if lsp[11] == 'M':
-                    cf6_values[curdt]['wind'] = 0.0
+                    cf6_values[date]['wind'] = 0.0
                 else:
-                    cf6_values[curdt]['wind'] = float(lsp[11]) * 0.868976
+                    cf6_values[date]['wind'] = float(lsp[11]) * 0.868976
 
     return cf6_values
 
@@ -163,8 +163,7 @@ def _climo_wind(config, stid, dates=None):
     """
     This function is used internally only.
 
-    Fetches climatological wind data using ulmo package to retrieve NCDC
-    archives.
+    Fetches climatological wind data using ulmo package to retrieve NCDC archives.
     """
 
     import ulmo
@@ -187,12 +186,10 @@ def _climo_wind(config, stid, dates=None):
 
 def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
     """
-    Generates verification data from MesoWest API. If use_climo is True, then
-    fetch climate data from NCDC using ulmo to fill in wind values. (We
-    probably generally don't want to do this, because it is slow and is
-    delayed by 1-2 weeks from present.) If use_cf6 is True, then any CF6 files
-    found in ~/site_data will be used for wind values. These files are
-    retrieved by get_cf6_files.
+    Generates verification data from MesoWest API. If use_climo is True, then fetch climate data from NCDC using ulmo
+    to fill in wind values. (We probably generally don't want to do this, because it is slow and is delayed by 1-2
+    weeks from present.) If use_cf6 is True, then any CF6 files found in ~/site_data will be used for wind values.
+    These files are retrieved by get_cf6_files.
     """
 
     # MesoWest token and init
@@ -228,9 +225,8 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
     obs = m.timeseries(stid=stid, start=start, end=end, vars=vars_api, units=units)
     obspd = pd.DataFrame.from_dict(obs['STATION'][0]['OBSERVATIONS'])
 
-    # Rename columns to requested vars. This changes the columns in the
-    # DataFrame to corresponding names in vars_request, because otherwise the
-    # columns returned by MesoPy are weird.
+    # Rename columns to requested vars. This changes the columns in the DataFrame to corresponding names in
+    # vars_request, because otherwise the columns returned by MesoPy are weird.
     obs_var_names = obs['STATION'][0]['SENSOR_VARIABLES']
     obs_var_keys = list(obs_var_names.keys())
     col_names = list(map(''.join, obspd.columns.values))
@@ -242,11 +238,10 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
                 col_names[c] = key
     obspd.columns = col_names
 
-    # Let's add a check here to make sure that we do indeed have all of the
-    # variables we want
+    # Let's add a check here to make sure that we do indeed have all of the variables we want
     for var in vars_request:
         if var not in col_names:
-            obspd[var] = np.nan
+            obspd = obspd.assign(**{var: np.nan})
 
     # Change datetime column to datetime object, subtract 6 hours to use 6Z days
     dateobj = pd.to_datetime(obspd['date_time']) - timedelta(hours=6)
@@ -254,9 +249,8 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
     datename = 'DATETIME'
     obspd = obspd.rename(columns={'date_time': datename})
 
-    # Now we're going to group the data into daily values. First, we group by
-    # hour to be sure we have the right precipitation accumulations, which are
-    # officially recorded by hour.
+    # Now we're going to group the data into daily values. First, we group by hour to be sure we have the right
+    # precipitation accumulations, which are officially recorded by hour.
 
     def hour(dates):
         date = dates.iloc[0]
@@ -290,9 +284,7 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
             col_names_new.append(col_names[c][0])
     obs_hourly.columns = col_names_new
 
-    # Now group by day. Note that we changed the time to subtract 6 hours, so
-    # days are nicely defined as 6Z to 6Z.
-
+    # Now group by day. Note that we changed the time to subtract 6 hours, so days are nicely defined as 6Z to 6Z.
     def day(dates):
         date = dates.iloc[0]
         return datetime(date.year, date.month, date.day)
@@ -312,9 +304,7 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
                                     pd.DatetimeIndex(obs_hourly[datename]).month,
                                     pd.DatetimeIndex(obs_hourly[datename]).day]).agg(aggregate)
 
-    # Now we check for wind values from the CF6 files, which are the actual
-    # verification
-
+    # Now we check for wind values from the CF6 files, which are the actual verification
     if use_climo or use_cf6:
         if config['debug'] > 9:
             print('verification: checking climo and/or CF6 for wind data')
@@ -362,8 +352,7 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
     round_dict['precip_accum_one_hour'] = 2
     obs_daily = obs_daily.round(round_dict)
 
-    # Lastly, place all the values we found into a list of Daily objects.
-    # Rename the columns and then iterate over rows.
+    # Lastly, place all the values we found into a list of Daily objects. Rename the columns and then iterate over rows.
     if 'air_temp_high_6_hour' in vars_request:
         obs_daily.rename(columns={'air_temp_high_6_hour': 'high'}, inplace=True)
     else:
@@ -378,11 +367,9 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
         obs_daily.rename(columns={'precip_accum_one_hour': 'rain'}, inplace=True)
     obs_daily.rename(columns={'wind_speed': 'wind'}, inplace=True)
 
-    # Make sure rain has no missing values rather than zeros. Groupby
-    # appropriately dealt with missing values earlier.
+    # Make sure rain has no missing values rather than zeros. Groupby appropriately dealt with missing values earlier.
     obs_daily['rain'].fillna(0.0, inplace=True)
-    # Set datetime as the index. This will help use datetime in the creation of
-    # the Dailys.
+    # Set datetime as the index. This will help use datetime in the creation of the Dailys.
     obs_daily = obs_daily.set_index(datename)
     # Remove extraneous columns
     export_cols = ['high', 'low', 'wind', 'rain']
@@ -410,11 +397,9 @@ def main(config, stid):
     """
     Retrieves yesterday and today's verification.
 
-    We need to be careful about what the starting date is. If it is an
-    incomplete verification day, then that incomplete data will overwrite the
-    previous day's verification. It is important, however, to make sure that
-    we get the final values for yesterday. Therefore, let's make sure it
-    starts at 6Z yesterday.
+    We need to be careful about what the starting date is. If it is an incomplete verification day, then that incomplete
+    data will overwrite the previous day's verification. It is important, however, to make sure that we get the final
+    values for yesterday. Therefore, let's make sure it starts at 6Z yesterday.
     """
 
     # Get dates
@@ -440,8 +425,8 @@ def main(config, stid):
 
 def historical(config, stid, start_date):
     """
-    Retrieves historical verifications starting at start (datetime). Sets the
-    hour of start to 6, so that we don't get incomplete verifications.
+    Retrieves historical verifications starting at start (datetime). Sets the hour of start to 6, so that we don't get
+    incomplete verifications.
     """
 
     # Get dates

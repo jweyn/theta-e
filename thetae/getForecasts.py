@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017 Jonathan Weyn <jweyn@uw.edu>
+# Copyright (c) 2017-18 Jonathan Weyn <jweyn@uw.edu>
 #
 # See the file LICENSE for your rights.
 #
@@ -10,9 +10,10 @@ with the main engine process, while the historical process is used in the engine
 historical forecasts for valid sources.
 """
 
-from thetae.db import db_writeForecast
+from thetae.db import writeForecast
 from datetime import datetime, timedelta
 from thetae.util import get_object, config_date_to_datetime, to_bool
+from builtins import str
 
 
 def main(config):
@@ -53,7 +54,7 @@ def main(config):
             try:
                 if config['debug'] > 9:
                     print('getForecasts: writing forecast to database')
-                db_writeForecast(config, forecast)
+                writeForecast(config, forecast)
             except BaseException as e:
                 print('getForecasts: failed to write forecast to database')
                 print("*** Reason: '%s'" % str(e))
@@ -113,7 +114,7 @@ def historical(config, stid):
         try:
             if config['debug'] > 9:
                 print('getForecasts: writing historical forecasts to database')
-            db_writeForecast(config, forecasts)
+            writeForecast(config, forecasts)
         except BaseException as e:
             print('getForecasts: failed to write historical forecasts to database')
             print("*** Reason: '%s'" % str(e))

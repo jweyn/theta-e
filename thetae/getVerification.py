@@ -10,9 +10,10 @@ the main engine process, while the historical process is used in the engine hist
 observations.
 """
 
-from thetae.db import db_writeTimeSeries, db_writeDaily
+from thetae.db import writeTimeSeries, writeDaily
 from datetime import datetime, timedelta
 from thetae.util import get_object, config_date_to_datetime
+from builtins import str
 
 
 def main(config):
@@ -51,7 +52,7 @@ def main(config):
         try:
             if config['debug'] > 9:
                 print('getVerification: writing verification to database')
-            db_writeDaily(config, verification, data_binding, 'verif')
+            writeDaily(config, verification, data_binding, 'verif')
         except BaseException as e:
             print('getVerification: failed to write verification to database')
             print("*** Reason: '%s'" % str(e))
@@ -83,7 +84,7 @@ def main(config):
         try:
             if config['debug'] > 9:
                 print('getVerification: writing obs to database')
-            db_writeTimeSeries(config, obs, data_binding, 'obs')
+            writeTimeSeries(config, obs, data_binding, 'obs')
         except BaseException as e:
             print('getVerification: failed to write obs to database')
             print("*** Reason: '%s'" % str(e))
@@ -131,7 +132,7 @@ def historical(config, stid):
     try:
         if config['debug'] > 9:
             print('getVerification: writing historical verification to database')
-        db_writeDaily(config, verification, data_binding, 'verif')
+        writeDaily(config, verification, data_binding, 'verif')
     except BaseException as e:
         print('getVerification: failed to write historical verification to database')
         print("*** Reason: '%s'" % str(e))
@@ -160,7 +161,7 @@ def historical(config, stid):
     try:
         if config['debug'] > 9:
             print('getVerification: writing historical obs to database')
-        db_writeTimeSeries(config, obs, data_binding, 'obs')
+        writeTimeSeries(config, obs, data_binding, 'obs')
     except BaseException as e:
         print('getVerification: failed to write historical obs to database')
         print("*** Reason: '%s'" % str(e))
@@ -190,7 +191,7 @@ def historical(config, stid):
     try:
         if config['debug'] > 9:
             print('getVerification: writing climo to database')
-        db_writeDaily(config, climo, data_binding, 'climo')
+        writeDaily(config, climo, data_binding, 'climo')
     except BaseException as e:
         print('getVerification: failed to write climo to database')
         print("*** Reason: '%s'" % str(e))

@@ -10,24 +10,22 @@ Retrieve GEFS MOS data (ensemble means)
 Daily: high, low, precip (no wind speed)
 Hourly: none
 
-Does not currently store information from the individual ensemble members but this feature could easily be added in the
-future.
-
-GEFS MOS does not account for the 06-06 UTC time frame.
+GEFS MOS does not account for the 06-06 UTC time frame. Ensemble values are saved to 'ensemble_file' with the util
+function write_ensemble_daily.
 """
 
 import re
 from thetae import Forecast, Daily
 from thetae.util import write_ensemble_daily
 from datetime import datetime, timedelta
-import urllib2
 import numpy as np
+import requests
 from bs4 import BeautifulSoup
 
 default_model_name = 'GEFS MOS'
 
 
-def mos_qpf_interpret(qpf):
+def qpf_interpreter(qpf):
     """
     Interprets a QPF value average estimates
 
@@ -59,9 +57,8 @@ def get_gefs_mos_forecast(stid, forecast_date):
 
     # Retrieve the model data
     url = 'http://www.nws.noaa.gov/cgi-bin/mos/getens.pl?sta=%s' % stid
-    req = urllib2.Request(url) 
-    response = urllib2.urlopen(req)
-    page = response.read().decode('utf-8', 'ignore')
+    response = requests.get(url)
+    page = response.text
     soup = BeautifulSoup(page, 'html.parser')
 
     # Lists for tomorrow's ensemble data
@@ -82,13 +79,13 @@ def get_gefs_mos_forecast(stid, forecast_date):
             model_time = datetime(int(dates[2]), int(dates[0]), int(dates[1]), hour)
         # find all of the forecast hours (every 12 hr)
         forecast_hours_tmp = pars[ii].text.split('FHR')[1].split('    ')[0]
-        forecast_hours = map(int, re.findall(r'\d+', forecast_hours_tmp))
+        forecast_hours = list(map(int, re.findall(r'\d+', forecast_hours_tmp)))
         # find all of the temperatures that match the forecast hours
         forecast_temps_tmp = pars[ii].text.split('X/N')[1].split('    ')[0]
-        forecast_temps = map(int, re.findall(r'\d+', forecast_temps_tmp))
+        forecast_temps = list(map(int, re.findall(r'\d+', forecast_temps_tmp)))
         # find all of the 24 hour precips
         forecast_precip_tmp = pars[ii].text.split('Q24')[1].split('|')[1]
-        forecast_precip = map(int, re.findall(r'\d+', forecast_precip_tmp))[0:5]
+        forecast_precip = list(map(int, re.findall(r'\d+', forecast_precip_tmp)))[0:5]
         
         forecast_dates_utc = []
         temps = []
@@ -103,7 +100,7 @@ def get_gefs_mos_forecast(stid, forecast_date):
         ens_highs.append(np.max(temps[valid_dates]))
         ens_lows.append(np.min(temps[valid_dates]))
         # the 24 hour precip for the next day is always the first value
-        ens_precips.append(mos_qpf_interpret(forecast_precip[0]))
+        ens_precips.append(qpf_interpreter(forecast_precip[0]))
 
         # Add each member to the list of Daily objects, for writing to a file
         daily = Daily(stid, forecast_date)

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017 Jonathan Weyn <jweyn@uw.edu>
+# Copyright (c) 2017-18 Jonathan Weyn <jweyn@uw.edu>
 #
 # See the file LICENSE for your rights.
 #
@@ -9,7 +9,7 @@ Main engine for the theta-e system.
 
 Step 0: check if the user has requested a utility operation, such as filling out historical data
 Step 1: check the database; if database has no tables for the stid create the tables
-Step 2: if applicable, run db_init for site: retrieves historical
+Step 2: if applicable, run init for site: retrieves historical
 Step 3: retrieve forecast data; save to database
 Step 4: retrieve verification data; save to database
 Step 5: run any calculation services, such as calculations for verification scores
@@ -17,15 +17,23 @@ Step 6: run plotting scripts, theta-e website scripts
 """
 
 import sys
+import os
 import thetae
 from thetae.util import get_object, get_config
+from builtins import str
 
 
 def main(args):
     """
     Main engine process.
     """
+    # Get the config file.
     config = get_config(args.config)
+
+    # Create the site_data archive directory, if necessary.
+    site_directory = '%s/site_data' % config['THETAE_ROOT']
+    if not(os.path.isdir(site_directory)):
+        os.makedirs(site_directory)
 
     # Check for backfill-historical sites
     if args.b_stid is not None:
@@ -46,12 +54,12 @@ def main(args):
             print('engine: error: no sites selected!')
             sys.exit(1)
         for stid in args.r_stid:
-            thetae.db.db_remove(config, stid)
+            thetae.db.remove(config, stid)
         sys.exit(0)
 
     # Step 1: check the database initialization
     print('engine: running database initialization checks')
-    add_sites = thetae.db.db_init(config)
+    add_sites = thetae.db.init(config)
 
     # Step 2: for each site in add_sites above, run historical data
     for stid in add_sites:

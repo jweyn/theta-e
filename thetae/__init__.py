@@ -23,7 +23,7 @@ from . import schemas
 
 # Local module folders
 from . import util
-from util import Forecast, Daily, TimeSeries
+from .util import Forecast, Daily, TimeSeries
 
 # ==============================================================================
 # Service groups.

@@ -1,6 +1,6 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #
-# Copyright (c) 2017 Jonathan Weyn <jweyn@uw.edu>
+# Copyright (c) 2017-18 Jonathan Weyn <jweyn@uw.edu>
 #
 # See the file LICENSE for your rights.
 
@@ -50,3 +50,9 @@ options, args = parse_args()
 # ==============================================================================
 # Run tests
 # ==============================================================================
+
+from thetae.util import get_config, get_object
+
+config = get_config(args[0])
+
+get_object('thetae.util').get_ghcn_stid(config, 'KSEA')
