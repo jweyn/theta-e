@@ -101,7 +101,7 @@ def wind_speed_interpreter(wind):
     return new_wind
 
 
-def get_nws_forecast(stid, lat, lon, forecast_date):
+def get_nws_forecast(config, stid, lat, lon, forecast_date):
     """
     Retrieve current NWS forecast for a point location.
 
@@ -160,13 +160,25 @@ def get_nws_forecast(stid, lat, lon, forecast_date):
     hourly_wind = hourly.loc[forecast_start:forecast_end, 'windSpeed'].max()
     hourly_rain = hourly.loc[forecast_start:forecast_end - timedelta(hours=1), 'rain'].sum()
 
+    # Create the Forecast object
+    forecast = Forecast(stid, default_model_name, forecast_date)
+    forecast.daily.setValues(hourly_high, hourly_low, hourly_wind, hourly_rain)
+    forecast.timeseries.data = hourly
+
     # Now do the daily data from the Forecast API
     api_url = 'https://api.weather.gov/points'
     point = '%0.3f,%0.3f' % (lat, lon)
     # Retrieve daily forecast
     daily_url = '%s/%s/forecast' % (api_url, point)
     response = requests.get(daily_url)
-    daily_data = response.json()
+    # Test for an error HTTP response. If there is an error response, omit the daily part.
+    try:
+        response.raise_for_status()
+        daily_data = response.json()
+    except BaseException as e:
+        if config['debug'] > 0:
+            print("nws: warning: no daily values used for %s ('%s')" % (stid, str(e)))
+        return forecast
 
     # Daily values: convert to DataFrame
     daily = pd.DataFrame.from_dict(daily_data['properties']['periods'])
@@ -187,11 +199,9 @@ def get_nws_forecast(stid, lat, lon, forecast_date):
         daily_low = np.nan
     daily_wind = mph_to_kt(np.max(daily.loc[forecast_start:forecast_end]['windSpeed']))
 
-    # Create the Forecast object
-    forecast = Forecast(stid, default_model_name, forecast_date)
+    # Update the Forecast object
     forecast.daily.setValues(np.nanmax([hourly_high, daily_high]), np.nanmin([hourly_low, daily_low]),
                              np.nanmax([hourly_wind, daily_wind]), hourly_rain)
-    forecast.timeseries.data = hourly
 
     return forecast
 
@@ -208,6 +218,6 @@ def main(config, model, stid, forecast_date):
         raise(KeyError('nws.py: missing or invalid latitude or longitude for station %s' % stid))
 
     # Get forecast
-    forecast = get_nws_forecast(stid, lat, lon, forecast_date)
+    forecast = get_nws_forecast(config, stid, lat, lon, forecast_date)
 
     return forecast
