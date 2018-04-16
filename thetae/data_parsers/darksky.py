@@ -27,6 +27,12 @@ def get_darksky_forecast(stid, lat, lon, api_key, forecast_date):
     json_url = api_url % (api_key, point)
     response = requests.get(json_url, params=api_options)
     darksky_data = response.json()
+    # Raise error for invalid HTTP response
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        print('darksky: got HTTP error when querying API')
+        raise
 
     # Convert to pandas DataFrame and fix time, units, and columns
     darksky_df = pd.DataFrame(darksky_data['hourly']['data'])
