@@ -55,7 +55,7 @@ def get_location_key(config, stid, lat, lon, api_key):
     codes_file = 'accuwx.codes'
     try:
         location_key = get_codes(config, codes_file, stid=stid)
-    except OSError:  # codes file does not exist
+    except (IOError, OSError):  # codes file does not exist
         location_key = get_accuwx_location(lat, lon, api_key)
         codes = {stid: location_key}
         write_codes(config, codes, codes_file, header='station ID,location key')
