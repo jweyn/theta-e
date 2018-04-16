@@ -204,7 +204,7 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
 
     # Add variables to the api request if they exist
     if config['debug'] > 50:
-        print('verification: searching for 6-hourly variables...')
+        print('verification: searching for 6-hourly variables')
     latest = m.latest(stid=stid)
     obs_list = list(latest['STATION'][0]['SENSOR_VARIABLES'].keys())
     for var in vars_option:
@@ -221,7 +221,7 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
     units = 'temp|f,precip|in,speed|kts'
 
     # Retrieve data
-    print('verification: retrieving data from %s to %s...' % (start, end))
+    print('verification: retrieving data from %s to %s' % (start, end))
     obs = m.timeseries(stid=stid, start=start, end=end, vars=vars_api, units=units)
     obspd = pd.DataFrame.from_dict(obs['STATION'][0]['OBSERVATIONS'])
 

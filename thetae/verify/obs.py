@@ -72,7 +72,7 @@ def get_obs(config, stid, start, end):
     units = 'temp|f,precip|in,speed|kts,pres|mb'
 
     # Retrieve data
-    print('obs: retrieving data from %s to %s...' % (start, end))
+    print('obs: retrieving data from %s to %s' % (start, end))
     obs = m.timeseries(stid=stid, start=start, end=end, vars=vars_api, units=units, hfmetars='0')
     obspd = pd.DataFrame.from_dict(obs['STATION'][0]['OBSERVATIONS'])
 

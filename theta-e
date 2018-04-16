@@ -9,7 +9,11 @@ Launching script for the theta-e forecast verification system.
 """
 
 import sys
+import os
 from argparse import ArgumentParser
+
+# Add this file path to the system path
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 # Import the main engine
 import thetae
