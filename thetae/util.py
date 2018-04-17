@@ -499,6 +499,16 @@ def mph_to_kt(val):
         return val * 0.868976
 
 
+def inhg_to_mb(val):
+    """
+    Converts inches of mercury to millibars; accepts numeric or string
+    """
+    try:
+        return float(val) * 33.8639
+    except (TypeError, ValueError):
+        return val * 33.8639
+
+
 def wind_dir_to_deg(val):
     """
     Converts string wind to float degrees
