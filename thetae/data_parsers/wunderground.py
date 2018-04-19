@@ -38,7 +38,7 @@ def get_english_units(series):
     for j in range(len(series)):
         try:
             new_series.iloc[j] = float(series.iloc[j]['english'])
-        except (TypeError,KeyError):
+        except (TypeError, KeyError):
             try:
                 new_series.iloc[j] = float(series.iloc[j])
             except:

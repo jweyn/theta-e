@@ -481,12 +481,22 @@ def to_float(x):
 
 def c_to_f(val):
     """
-    Converts celsius to integer fahrenheit; accepts numeric or string
+    Converts Celsius to Fahrenheit; accepts numeric or string
     """
     try:
-        return int(float(val) * 9. / 5 + 32)
+        return float(val) * 9. / 5. + 32.
     except (TypeError, ValueError):
-        return val * 9. / 5 + 32
+        return val * 9. / 5. + 32.
+
+
+def f_to_c(val):
+    """
+    Converts Fahrenheit to Celsius; accepts numeric or string
+    """
+    try:
+        return (float(val) - 32.) * 5. / 9.
+    except (TypeError, ValueError):
+        return (val - 32.) * 5. / 9.
 
 
 def mph_to_kt(val):
@@ -509,6 +519,16 @@ def inhg_to_mb(val):
         return val * 33.8639
 
 
+def mm_to_in(val):
+    """
+    Converts millimeters to inches; accepts numeric or string
+    """
+    try:
+        return float(val) * 0.0393701
+    except (TypeError, ValueError):
+        return val * 0.0393701
+
+
 def wind_dir_to_deg(val):
     """
     Converts string wind to float degrees
@@ -519,14 +539,20 @@ def wind_dir_to_deg(val):
     return conversion[val]
 
 
-def dewpoint_from_t_rh(t, rh):
+def dewpoint_from_t_rh(t, rh, is_f=False):
     """
-    Calculate dewpoint in C from temperature in C and relative humidity in %.
+    Calculate dewpoint from temperature relative humidity in %.
 
     :param t: temperature in C
     :param rh: relative humidity in %
-    :return: dewpoint: dewpoint in C
+    :param is_f: if True, temperature is in Fahrenheit, otherwise, Celsius
+    :return: dewpoint: dewpoint in specified temperature units
     """
+    if is_f:
+        t = f_to_c(t)
     dewpoint = (243.04 * (np.log(rh/100.) + ((17.625 * t) / (243.04 + t))) /
                 (17.625 - np.log(rh/100.) - ((17.625 * t) / (243.04 + t))))
-    return dewpoint
+    if is_f:
+        return c_to_f(dewpoint)
+    else:
+        return dewpoint
