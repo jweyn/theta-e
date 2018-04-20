@@ -78,9 +78,15 @@ def get_wunderground_forecast(stid, api_key, forecast_date):
     json_url = api_url % (api_key, stid)
     response = requests.get(json_url, params=api_options)
     wunderground_data = response.json()
-    wunderground_df = pd.DataFrame(wunderground_data['hourly_forecast'])
+    # Raise error for invalid HTTP response
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        print('wunderground: got HTTP error when querying API')
+        raise
 
-    # get timezone information
+    # Convert to DataFrame, fix time
+    wunderground_df = pd.DataFrame(wunderground_data['hourly_forecast'])
     timezone_df = pd.DataFrame(wunderground_data['forecast']['simpleforecast'])
     timezone = get_timezone(timezone_df['forecastday'])
     time_series = convert_fcttime(wunderground_df['FCTTIME'], timezone)

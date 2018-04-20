@@ -93,17 +93,17 @@ def main(config, model, stid, forecast_date):
         lat = float(config['Stations'][stid]['latitude'])
         lon = float(config['Stations'][stid]['longitude'])
     except KeyError:
-        raise (KeyError('aeris.py: missing or invalid latitude or longitude for station %s' % stid))
+        raise (KeyError('aeris: missing or invalid latitude or longitude for station %s' % stid))
 
     # Get the API ID and Secret from the config
     try:
         api_id = config['Models'][model]['api_id']
     except KeyError:
-        raise KeyError('aeris.py: no api_id parameter defined for model %s in config!' % model)
+        raise KeyError('aeris: no api_id parameter defined for model %s in config!' % model)
     try:
         api_secret = config['Models'][model]['api_secret']
     except KeyError:
-        raise KeyError('aeris.py: no api_secret parameter defined for model %s in config!' % model)
+        raise KeyError('aeris: no api_secret parameter defined for model %s in config!' % model)
 
     # Get forecast
     forecast = get_aeris_forecast(stid, lat, lon, api_id, api_secret, forecast_date)

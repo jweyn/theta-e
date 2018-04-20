@@ -112,13 +112,13 @@ def main(config, model, stid, forecast_date):
         lat = float(config['Stations'][stid]['latitude'])
         lon = float(config['Stations'][stid]['longitude'])
     except KeyError:
-        raise (KeyError('openweathermap.py: missing or invalid latitude or longitude for station %s' % stid))
+        raise (KeyError('openweathermap: missing or invalid latitude or longitude for station %s' % stid))
 
     # Get the API key from the config
     try:
         api_key = config['Models'][model]['api_key']
     except KeyError:
-        raise KeyError('openweathermap.py: no api_key parameter defined for model %s in config!' % model)
+        raise KeyError('openweathermap: no api_key parameter defined for model %s in config!' % model)
 
     # Get forecast
     forecast = get_owm_forecast(stid, lat, lon, api_key, forecast_date)

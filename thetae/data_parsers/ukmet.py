@@ -145,12 +145,12 @@ def get_ukmet_forecast(stid, ukmet_code, forecast_date):
             # unlike the mos code, we always use the 'include'
             iloc_start_include = df.index.get_loc(forecast_start)
         except BaseException:
-            print('Error getting start time index in db; check data.')
+            print('ukmet: error getting start time index in db; check data.')
             break
         try:
             iloc_end = df.index.get_loc(forecast_end)
         except BaseException:
-            print('Error getting end time index in db; check data.')
+            print('ukmet: error getting end time index in db; check data.')
             break
         raw_high = df.iloc[iloc_start_include:iloc_end]['temperature'].max()
         raw_low = df.iloc[iloc_start_include:iloc_end]['temperature'].min()
@@ -189,11 +189,11 @@ def main(config, model, stid, forecast_date):
     try:
         ukmet_codes_file = config['Models'][model]['codes_file']
     except KeyError:
-        raise KeyError('ukmet.py: no codes file specified for model %s in config!' % model)
+        raise KeyError('ukmet: no codes file specified for model %s in config!' % model)
     try:
         ukmet_code = get_codes(config, ukmet_codes_file, stid)
     except BaseException as e:
-        print("'ukmet.py: can't find code in %s for site %s!" % (ukmet_codes_file, stid))
+        print("'ukmet: can't find code in %s for site %s!" % (ukmet_codes_file, stid))
         raise
 
     # Get forecast

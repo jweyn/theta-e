@@ -93,7 +93,7 @@ def get_accuwx_forecast(config, stid, location_key, api_key, forecast_date):
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError:
-            print('accuwx: got HTTP error when querying API')
+            print('accuweather: got HTTP error when querying API')
             raise
         # Cache the response
         with open(cache_file, 'w') as f:

@@ -125,7 +125,7 @@ def _cf6_wind(config, stid):
     """
 
     site_directory = '%s/site_data' % config['THETAE_ROOT']
-    if config['debug'] > 0:
+    if config['debug'] > 9:
         print('verification: searching for CF6 files in %s' % site_directory)
     listing = os.listdir(site_directory)
     file_list = [f for f in listing if f.startswith(stid.upper()) and f.endswith('.cli')]

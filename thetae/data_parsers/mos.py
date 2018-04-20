@@ -65,7 +65,7 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     df = pd.read_csv(response.raw, index_col=False)
     # Raise exception if DataFrame is empty
     if len(df.index) == 0:
-        raise ValueError('mos.py: error: empty DataFrame; data missing.')
+        raise ValueError('mos: error: empty DataFrame; data missing.')
     date_index = pd.to_datetime(df['ftime'])
     df['datetime'] = date_index
     # Remove duplicate rows
@@ -127,7 +127,7 @@ def main(config, model, stid, forecast_date):
     try:
         mos_model = config['Models'][model]['mos_model']
     except KeyError:
-        raise KeyError('mos.py: no mos_model parameter defined for model %s in config!' % model)
+        raise KeyError('mos: no mos_model parameter defined for model %s in config!' % model)
 
     # Init date, determined from current time
     time_now = datetime.utcnow()
@@ -152,7 +152,7 @@ def historical(config, model, stid, forecast_dates):
     try:
         mos_model = config['Models'][model]['mos_model']
     except KeyError:
-        raise KeyError('mos.py: no mos_model parameter defined for model %s in config!' % model)
+        raise KeyError('mos: no mos_model parameter defined for model %s in config!' % model)
 
     forecasts = []
     for forecast_date in forecast_dates:
@@ -162,7 +162,7 @@ def historical(config, model, stid, forecast_dates):
             forecasts.append(forecast)
         except BaseException as e:
             if int(config['debug']) > 9:
-                print('mos.py: failed to retrieve historical forecast for %s on %s' % (mos_model, init_date))
+                print('mos: failed to retrieve historical forecast for %s on %s' % (mos_model, init_date))
                 print("*** Reason: '%s'" % str(e))
 
     return forecasts
