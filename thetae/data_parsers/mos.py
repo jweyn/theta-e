@@ -154,6 +154,7 @@ def historical(config, model, stid, forecast_dates):
     except KeyError:
         raise KeyError('mos: no mos_model parameter defined for model %s in config!' % model)
 
+    # Get forecasts
     forecasts = []
     for forecast_date in forecast_dates:
         init_date = forecast_date - timedelta(hours=12)

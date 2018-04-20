@@ -5,7 +5,7 @@
 #
 
 """
-Retrieve USL forecast data.
+Retrieve USL forecast data. Unfortunately need to use urlopen to run javascript.
 
 After code by Luke Madaus.
 """
@@ -94,6 +94,8 @@ def get_usl_forecast(config, stid, run, forecast_date):
                 values[v] = float(values[v])
             except (TypeError, ValueError):
                 pass
+            if values[v] == '':
+                values[v] = np.nan
         try:
             usl_df.loc[usl_df.index[date_index], :] = values
             date_index += 1
@@ -134,3 +136,35 @@ def main(config, model, stid, forecast_date):
     forecast = get_usl_forecast(config, stid, run_time[:-1], forecast_date)
 
     return forecast
+
+
+def historical(config, model, stid, forecast_dates):
+    """
+    Produce a Forecast object from USL.
+    """
+    # We don't usually want to do historical for USL. Give a warning.
+    print('usl warning: historical forecasts are possible but not recommended unless absolutely necessary.')
+
+    # Get the specific run time from the config
+    try:
+        run_time = config['Models'][model]['run_time'].upper()
+    except KeyError:
+        run_time = '22Z'
+        print('usl warning: no run_time parameter defined for model %s in config; defaulting to 22Z' % model)
+    if run_time not in ['12Z', '22Z']:
+        print("usl warning: invalid run_time parameter ('%s') given for model %s in config. Should be '12Z' or '22Z'; "
+              "defaulting to 22Z" % (run_time, model))
+        run_time = '22Z'
+
+    # Get forecasts
+    forecasts = []
+    for forecast_date in forecast_dates:
+        try:
+            forecast = get_usl_forecast(config, stid, run_time[:-1], forecast_date)
+            forecasts.append(forecast)
+        except BaseException as e:
+            if int(config['debug']) > 9:
+                print('usl: failed to retrieve historical forecast for %s' % forecast_date)
+                print("*** Reason: '%s'" % str(e))
+
+    return forecasts

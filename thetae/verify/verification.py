@@ -63,7 +63,12 @@ def get_cf6_files(config, stid, num_files=1):
             try:
                 body_and_footer = cf6_data.split('CXHW')[1]  # Hawaii
             except IndexError:
-                body_and_footer = cf6_data.split('CXAK')[1]  # Alaska
+                try:
+                    body_and_footer = cf6_data.split('CXAK')[1]  # Alaska
+                except IndexError:
+                    if config['debug'] > 50:
+                        print('get_cf6_files: bad file from request version %d' % r)
+                    continue
         body_and_footer_lines = body_and_footer.splitlines()
         if len(body_and_footer_lines) <= 2:
             body_and_footer = cf6_data.split('000')[2]
