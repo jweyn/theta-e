@@ -93,7 +93,7 @@ def get_owm_forecast(stid, lat, lon, api_key, forecast_date):
     except KeyError:
         daily_low = owm_df.loc[forecast_start:forecast_end, 'temperature'].min()
     daily_wind = owm_df.loc[forecast_start:forecast_end, 'windSpeed'].max()
-    daily_rain = owm_df.loc[forecast_start + timedelta(hours=3):forecast_end, 'rain'].sum()
+    daily_rain = np.nanmax([owm_df.loc[forecast_start + timedelta(hours=3):forecast_end, 'rain'].sum(), 0.0])
 
     # Create Forecast object
     forecast = Forecast(stid, default_model_name, forecast_date)
