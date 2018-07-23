@@ -63,10 +63,7 @@ def get_obs(config, stid, start, end):
                     'sea_level_pressure', 'weather_condition']
 
     # Add variables to the api request
-    vars_api = ''
-    for var in vars_request:
-        vars_api += var + ','
-    vars_api = vars_api[:-1]
+    vars_api = ','.join(vars_request)
 
     # Units
     units = 'temp|f,precip|in,speed|kts,pres|mb'
@@ -121,8 +118,8 @@ def get_obs(config, stid, start, end):
     obs_hourly['cloud_layer_3_code'].fillna(1.0, inplace=True)
 
     # Format cloud data
-    cloud = 100. - 100. * ((1-_cloud(obspd['cloud_layer_1_code'])) * (1-_cloud(obspd['cloud_layer_2_code'])) *
-                           (1-_cloud(obspd['cloud_layer_3_code'])))
+    cloud = 100. - 100. * ((1-_cloud(obs_hourly['cloud_layer_1_code'])) * (1-_cloud(obs_hourly['cloud_layer_2_code'])) *
+                           (1-_cloud(obs_hourly['cloud_layer_3_code'])))
     # Cloud exceeding 100% set to 100
     cloud[cloud > 100.] = 100.
     # Drop old cloud columns and replace with only total cloud

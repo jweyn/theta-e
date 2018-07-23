@@ -217,10 +217,7 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
             if config['debug'] > 9:
                 print('verification: using variable %s' % var)
             vars_request += [var]
-    vars_api = ''
-    for var in vars_request:
-        vars_api += var + ','
-    vars_api = vars_api[:-1]
+    vars_api = ','.join(vars_request)
 
     # Units
     units = 'temp|f,precip|in,speed|kts'

@@ -65,7 +65,11 @@ def get_owm_forecast(stid, lat, lon, api_key, forecast_date):
         owm_df[parameter] = get_parameter_in_series(owm_df['main'], parameter)
 
     # Get some other special parameters
-    owm_df.loc[:, 'rain'] = mm_to_in(get_parameter_in_series(owm_df['rain'], '3h'))
+    # Make sure the 'rain' parameter exists (if no rain in forecast, the column is missing)
+    if 'rain' not in owm_df:
+        owm_df = owm_df.assign(**{'rain': 0.0})
+    else:
+        owm_df.loc[:, 'rain'] = mm_to_in(get_parameter_in_series(owm_df['rain'], '3h'))
     owm_df['condition'] = get_parameter_in_series(owm_df['weather'], 'description', is_list=True)
     owm_df['windSpeed'] = mph_to_kt(get_parameter_in_series(owm_df['wind'], 'speed'))
     owm_df['windDirection'] = get_parameter_in_series(owm_df['wind'], 'deg')
