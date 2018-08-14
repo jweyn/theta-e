@@ -30,7 +30,7 @@ def connection(config, database):
     :return: sqlite3 database connection object
     """
     db_dir = '%s/archive' % config['THETAE_ROOT']
-    if config['debug'] > 9:
+    if config['debug'] > 50:
         print('db.connection: attempting to connect to database %s' % database)
     if not (os.path.isdir(db_dir)):
         try:
@@ -45,7 +45,7 @@ def connection(config, database):
         return
     try:
         db_name = '%s/%s' % (db_dir, config['Databases'][database]['database_name'])
-        if config['debug'] > 9:
+        if config['debug'] > 50:
             print('db.connection: using database at %s' % db_name)
     except:
         print('Error: database name error in config file')
@@ -574,7 +574,7 @@ def readDaily(config, stid, data_binding, table_type, model=None, start_date=Non
             raise IndexError('db.readDaily error: no data found.')
 
 
-def readForecast(config, stid, model, date, hour_start=6, hour_padding=6):
+def readForecast(config, stid, model, date, hour_start=6, hour_padding=6, no_hourly_ok=False):
     """
     Return a Forecast object from the main theta-e database for a given model
     and date. This is specifically designed to return a Forecast for a single
@@ -589,6 +589,7 @@ def readForecast(config, stid, model, date, hour_start=6, hour_padding=6):
     :param date: datetime or str: date to retrieve
     :param hour_start: int: starting hour of the day in UTC
     :param hour_padding: int: added hours around the 24-hour TimeSeries
+    :param no_hourly_ok: bool: if True, does not raise an error if the hourly timeseries is empty
     :return: Forecast
     """
     # Basic sanity check for hour parameters
@@ -612,7 +613,13 @@ def readForecast(config, stid, model, date, hour_start=6, hour_padding=6):
     date = date_to_datetime(date)
     start_date = date + timedelta(hours=hour_start - hour_padding)
     end_date = date + timedelta(hours=hour_start + 24 + hour_padding)
-    timeseries = readTimeSeries(config, stid, data_binding, table_type, model, start_date, end_date)
+    try:
+        timeseries = readTimeSeries(config, stid, data_binding, table_type, model, start_date, end_date)
+    except ValueError:
+        if no_hourly_ok:
+            timeseries = TimeSeries(stid)
+        else:
+            raise
 
     # Assign and return
     forecast.timeseries = timeseries
