@@ -37,9 +37,9 @@ def main(args):
 
     # Check for backfill-historical sites
     if args.b_stid is not None:
-        print('engine: running backfill of historical data')
+        print('thetae.engine: running backfill of historical data')
         if len(args.b_stid) == 0:
-            print('engine: all sites selected')
+            print('thetae.engine: all sites selected')
             sites = config['Stations'].keys()
         else:
             sites = args.b_stid
@@ -49,16 +49,16 @@ def main(args):
 
     # Check for database resets
     if args.r_stid is not None:
-        print('engine: performing database reset')
+        print('thetae.engine: performing database reset')
         if len(args.r_stid) == 0:
-            print('engine: error: no sites selected!')
+            print('thetae.engine: error: no sites selected!')
             sys.exit(1)
         for stid in args.r_stid:
             thetae.db.remove(config, stid)
         sys.exit(0)
 
     # Step 1: check the database initialization
-    print('engine: running database initialization checks')
+    print('thetae.engine: running database initialization checks')
     add_sites = thetae.db.init(config)
 
     # Step 2: for each site in add_sites above, run historical data
@@ -69,14 +69,14 @@ def main(args):
     for service_group in config['Engine']['Services'].keys():
         # Make sure we have defined a group to do what this asks
         if service_group not in thetae.all_service_groups:
-            print('engine warning: doing nothing for services in %s' % service_group)
+            print('thetae.engine warning: doing nothing for services in %s' % service_group)
             continue
         for service in config['Engine']['Services'][service_group]:
             # Execute the service
             try:
                 get_object(service).main(config)
             except BaseException as e:
-                print('engine warning: failed to run service %s' % service)
+                print('thetae.engine warning: failed to run service %s' % service)
                 print("*** Reason: '%s'" % str(e))
                 if config['traceback']:
                     raise
@@ -89,7 +89,7 @@ def historical(config, stid):
     for service_group in config['Engine']['Services'].keys():
         # Make sure we have defined a group to do what this asks
         if service_group not in thetae.all_service_groups:
-            print('engine warning: doing nothing for services in %s' % service_group)
+            print('thetae.engine warning: doing nothing for services in %s' % service_group)
             continue
         for service in config['Engine']['Services'][service_group]:
             # Execute the service.
@@ -97,10 +97,10 @@ def historical(config, stid):
                 get_object(service).historical(config, stid)
             except AttributeError:
                 if config['debug'] > 9:
-                    print("engine warning: no 'historical' attribute for service %s" % service)
+                    print("thetae.engine warning: no 'historical' attribute for service %s" % service)
                 continue
             except BaseException as e:
-                print('engine warning: failed to run historical for service %s' % service)
+                print('thetae.engine warning: failed to run historical for service %s' % service)
                 print("*** Reason: '%s'" % str(e))
                 if config['traceback']:
                     raise

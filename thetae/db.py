@@ -284,7 +284,8 @@ def _read(config, database, table, model=None, start_date=None, end_date=None):
 
     # Check that we have data
     if len(values) == 0:
-        print('db._read: warning: no valid data found, returning None')
+        if config['debug'] > 9:
+            print('db._read: warning: no valid data found!')
         return
 
     # Get column names
