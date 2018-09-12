@@ -74,7 +74,7 @@ def historical(config, stid):
     time_now = datetime.utcnow()
     forecast_dates = []
     try:
-        start_date = config_date_to_datetime(config['Stations'][stid]['start_date'])
+        start_date = config_date_to_datetime(config['Stations'][stid]['history_start'])
     except:
         print('getForecasts warning: cannot get start_date in config for station %s, setting to -30 days' % stid)
         start_date = (datetime(time_now.year, time_now.month, time_now.day) - timedelta(days=30))

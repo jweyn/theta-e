@@ -11,6 +11,14 @@ Initialize thetae.
 __version__ = '0.0.1'
 
 # ==============================================================================
+# Service groups.
+# ==============================================================================
+
+all_service_groups = [
+    'retrieve_services', 'output_services'
+]
+
+# ==============================================================================
 # Make sure we import everything we need.
 # ==============================================================================
 
@@ -24,11 +32,3 @@ from . import schemas
 # Local module folders
 from . import util
 from .util import Forecast, Daily, TimeSeries
-
-# ==============================================================================
-# Service groups.
-# ==============================================================================
-
-all_service_groups = [
-    'retrieve_services', 'output_services'
-]

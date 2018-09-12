@@ -102,7 +102,7 @@ def historical(config, stid):
     # Figure out which days we want since config start_date
     time_now = datetime.utcnow()
     try:
-        start_date = config_date_to_datetime(config['Stations'][stid]['start_date'])
+        start_date = config_date_to_datetime(config['Stations'][stid]['history_start'])
     except:
         print('getVerification warning: cannot get start_date in config for '
               'station %s, setting to -30 days' % stid)

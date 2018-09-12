@@ -29,6 +29,8 @@ def parse_args():
     parser.add_argument("config", help="Path to theta-e config file")
     parser.add_argument("-n", "--no-output", action="store_true", dest="no_output",
                         help="Suppress all plot and web output")
+    parser.add_argument("-o", "--output-only", action="store_true", dest="output_only",
+                        help="Only produce output (do not fetch data)")
     parser.add_argument("-v", "--version", action="store_true", dest="version",
                         help="Display version number then exit")
     parser.add_argument("--backfill-historical", action="store", dest="b_stid", nargs='*',
@@ -42,6 +44,9 @@ def parse_args():
     if arguments.version:
         print('thetae module version: %s' % thetae.__version__)
         sys.exit(0)
+
+    if arguments.no_output and arguments.output_only:
+        raise ValueError('cannot have both options --no-output and --output')
 
     return arguments
 
