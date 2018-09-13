@@ -10,6 +10,7 @@ Generates json output for web graphing.
 
 from datetime import datetime, timedelta
 import json
+import os
 import pandas as pd
 from thetae.util import Forecast, date_to_string
 from thetae.db import readForecast, readTimeSeries, readDaily
@@ -27,7 +28,7 @@ def json_daily(config, stid, models, forecast_date, file, start_date=None):
         dates = pd.date_range(start_date, forecast_date, freq='D').to_pydatetime()
     for model in models:
         if config['debug'] > 9:
-            print('json: retrieving daily data for %s at %s' % (model, stid))
+            print('web.json: retrieving daily data for %s at %s' % (model, stid))
         forecasts = []
         for date in dates:
             try:
@@ -48,9 +49,12 @@ def json_hourly(config, stid, models, forecast_date, file):
     hourly = {}
     for model in models:
         if config['debug'] > 9:
-            print('json: retrieving hourly for %s at %s' % (model, stid))
-        forecast = readForecast(config, stid, model, forecast_date, no_hourly_ok=True)
-        hourly[model] = forecast.timeseries.data.to_dict(orient='list')
+            print('web.json: retrieving hourly data for %s at %s' % (model, stid))
+        try:
+            forecast = readForecast(config, stid, model, forecast_date, no_hourly_ok=True)
+            hourly[model] = forecast.timeseries.data.to_dict(orient='list')
+        except ValueError:
+            hourly[model] = {}
 
     with open(file, 'w') as f:
         json.dump(hourly, f)
@@ -64,7 +68,7 @@ def json_verif(config, stid, start_date, file):
     verif = {}
     variables = ['high', 'low', 'wind', 'rain']
     if config['debug'] > 9:
-        print('json: retrieving verification for %s' % stid)
+        print('web.json: retrieving verification for %s' % stid)
     dailys = readDaily(config, stid, 'forecast', 'verif', start_date=start_date, end_date=datetime.utcnow())
     for v in variables:
         verif[v.upper()] = [getattr(dailys[j], v) for j in range(len(dailys))]
@@ -80,7 +84,7 @@ def json_obs(config, stid, start_date, file):
     to file.
     """
     if config['debug'] > 9:
-        print('json: retrieving obs for %s' % stid)
+        print('web.json: retrieving obs for %s' % stid)
     ts = readTimeSeries(config, stid, 'forecast', 'obs', start_date=start_date, end_date=datetime.utcnow())
 
     with open(file, 'w') as f:
@@ -98,12 +102,15 @@ def main(config, stid, forecast_date):
     # For historical outputs, set the date to 31 days back
     start_date = forecast_date - timedelta(days=31)
 
-    # Get the file names
+    # Get the file directory and attempt to create it if it doesn't exist
     try:
         file_dir = config['Web']['Options']['json_file_dir']
     except KeyError:
         file_dir = '%s/site_data' % config['THETAE_ROOT']
-        print('json: warning: setting output directory to default')
+        print('web.json warning: setting output directory to default')
+    os.makedirs(file_dir, exist_ok=True)
+    if config['debug'] > 9:
+        print('web.json: writing output to %s' % file_dir)
 
     # Get output
     daily_file = '%s/%s_daily_forecast.json' % (file_dir, stid)

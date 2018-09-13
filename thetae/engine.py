@@ -40,6 +40,15 @@ def main(args):
     if not(os.path.isdir(plot_directory)):
         os.makedirs(site_directory)
 
+    # Check for output suppression or only output options
+    global service_groups
+    if args.no_output:
+        service_groups.remove('output_services')
+        print('thetae.engine: suppressing output')
+    if args.output_only:
+        service_groups = ['output_services']
+        print('thetae.engine: doing output only')
+
     # Check for backfill-historical sites
     if args.b_stid is not None:
         print('thetae.engine: running backfill of historical data')
