@@ -19,10 +19,12 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 from matplotlib import dates
 
-def plot_timeseries(config, stid, models, forecast_date, variable):
+
+def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img_type):
     """
     Timeseries plotting function
     """
+    variable = variable.upper()
 
     # Initialize plot
     fig = plt.figure()
@@ -38,12 +40,13 @@ def plot_timeseries(config, stid, models, forecast_date, variable):
             ax.plot(to_datetime(forecast.timeseries.data['DATETIME']), data, label=model,
                     color=config['Models'][model]['color'])
         except ValueError:
-            print('{} timeseries plot {} failure {}'.format(stid, variable, model))
+            if config['debug'] > 9:
+                print('plot.timeseries warning: no hourly data for %s, %s' % (stid, model))
 
     # Plot observations
     obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=18),
                          end_date=forecast_date+timedelta(hours=24))
-    if variable is not 'RAIN':
+    if variable != 'RAIN':
         ax.plot(to_datetime(obs.data['DATETIME']), obs.data[variable], label='OBS',
                 color='black', linestyle=':', marker='o', ms=4)
 
@@ -59,7 +62,7 @@ def plot_timeseries(config, stid, models, forecast_date, variable):
 
     # x-axis range and label formatting
     ax.set_xlabel('Valid time')
-    ax.xaxis.set_major_locator(dates.HourLocator(byhour=[0,3,6,9,12,15,18,21]))
+    ax.xaxis.set_major_locator(dates.HourLocator(byhour=list(range(0, 25, 3))))
     ax.xaxis.set_major_formatter(dates.DateFormatter('%HZ'))
     ax.xaxis.set_minor_locator(dates.DayLocator())
     ax.xaxis.set_minor_formatter(dates.DateFormatter('%h %d'))
@@ -86,16 +89,16 @@ def plot_timeseries(config, stid, models, forecast_date, variable):
     ax.set_xlim(forecast_date-timedelta(hours=12), forecast_date+timedelta(hours=42))
 
     # Save plot
-    save_dir = '%splots/%s/timeseries/' % (config['THETAE_ROOT'], stid)
-    plt.savefig('{}/{}_timeseries_{}.png'.format(save_dir, stid, variable), dpi=150)
+    plt.savefig('{}/{}_timeseries_{}.{}'.format(plot_dir, stid, variable, img_type), dpi=150)
     return
 
+
 def compute_rain_accumulation(forecast, forecast_date):
-    '''
+    """
     Converts a forecast rain timeseries to a cumulative rain timeseries.
     Adjusts so that 0 is the start of the forecast.
     Keeps rain prior to start of forecast as 'negative' rain to show timing uncertainties.
-    '''
+    """
     cum_rain = np.cumsum(forecast.timeseries.data['RAIN'].fillna(value=0))
     fcst_start_loc = np.where((to_datetime(forecast.timeseries.data['DATETIME']) ==
                                forecast_date+timedelta(hours=6)))[0][0]
@@ -109,22 +112,35 @@ def main(config, stid, forecast_date):
     """
     Make timeseries plots for a given station.
     """
-    # Check for existence of save directories, create if missing
-    plot_directory = '%splots/%s' % (config['THETAE_ROOT'],stid)
-    if not(os.path.isdir(plot_directory)):
-        os.makedirs(plot_directory)
-    station_directory = '%splots/%s/timeseries' % (config['THETAE_ROOT'],stid)
-    if not(os.path.isdir(station_directory)):
-        os.makedirs(station_directory)
+    # Get the file directory and attempt to create it if it doesn't exist
+    try:
+        plot_directory = config['Plot']['Options']['plot_dir']
+    except KeyError:
+        plot_directory = '%s/site_data' % config['THETAE_ROOT']
+        print('plot.timeseries warning: setting output directory to default')
+    os.makedirs(plot_directory, exist_ok=True)
+    if config['debug'] > 9:
+        print('plot.timeseries: writing output to %s' % plot_directory)
+    try:
+        image_type = config['Plot']['Options']['plot_file_format']
+    except KeyError:
+        image_type = 'svg'
+        if config['debug'] > 50:
+            print('plot.climo warning: using default image file format (svg)')
 
     # Get list of models
-    models = config['Models'].keys()
+    models = list(config['Models'].keys())
     
-    # Define variables. Possibly move this to config later
-    variables = ['TEMPERATURE', 'DEWPOINT', 'WINDSPEED', 'RAIN']
+    # Read requested variables from config
+    try:
+        variables = config['Plot']['Options']['variables']
+    except KeyError:
+        variables = ['TEMPERATURE', 'DEWPOINT', 'WINDSPEED', 'RAIN']
 
     # Get forecast
     for variable in variables:
-        plot_timeseries(config, stid, models, forecast_date, variable)
+        if config['debug'] > 50:
+            print('plot.timeseries: plotting %s' % variable)
+        plot_timeseries(config, stid, models, forecast_date, variable, plot_directory, image_type)
 
     return
