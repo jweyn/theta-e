@@ -14,7 +14,7 @@ Gray background shading does not account for different wind forecast period
 import os
 import numpy as np
 from pandas import to_datetime
-from thetae.db import readForecast
+from thetae.db import readForecast, readTimeSeries
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 from matplotlib import dates
@@ -39,6 +39,13 @@ def plot_timeseries(config, stid, models, forecast_date, variable):
                     color=config['Models'][model]['color'])
         except ValueError:
             print('{} timeseries plot {} failure {}'.format(stid, variable, model))
+
+    # Plot observations
+    obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=18),
+                         end_date=forecast_date+timedelta(hours=24))
+    if variable is not 'RAIN':
+        ax.plot(to_datetime(obs.data['DATETIME']), obs.data[variable], label='OBS',
+                color='black', linestyle=':', marker='o', ms=4)
 
     # Plot configurations and saving
     ax.grid()
