@@ -35,6 +35,11 @@ def main(args):
     if not(os.path.isdir(site_directory)):
         os.makedirs(site_directory)
 
+    # Create the directory to save plots
+    plot_directory = '%splots' % config['THETAE_ROOT']
+    if not(os.path.isdir(plot_directory)):
+        os.makedirs(site_directory)
+
     # Check for backfill-historical sites
     if args.b_stid is not None:
         print('thetae.engine: running backfill of historical data')
