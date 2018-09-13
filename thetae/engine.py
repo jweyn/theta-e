@@ -22,8 +22,6 @@ import thetae
 from thetae.util import get_object, get_config
 from builtins import str
 
-service_groups = thetae.all_service_groups.copy()
-
 
 def main(args):
     """
@@ -35,6 +33,11 @@ def main(args):
     # Create the site_data archive directory, if necessary.
     site_directory = '%s/site_data' % config['THETAE_ROOT']
     if not(os.path.isdir(site_directory)):
+        os.makedirs(site_directory)
+
+    # Create the directory to save plots
+    plot_directory = '%splots' % config['THETAE_ROOT']
+    if not(os.path.isdir(plot_directory)):
         os.makedirs(site_directory)
 
     # Check for output suppression or only output options
@@ -79,7 +82,7 @@ def main(args):
     # Steps 3-6: run services!
     for service_group in config['Engine']['Services'].keys():
         # Make sure we have defined a group to do what this asks
-        if service_group not in service_groups:
+        if service_group not in thetae.all_service_groups:
             print('thetae.engine warning: doing nothing for services in %s' % service_group)
             continue
         for service in config['Engine']['Services'][service_group]:
@@ -97,11 +100,9 @@ def historical(config, stid):
     """
     Run services if they have a 'historical' attribute.
     """
-    global service_groups
-
     for service_group in config['Engine']['Services'].keys():
         # Make sure we have defined a group to do what this asks
-        if service_group not in service_groups:
+        if service_group not in thetae.all_service_groups:
             print('thetae.engine warning: doing nothing for services in %s' % service_group)
             continue
         for service in config['Engine']['Services'][service_group]:
