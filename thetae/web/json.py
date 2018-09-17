@@ -36,7 +36,7 @@ def json_daily(config, stid, models, forecast_date, file, start_date=None):
             except (ValueError, IndexError):
                 forecasts.append(Forecast(stid, model, date))
         daily[model] = {v.upper(): [getattr(forecasts[f].daily, v) for f in range(len(forecasts))] for v in variables}
-        daily[model]['DATETIME'] = [date_to_string(d) for d in dates]
+        daily[model]['DATETIME'] = [date_to_string(d) + ' Z' for d in dates]
 
     with open(file, 'w') as f:
         json.dump(daily, f)
@@ -51,9 +51,12 @@ def json_hourly(config, stid, models, forecast_date, file):
         if config['debug'] > 9:
             print('web.json: retrieving hourly data for %s at %s' % (model, stid))
         try:
-            forecast = readForecast(config, stid, model, forecast_date, no_hourly_ok=True)
-            hourly[model] = forecast.timeseries.data.to_dict(orient='list')
-        except ValueError:
+            forecast = readForecast(config, stid, model, forecast_date, hour_padding=18, no_hourly_ok=True)
+            # Eliminate 'NaN'
+            ts = forecast.timeseries.data.where(pd.notnull(forecast.timeseries.data), None)
+            ts['DATETIME'] = ts['DATETIME'].apply(lambda x: x + ' Z')
+            hourly[model] = ts.to_dict(orient='list')
+        except (ValueError, KeyError):
             hourly[model] = {}
 
     with open(file, 'w') as f:
@@ -72,7 +75,7 @@ def json_verif(config, stid, start_date, file):
     dailys = readDaily(config, stid, 'forecast', 'verif', start_date=start_date, end_date=datetime.utcnow())
     for v in variables:
         verif[v.upper()] = [getattr(dailys[j], v) for j in range(len(dailys))]
-    verif['DATETIME'] = [getattr(dailys[j], 'date') for j in range(len(dailys))]
+    verif['DATETIME'] = [getattr(dailys[j], 'date') + ' Z' for j in range(len(dailys))]
 
     with open(file, 'w') as f:
         json.dump(verif, f)
@@ -86,6 +89,7 @@ def json_obs(config, stid, start_date, file):
     if config['debug'] > 9:
         print('web.json: retrieving obs for %s' % stid)
     ts = readTimeSeries(config, stid, 'forecast', 'obs', start_date=start_date, end_date=datetime.utcnow())
+    ts.data['DATETIME'] = ts.data['DATETIME'].apply(lambda x: x + ' Z')
 
     with open(file, 'w') as f:
         json.dump(ts.data.where(ts.data.notnull(), None).to_dict(orient='list'), f)

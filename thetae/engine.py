@@ -23,7 +23,7 @@ from thetae.util import get_object, get_config
 from builtins import str
 
 
-service_groups = thetae.all_service_groups.copy()
+service_groups = list(thetae.all_service_groups)
 
 
 def main(args):
