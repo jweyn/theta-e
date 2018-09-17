@@ -30,7 +30,7 @@ def qpf_interpreter(qpf):
     Interprets a QPF value average estimates
 
     :param qpf: q24 value from MOS
-    :return: precip: average estimated precip
+    :return: new_p: average estimated precip
     """
     translator = {
         0: 0.0,
@@ -41,9 +41,11 @@ def qpf_interpreter(qpf):
         5: 1.5,
         6: 2.5
     }
-    new_qpf = translator[qpf]
-
-    return new_qpf
+    try:
+        new_p = translator[qpf]
+    except KeyError:
+        new_p = 0.0
+    return new_p
 
 
 def get_gefs_mos_forecast(stid, forecast_date):

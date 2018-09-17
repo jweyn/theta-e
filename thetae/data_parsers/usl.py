@@ -24,17 +24,15 @@ except ImportError:
 default_model_name = 'USL'
 
 
-def remove_last_char(series):
+def remove_last_char(value):
     """
-    Returns a series with the last character of a string removed, converted to float
+    Removes the last character of a string value and converts to float
     """
-    new_series = series.copy()
-    for j in range(len(series)):
-        try:
-            new_series.iloc[j] = float(series.iloc[j][:-1])
-        except (TypeError, KeyError):
-            pass
-    return new_series
+    try:
+        new_value = float(value[:-1])
+    except (TypeError, KeyError):
+        return np.nan
+    return new_value
 
 
 def get_usl_forecast(config, stid, run, forecast_date):
@@ -67,7 +65,6 @@ def get_usl_forecast(config, stid, run, forecast_date):
         # Daily values, if that's the appropriate block
         if re.search('&deg;F</td>', block):
             split_block = block.split('<td>')
-
             try:
                 high = int(re.search('(-?\d{1,3})', split_block[1]).groups()[0])
                 low = int(re.search('(-?\d{1,3})', split_block[2]).groups()[0])
@@ -106,8 +103,8 @@ def get_usl_forecast(config, stid, run, forecast_date):
     usl_df['DateTime'] = usl_df.index
     for index in usl_df.index:
         usl_df.loc[index, 'windDirection'] = wind_dir_to_deg(usl_df.loc[index, 'windDirection'])
-    usl_df['humidity'] = remove_last_char(usl_df['humidity'])
-    usl_df['cloud'] = remove_last_char(usl_df['cloud'])
+    usl_df['humidity'] = usl_df['humidity'].apply(remove_last_char)
+    usl_df['cloud'] = usl_df['cloud'].apply(remove_last_char)
 
     # Create Forecast object
     forecast = Forecast(stid, default_model_name, forecast_date)

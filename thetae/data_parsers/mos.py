@@ -20,10 +20,10 @@ default_model_name = 'MOS'
 
 def qpf_interpreter(qpf):
     """
-    Interprets a pandas Series of QPF by average estimates
+    Interprets a QPF value average estimates
 
-    :param qpf: Series of q06 or q12 from MOS
-    :return: precip: Series of average estimated precipitation
+    :param qpf: q06 or q12 value from MOS
+    :return: new_p: average estimated precip
     """
     translator = {
         0: 0.0,
@@ -34,13 +34,11 @@ def qpf_interpreter(qpf):
         5: 1.5,
         6: 2.5
     }
-    new_qpf = qpf.copy()
-    for j in range(len(qpf)):
-        try:
-            new_qpf.iloc[j] = translator[int(qpf.iloc[j])]
-        except:
-            new_qpf.iloc[j] = 0.0
-    return new_qpf
+    try:
+        new_p = translator[qpf]
+    except KeyError:
+        new_p = 0.0
+    return new_p
 
 
 def get_mos_forecast(stid, mos_model, init_date, forecast_date):
@@ -71,7 +69,7 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     # Remove duplicate rows
     df = df.drop_duplicates()
     # Fix rain
-    df['q06'] = qpf_interpreter(df['q06'])
+    df['q06'] = df['q06'].apply(qpf_interpreter)
 
     # Format the DataFrame for the default schema
     # Dictionary for renaming columns

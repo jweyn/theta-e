@@ -13,6 +13,7 @@ from thetae.util import epoch_time_to_datetime, mph_to_kt, inhg_to_mb
 from datetime import datetime, timedelta
 import requests
 import pandas as pd
+import numpy as np
 
 default_model_name = 'Weather Underground'
 
@@ -30,34 +31,29 @@ def convert_fcttime(fcttime_series, timezone):
     return new_fcttime_series
 
 
-def get_english_units(series):
+def get_english_units(value):
     """
     Gets the english units from dicts containing multiple units and converts to float values
     """
-    new_series = series.copy()
-    for j in range(len(series)):
+    try:
+        new_value = float(value['english'])
+    except (TypeError, KeyError):
         try:
-            new_series.iloc[j] = float(series.iloc[j]['english'])
-        except (TypeError, KeyError):
-            try:
-                new_series.iloc[j] = float(series.iloc[j])
-            except:
-                pass
-            pass
-    return new_series
+            new_value = float(value)
+        except (TypeError, ValueError):
+            return value
+    return new_value
 
 
-def get_wind_degrees(series):
+def get_wind_degrees(value):
     """
     Returns the wind direction in degrees from a dict containing degrees and direction
     """
-    new_series = series.copy()
-    for j in range(len(series)):
-        try:
-            new_series.iloc[j] = float(series.iloc[j]['degrees'])
-        except (TypeError, KeyError):
-            pass
-    return new_series
+    try:
+        new_value = float(value['degrees'])
+    except (TypeError, KeyError):
+        return value
+    return new_value
 
 
 def get_timezone(series):
@@ -92,10 +88,10 @@ def get_wunderground_forecast(stid, api_key, forecast_date):
     time_series = convert_fcttime(wunderground_df['FCTTIME'], timezone)
 
     for column in wunderground_df.columns.values:
-        wunderground_df[column] = get_english_units(wunderground_df[column])
+        wunderground_df[column] = wunderground_df[column].apply(get_english_units)
     wunderground_df['mslp'] = inhg_to_mb(wunderground_df['mslp'])
     wunderground_df['wspd'] = mph_to_kt(wunderground_df['wspd'])
-    wunderground_df['wdir'] = get_wind_degrees(wunderground_df['wdir'])
+    wunderground_df['wdir'] = wunderground_df['wdir'].apply(get_wind_degrees)
 
     column_names_dict = {
           'FCTTIME': 'DateTime',

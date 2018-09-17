@@ -323,33 +323,35 @@ def writeTimeSeries(config, timeseries, data_binding, table_type):
     :param table_type: str: type of table
     :return:
     """
-    def hourly_to_row(hourly, model, columns):
+    def hourly_to_row(hourly, model, cols):
         """
         Converts an hourly timeseries to sql rows
         """
         if config['debug'] > 50:
-            print('db.writeTimeSeries: converting timseries data to SQL rows')
-        series = []
+            print('db.writeTimeSeries: converting timeseries data to SQL rows')
+        sql = []
         hourly.columns = [c.upper() for c in hourly.columns]
-        columns = [c.upper() for c in columns]
-        for index, pd_row in hourly.iterrows():
+        cols = [c.upper() for c in cols]
+        for pd_row in hourly.itertuples():
             try:
-                datestr = date_to_string(pd_row['DATETIME'].to_pydatetime())
+                datestr = date_to_string(pd_row.DATETIME.to_pydatetime())
             except TypeError:
-                datestr = pd_row['DATETIME']
+                datestr = pd_row.DATETIME
             row = []
-            for column in columns:
-                if column == 'DATETIME':
+            for col in cols:
+                if col == 'DATETIME':
                     row.append(datestr)
-                elif column == 'MODEL':
+                elif col == 'MODEL':
                     row.append(model)
-                elif column != 'PRIMARY KEY':
+                elif col != 'PRIMARY KEY':
                     try:
-                        row.append(pd_row[column])
-                    except:
+                        row.append(float(getattr(pd_row, col)))
+                    except AttributeError:
                         row.append(None)
-            series.append(tuple(row))
-        return series
+                    except (TypeError, ValueError):
+                        row.append(getattr(pd_row, col))
+            sql.append(tuple(row))
+        return sql
 
     # Get the database and the names of columns in the schema
     database = config['DataBinding'][data_binding]['database']

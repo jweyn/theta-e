@@ -89,15 +89,13 @@ def xml_to_condition(l):
 
 def wind_speed_interpreter(wind):
     """
-    Interprets a pandas Series of NWS wind speed to return the maximum.
+    Interprets NWS wind speed to return the maximum.
     """
     pattern = re.compile(r'(\d{1,3})')
-    new_wind = wind.copy()
-    for j in range(len(wind)):
-        try:
-            new_wind.iloc[j] = float(pattern.findall(wind.iloc[j])[-1])
-        except:
-            new_wind.iloc[j] = np.nan
+    try:
+        new_wind = float(pattern.findall(wind)[-1])
+    except:
+        new_wind = np.nan
     return new_wind
 
 
@@ -183,7 +181,7 @@ def get_nws_forecast(config, stid, lat, lon, forecast_date):
     # Daily values: convert to DataFrame
     daily = pd.DataFrame.from_dict(daily_data['properties']['periods'])
     # Change the wind to its max value
-    daily['windSpeed'] = wind_speed_interpreter(daily['windSpeed'])
+    daily['windSpeed'] = daily['windSpeed'].apply(wind_speed_interpreter)
     # De-localize the starting time so we can do an explicit datetime comparison
     daily['startTime'] = [parse_iso(daily['startTime'].iloc[j]) for j in range(len(daily['startTime']))]
     daily['startTime'] = [daily['startTime'].iloc[j].to_pydatetime().replace(tzinfo=None) for j in

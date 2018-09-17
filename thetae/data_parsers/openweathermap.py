@@ -18,20 +18,23 @@ import numpy as np
 default_model_name = 'OpenWeatherMap'
 
 
-def get_parameter_in_series(series, param, is_list=False):
+def get_parameter(value, param, is_list=False):
     """
-    Gets a parameter from a series whose elements are dicts containing the parameter
+    Get a specific parameter from a dictionary-valued Series element.
+
+    :param value: element of Series
+    :param param: str: desired parameter
+    :param is_list: bool: if True, 'value' is interpreted as a list
+    :return: new_value: desired value for parameter in element
     """
-    new_series = series.copy()
-    for j in range(len(series)):
-        try:
-            if is_list:
-                new_series.iloc[j] = series.iloc[j][0][param]
-            else:
-                new_series.iloc[j] = series.iloc[j][param]
-        except (TypeError, KeyError, ValueError):
-            new_series.iloc[j] = np.nan
-    return new_series
+    try:
+        if is_list:
+            new_value = value[0][param]
+        else:
+            new_value = value[param]
+    except (TypeError, KeyError, ValueError):
+        new_value = np.nan
+    return new_value
 
 
 def get_owm_forecast(stid, lat, lon, api_key, forecast_date):
@@ -62,18 +65,18 @@ def get_owm_forecast(stid, lat, lon, api_key, forecast_date):
 
     # OWM has a column 'main' which contains some parameters at all times. Get all of those.
     for parameter in owm_df.loc[owm_df.index[0], 'main'].keys():
-        owm_df[parameter] = get_parameter_in_series(owm_df['main'], parameter)
+        owm_df[parameter] = owm_df['main'].apply(get_parameter, args=(parameter,))
 
     # Get some other special parameters
     # Make sure the 'rain' parameter exists (if no rain in forecast, the column is missing)
     if 'rain' not in owm_df:
         owm_df = owm_df.assign(**{'rain': 0.0})
     else:
-        owm_df.loc[:, 'rain'] = mm_to_in(get_parameter_in_series(owm_df['rain'], '3h'))
-    owm_df['condition'] = get_parameter_in_series(owm_df['weather'], 'description', is_list=True)
-    owm_df['windSpeed'] = mph_to_kt(get_parameter_in_series(owm_df['wind'], 'speed'))
-    owm_df['windDirection'] = get_parameter_in_series(owm_df['wind'], 'deg')
-    owm_df['cloud'] = get_parameter_in_series(owm_df['clouds'], 'all')
+        owm_df.loc[:, 'rain'] = mm_to_in(owm_df['rain'].apply(get_parameter, args=('3h',)))
+    owm_df['condition'] = owm_df['weather'].apply(get_parameter, args=('description',), is_list=True)
+    owm_df['windSpeed'] = mph_to_kt(owm_df['wind'].apply(get_parameter, args=('speed',)))
+    owm_df['windDirection'] = owm_df['wind'].apply(get_parameter, args=('deg',))
+    owm_df['cloud'] = owm_df['clouds'].apply(get_parameter, args=('all',))
     owm_df['dewpoint'] = np.nan
     for idx in owm_df.index:
         owm_df.loc[idx, 'dewpoint'] = dewpoint_from_t_rh(owm_df.loc[idx, 'temp'], owm_df.loc[idx, 'humidity'])

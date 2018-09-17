@@ -22,13 +22,10 @@ all_service_groups = [
 # Make sure we import everything we need.
 # ==============================================================================
 
-# Local files
+# Current-level module imports. 'engine' depends on 'all_service_groups' above.
 from . import db
 from . import engine
 from . import getForecasts
 from . import getVerification
-from . import schemas
-
-# Local module folders
 from . import util
 from .util import Forecast, Daily, TimeSeries
