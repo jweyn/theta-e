@@ -202,7 +202,8 @@ def historical(config, stid):
     except KeyError:
         file_dir = '%s/site_data' % config['THETAE_ROOT']
         print('plot.climo warning: setting output directory to default')
-    os.makedirs(file_dir, exist_ok=True)
+    if not(os.path.isdir(file_dir)):
+        os.makedirs(file_dir)
     if config['debug'] > 9:
         print('plot.climo: writing output to %s' % file_dir)
 

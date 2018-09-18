@@ -118,7 +118,8 @@ def main(config, stid, forecast_date):
     except KeyError:
         plot_directory = '%s/site_data' % config['THETAE_ROOT']
         print('plot.timeseries warning: setting output directory to default')
-    os.makedirs(plot_directory, exist_ok=True)
+    if not(os.path.isdir(plot_directory)):
+        os.makedirs(plot_directory)
     if config['debug'] > 9:
         print('plot.timeseries: writing output to %s' % plot_directory)
     try:
