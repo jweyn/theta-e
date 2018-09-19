@@ -44,7 +44,7 @@ def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img
                 print('plot.timeseries warning: no hourly data for %s, %s' % (stid, model))
 
     # Plot observations
-    obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=18),
+    obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=25),
                          end_date=forecast_date+timedelta(hours=24))
     if variable != 'RAIN':
         ax.plot(to_datetime(obs.data['DATETIME']), obs.data[variable], label='OBS',

@@ -420,6 +420,16 @@ def epoch_time_to_datetime(timestamp, timezone=None):
     return date
 
 
+def last_leap_year(date=None):
+    """
+    Return the last complete leap year from today or a specified date.
+    """
+    if date is None:
+        date = datetime.utcnow()
+    leap = (date.year - 1) - ((date.year - 1) % 4)
+    return leap
+
+
 def file_mtime_utc(file_name):
     """
     Return a timezone-unaware datetime in UTC for the last modified time of a file.

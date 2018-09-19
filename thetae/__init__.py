@@ -15,7 +15,7 @@ __version__ = '0.0.1'
 # ==============================================================================
 
 all_service_groups = [
-    'retrieve_services', 'output_services'
+    'retrieve_services', 'calc_services', 'output_services'
 ]
 
 # ==============================================================================
@@ -27,5 +27,6 @@ from . import db
 from . import engine
 from . import getForecasts
 from . import getVerification
+from . import calcVerification
 from . import util
 from .util import Forecast, Daily, TimeSeries

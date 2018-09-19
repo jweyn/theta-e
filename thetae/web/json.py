@@ -12,15 +12,16 @@ from datetime import datetime, timedelta
 import json
 import os
 import pandas as pd
-from thetae.util import Forecast, date_to_string
+from collections import OrderedDict
+from thetae.util import Forecast, date_to_string, last_leap_year
 from thetae.db import readForecast, readTimeSeries, readDaily
 
 
-def json_daily(config, stid, models, forecast_date, file, start_date=None):
+def json_daily(config, stid, models, forecast_date, start_date=None):
     """
     Produce a json file for daily forecast values at a station from the given models, and save it to file.
     """
-    daily = {}
+    daily = OrderedDict()
     variables = ['high', 'low', 'wind', 'rain']
     if start_date is None:
         dates = [forecast_date]
@@ -38,15 +39,14 @@ def json_daily(config, stid, models, forecast_date, file, start_date=None):
         daily[model] = {v.upper(): [getattr(forecasts[f].daily, v) for f in range(len(forecasts))] for v in variables}
         daily[model]['DATETIME'] = [date_to_string(d) + ' Z' for d in dates]
 
-    with open(file, 'w') as f:
-        json.dump(daily, f)
+    return daily
 
 
-def json_hourly(config, stid, models, forecast_date, file):
+def json_hourly(config, stid, models, forecast_date):
     """
     Produce a json file for hourly forecast values at a station from the given models, and save it to file.
     """
-    hourly = {}
+    hourly = OrderedDict()
     for model in models:
         if config['debug'] > 9:
             print('web.json: retrieving hourly data for %s at %s' % (model, stid))
@@ -55,33 +55,31 @@ def json_hourly(config, stid, models, forecast_date, file):
             # Eliminate 'NaN'
             ts = forecast.timeseries.data.where(pd.notnull(forecast.timeseries.data), None)
             ts['DATETIME'] = ts['DATETIME'].apply(lambda x: x + ' Z')
-            hourly[model] = ts.to_dict(orient='list')
+            hourly[model] = ts.to_dict(orient='list', into=OrderedDict)
         except (ValueError, KeyError):
-            hourly[model] = {}
+            hourly[model] = OrderedDict()
 
-    with open(file, 'w') as f:
-        json.dump(hourly, f)
+    return hourly
 
 
-def json_verif(config, stid, start_date, file):
+def json_verif(config, stid, start_date):
     """
     Produce a json file for verification values at a station starting at start_date and going to the latest
     available verification, and save it to file.
     """
-    verif = {}
+    verif = OrderedDict()
     variables = ['high', 'low', 'wind', 'rain']
     if config['debug'] > 9:
         print('web.json: retrieving verification for %s' % stid)
     dailys = readDaily(config, stid, 'forecast', 'verif', start_date=start_date, end_date=datetime.utcnow())
     for v in variables:
         verif[v.upper()] = [getattr(dailys[j], v) for j in range(len(dailys))]
-    verif['DATETIME'] = [getattr(dailys[j], 'date') + ' Z' for j in range(len(dailys))]
+    verif['DATETIME'] = [date_to_string(getattr(dailys[j], 'date')) + ' Z' for j in range(len(dailys))]
 
-    with open(file, 'w') as f:
-        json.dump(verif, f)
+    return verif
 
 
-def json_obs(config, stid, start_date, file):
+def json_obs(config, stid, start_date):
     """
     Produce a json file for observations at a station starting at start_date and going to the current time, and save it
     to file.
@@ -91,8 +89,32 @@ def json_obs(config, stid, start_date, file):
     ts = readTimeSeries(config, stid, 'forecast', 'obs', start_date=start_date, end_date=datetime.utcnow())
     ts.data['DATETIME'] = ts.data['DATETIME'].apply(lambda x: x + ' Z')
 
-    with open(file, 'w') as f:
-        json.dump(ts.data.where(ts.data.notnull(), None).to_dict(orient='list'), f)
+    return ts.data.where(ts.data.notnull(), None).to_dict(orient='list', into=OrderedDict)
+
+
+def json_climo(config, stid, start_date):
+    """
+    Produce a json file for verification values at a station starting at start_date and going to the latest
+    available verification, and save it to file.
+    """
+    climo = OrderedDict()
+    end_date = datetime.utcnow()
+    variables = ['high', 'low', 'wind', 'rain']
+    if config['debug'] > 9:
+        print('web.json: retrieving climo for %s' % stid)
+    dailys = []
+    current_date = start_date
+    while current_date <= end_date:
+        climo_date = current_date.replace(year=last_leap_year())
+        daily = readDaily(config, stid, 'forecast', 'climo', start_date=climo_date, end_date=climo_date)
+        daily.date = current_date
+        dailys.append(daily)
+        current_date += timedelta(days=1)
+    for v in variables:
+        climo[v.upper()] = [getattr(dailys[j], v) for j in range(len(dailys))]
+    climo['DATETIME'] = [date_to_string(getattr(dailys[j], 'date')) + ' Z' for j in range(len(dailys))]
+
+    return climo
 
 
 def main(config, stid, forecast_date):
@@ -117,14 +139,17 @@ def main(config, stid, forecast_date):
     if config['debug'] > 9:
         print('web.json: writing output to %s' % file_dir)
 
+    json_file = '%s/%s.json' % (file_dir, stid.upper())
+
     # Get output
-    daily_file = '%s/%s_daily_forecast.json' % (file_dir, stid)
-    json_daily(config, stid, models, forecast_date, daily_file, start_date=start_date)
-    hourly_file = '%s/%s_hourly_forecast.json' % (file_dir, stid)
-    json_hourly(config, stid, models, forecast_date, hourly_file)
-    verif_file = '%s/%s_verif.json' % (file_dir, stid)
-    json_verif(config, stid, start_date, verif_file)
-    obs_file = '%s/%s_obs.json' % (file_dir, stid)
-    json_obs(config, stid, start_date, obs_file)
+    json_dict = OrderedDict()
+    json_dict['dailyForecast'] = json_daily(config, stid, models, forecast_date, start_date=start_date)
+    json_dict['hourlyForecast'] = json_hourly(config, stid, models, forecast_date)
+    json_dict['verification'] = json_verif(config, stid, start_date)
+    json_dict['obs'] = json_obs(config, stid, start_date)
+    json_dict['climo'] = json_climo(config, stid, start_date)
+
+    with open(json_file, 'w') as f:
+        json.dump(json_dict, f)
 
     return

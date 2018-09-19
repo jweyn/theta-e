@@ -11,7 +11,7 @@ Functions for interfacing with SQL databases.
 import sqlite3
 import os
 import pandas as pd
-from thetae.util import (get_object, TimeSeries, Daily, Forecast, date_to_datetime, date_to_string)
+from thetae.util import get_object, TimeSeries, Daily, Forecast, date_to_datetime, date_to_string, last_leap_year
 from datetime import datetime, timedelta
 from builtins import str
 
@@ -110,11 +110,11 @@ def init(config, reset_old=False):
                     cursor.execute("CREATE TABLE %s (%s);" % (table, sqltypestr,))
                 else:
                     # Check if data in table are recent
+                    time_now = datetime.utcnow()
                     if table != stid.upper() + '_CLIMO':
                         recent = timedelta(days=30)
                     else:
-                        recent = timedelta(days=4 * 365.25)
-                    time_now = datetime.utcnow()
+                        recent = time_now - datetime(last_leap_year(time_now), 12, 31)
                     key = date_keys[t]
                     try:
                         cursor.execute("SELECT %s FROM %s ORDER BY %s DESC LIMIT 1;" % (key, table, key))
@@ -562,7 +562,7 @@ def readDaily(config, stid, data_binding, table_type, model=None, start_date=Non
     daily_list = []
     for index in range(len(data.index)):
         row = data.iloc[index]
-        daily = Daily(stid, row['DATETIME'])
+        daily = Daily(stid, date_to_datetime(row['DATETIME']))
         daily.setValues(row['HIGH'], row['LOW'], row['WIND'], row['RAIN'])
         daily.model = model
         daily_list.append(daily)
@@ -574,7 +574,7 @@ def readDaily(config, stid, data_binding, table_type, model=None, start_date=Non
         try:
             return daily_list[0]
         except:
-            raise IndexError('db.readDaily error: no data found.')
+            raise ValueError('db.readDaily error: no data found.')
 
 
 def readForecast(config, stid, model, date, hour_start=6, hour_padding=6, no_hourly_ok=False):

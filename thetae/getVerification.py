@@ -23,7 +23,7 @@ def main(config):
 
     data_binding = 'forecast'
 
-    # Figure out which day we are forecasting for: the next UTC day.
+    # Figure out which day we are verifying for: today.
     time_now = datetime.utcnow()
     verif_date = datetime(time_now.year, time_now.month, time_now.day)
     print('getVerification: verification date %s' % verif_date)
@@ -99,7 +99,7 @@ def historical(config, stid):
 
     data_binding = 'forecast'
 
-    # Figure out which days we want since config start_date
+    # Figure out which days we want since config history_start
     time_now = datetime.utcnow()
     try:
         start_date = config_date_to_datetime(config['Stations'][stid]['history_start'])
