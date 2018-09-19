@@ -104,7 +104,7 @@ def historical(config, stid):
     try:
         start_date = config_date_to_datetime(config['Stations'][stid]['history_start'])
     except:
-        print('getVerification warning: cannot get start_date in config for '
+        print('getVerification warning: cannot get history_start in config for '
               'station %s, setting to -30 days' % stid)
         start_date = (datetime(time_now.year, time_now.month, time_now.day) - timedelta(days=30))
     print('getVerification: getting historical data for %s starting %s' %
@@ -186,7 +186,6 @@ def historical(config, stid):
         print("*** Reason: '%s'" % str(e))
         if config['traceback']:
             raise
-        return
     # Write to the database
     try:
         if config['debug'] > 9:

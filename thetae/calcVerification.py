@@ -82,12 +82,12 @@ def main(config):
     # Figure out which days we are verifying for: up to yesterday.
     time_now = datetime.utcnow() - timedelta(days=1, hours=6)
     end_date = datetime(time_now.year, time_now.month, time_now.day)
-    print('calcVerification: verification through %s' % end_date)
+    print('calcVerification: calculating statistics through %s' % end_date)
     start_date = end_date - timedelta(days=31)
 
     # The directory and archive file
-    site_directory = '%s/site_data' % config['THETAE_ROOT']
-    stats_file = '%s/statistics.json' % site_directory
+    db_dir = '%s/archive' % config['THETAE_ROOT']
+    stats_file = '%s/theta-e-stats.json' % db_dir
     stats = OrderedDict()
 
     # Iterate over stations
