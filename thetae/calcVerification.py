@@ -45,7 +45,7 @@ def get_forecast_stats(forecasts, verifs, day_list=None):
         rmse_no_bias = np.nanmean(np.sqrt((forecast_values - bias - verif_values) ** 2.))
         stats_dict['stats'][var]['bias'] = bias
         stats_dict['stats'][var]['rmse'] = rmse
-        stats_dict['stats'][var]['rmse_no_bias'] = rmse_no_bias
+        stats_dict['stats'][var]['rmseNoBias'] = rmse_no_bias
 
     return stats_dict
 
@@ -138,14 +138,14 @@ def main(config):
 
             # Add in the skill scores
             for var in ['high', 'low', 'wind', 'rain']:
-                model_stats['stats'][var]['skill_climo'] = 1. - (model_stats['stats'][var]['rmse'] /
-                                                                 climo_stats['stats'][var]['rmse'])
-                model_stats['stats'][var]['skill_climo_no_bias'] = 1. - (model_stats['stats'][var]['rmse_no_bias'] /
-                                                                         climo_stats['stats'][var]['rmse'])
-                model_stats['stats'][var]['skill_persist'] = 1. - (model_stats['stats'][var]['rmse'] /
-                                                                   persist_stats['stats'][var]['rmse'])
-                model_stats['stats'][var]['skill_persist_no_bias'] = 1. - (model_stats['stats'][var]['rmse_no_bias'] /
-                                                                           persist_stats['stats'][var]['rmse'])
+                model_stats['stats'][var]['skillClimo'] = 1. - (model_stats['stats'][var]['rmse'] /
+                                                                climo_stats['stats'][var]['rmse'])
+                model_stats['stats'][var]['skillClimoNoBias'] = 1. - (model_stats['stats'][var]['rmseNoBias'] /
+                                                                      climo_stats['stats'][var]['rmse'])
+                model_stats['stats'][var]['skillPersist'] = 1. - (model_stats['stats'][var]['rmse'] /
+                                                                  persist_stats['stats'][var]['rmse'])
+                model_stats['stats'][var]['skillPersistNoBias'] = 1. - (model_stats['stats'][var]['rmseNoBias'] /
+                                                                        persist_stats['stats'][var]['rmse'])
 
             # Remove NaN (not interpreted by json) and add to the large dictionary
             replace_nan_in_dict(model_stats)
