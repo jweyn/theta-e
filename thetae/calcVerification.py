@@ -126,7 +126,8 @@ def main(config):
             except ValueError:
                 print('calcVerification warning: no data found for model %s at %s' % (model, stid))
                 continue
-            verif_days = [d for d in forecasts.keys() if d in verification.keys()]
+            verif_days = [d for d in forecasts.keys() if (d in verification.keys() and d in climo.keys() and
+                                                          d in persistence.keys())]
 
             # Get stats for each of the model, climo, and persistence. We do this for every model so that the skill
             # scores can be compared across different sets of available verification days for each model.
