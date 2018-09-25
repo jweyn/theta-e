@@ -558,6 +558,17 @@ def wind_dir_to_deg(val):
     conversion = dict(zip(dir_text, dir_deg))
     return conversion[val]
 
+def uv_to_deg(uval, vval):
+    """
+    Converts U and V component of wind to a speed and direction
+    """
+    vel_val = np.sqrt(uval**2 + vval**2)
+    wdir = 180/np.pi * np.arctan2(uval, vval)
+    wdir += 180
+    if wdir < 0:
+        wdir += 360
+    return vel_val, wdir
+
 
 def dewpoint_from_t_rh(t, rh, is_f=False):
     """
