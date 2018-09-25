@@ -519,6 +519,16 @@ def mph_to_kt(val):
         return val * 0.868976
 
 
+def ms_to_kt(val):
+    """
+    Converts m/s to knots; accepts numeric or string
+    """
+    try:
+        return float(val) * 1.94384
+    except (TypeError, ValueError):
+        return val * 1.94384
+
+
 def inhg_to_mb(val):
     """
     Converts inches of mercury to millibars; accepts numeric or string
