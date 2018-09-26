@@ -11,7 +11,7 @@ Calculate verification scores and metrics. These are not saved to the database, 
 import numpy as np
 from thetae.db import readDaily
 from datetime import datetime, timedelta
-from thetae.util import get_object, date_to_string, last_leap_year
+from thetae.util import date_to_string, last_leap_year, date_to_datetime
 from collections import OrderedDict
 import json
 
@@ -28,7 +28,7 @@ def get_forecast_stats(forecasts, verifs, day_list=None):
     stats_dict = OrderedDict()
     stats_dict['attrs'] = OrderedDict()
     stats_dict['attrs']['numDays'] = num_days
-    stats_dict['attrs']['verifyingDays'] = days
+    stats_dict['attrs']['verifyingDays'] = [date_to_datetime(d).isoformat() + 'Z' for d in days]
     stats_dict['stats'] = OrderedDict()
 
     if num_days < 1:

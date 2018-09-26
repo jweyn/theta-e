@@ -13,7 +13,7 @@ import json
 import os
 import pandas as pd
 from collections import OrderedDict
-from thetae.util import Forecast, date_to_string, last_leap_year
+from thetae.util import Forecast, date_to_string, last_leap_year, date_to_datetime
 from thetae.db import readForecast, readTimeSeries, readDaily
 
 
@@ -37,7 +37,7 @@ def json_daily(config, stid, models, forecast_date, start_date=None):
             except (ValueError, IndexError):
                 forecasts.append(Forecast(stid, model, date))
         daily[model] = {v.upper(): [getattr(forecasts[f].daily, v) for f in range(len(forecasts))] for v in variables}
-        daily[model]['DATETIME'] = [date_to_string(d) + ' Z' for d in dates]
+        daily[model]['DATETIME'] = [d.isoformat() + 'Z' for d in dates]
 
     return daily
 
@@ -54,7 +54,7 @@ def json_hourly(config, stid, models, forecast_date):
             forecast = readForecast(config, stid, model, forecast_date, hour_padding=18, no_hourly_ok=True)
             # Eliminate 'NaN'
             ts = forecast.timeseries.data.where(pd.notnull(forecast.timeseries.data), None)
-            ts['DATETIME'] = ts['DATETIME'].apply(lambda x: x + ' Z')
+            ts['DATETIME'] = pd.to_datetime(ts['DATETIME']).dt.strftime('%Y-%m-%dT%H:%M:%SZ')
             hourly[model] = ts.to_dict(orient='list', into=OrderedDict)
         except (ValueError, KeyError):
             hourly[model] = OrderedDict()
@@ -74,7 +74,7 @@ def json_verif(config, stid, start_date):
     dailys = readDaily(config, stid, 'forecast', 'verif', start_date=start_date, end_date=datetime.utcnow())
     for v in variables:
         verif[v.upper()] = [getattr(dailys[j], v) for j in range(len(dailys))]
-    verif['DATETIME'] = [date_to_string(getattr(dailys[j], 'date')) + ' Z' for j in range(len(dailys))]
+    verif['DATETIME'] = [getattr(dailys[j], 'date').isoformat() + 'Z' for j in range(len(dailys))]
 
     return verif
 
@@ -87,7 +87,7 @@ def json_obs(config, stid, start_date):
     if config['debug'] > 9:
         print('web.json: retrieving obs for %s' % stid)
     ts = readTimeSeries(config, stid, 'forecast', 'obs', start_date=start_date, end_date=datetime.utcnow())
-    ts.data['DATETIME'] = ts.data['DATETIME'].apply(lambda x: x + ' Z')
+    ts.data['DATETIME'] = pd.to_datetime(ts.data['DATETIME']).dt.strftime('%Y-%m-%dT%H:%M:%SZ')
 
     return ts.data.where(ts.data.notnull(), None).to_dict(orient='list', into=OrderedDict)
 
@@ -112,7 +112,7 @@ def json_climo(config, stid, start_date):
         current_date += timedelta(days=1)
     for v in variables:
         climo[v.upper()] = [getattr(dailys[j], v) for j in range(len(dailys))]
-    climo['DATETIME'] = [date_to_string(getattr(dailys[j], 'date')) + ' Z' for j in range(len(dailys))]
+    climo['DATETIME'] = [getattr(dailys[j], 'date').isoformat() + 'Z' for j in range(len(dailys))]
 
     return climo
 
