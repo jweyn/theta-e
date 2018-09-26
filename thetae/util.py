@@ -558,7 +558,8 @@ def wind_dir_to_deg(val):
     conversion = dict(zip(dir_text, dir_deg))
     return conversion[val]
 
-def uv_to_deg(uval, vval):
+
+def wind_uv_to_speed_dir(uval, vval):
     """
     Converts U and V component of wind to a speed and direction
     """
