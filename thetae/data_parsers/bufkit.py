@@ -57,7 +57,7 @@ def get_bufkit_forecast(bufr, bufkit_dir, model, bufr_name, cycle, stid, forecas
         return forecast
     else:
         # Call bufrgruven, save files in specified bufr directory
-        command = ('%s --dset %s --cycle %s --stations %s --noascii --nozipit --metdat %s --date %s --ftp --verbose' %
+        command = ('%s --dset %s --cycle %s --stations %s --noascii --nozipit --metdat %s --date %s --noverbose' %
                    (bufr, bufr_search_model, model_cycle, stid.lower(), bufkit_dir, model_time[:-2]))
         os.system(command)
 
