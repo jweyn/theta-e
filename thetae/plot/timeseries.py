@@ -114,7 +114,7 @@ def main(config, stid, forecast_date):
     """
     # Get the file directory and attempt to create it if it doesn't exist
     try:
-        plot_directory = config['Plot']['Options']['plot_dir']
+        plot_directory = config['Plot']['Options']['plot_directory']
     except KeyError:
         plot_directory = '%s/site_data' % config['THETAE_ROOT']
         print('plot.timeseries warning: setting output directory to default')

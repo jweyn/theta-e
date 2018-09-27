@@ -198,7 +198,7 @@ def historical(config, stid):
 
     # Get the file directory and attempt to create it if it doesn't exist
     try:
-        file_dir = config['Plot']['Options']['plot_dir']
+        file_dir = config['Plot']['Options']['plot_directory']
     except KeyError:
         file_dir = '%s/site_data' % config['THETAE_ROOT']
         print('plot.climo warning: setting output directory to default')

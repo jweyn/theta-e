@@ -9,6 +9,7 @@ Utility functions and classes for theta-e.
 """
 
 from datetime import datetime, timedelta
+import thetae
 import pytz
 import os
 import numpy as np
@@ -85,6 +86,10 @@ class Forecast(object):
         return self
 
 
+class IncompatibleVersionError(Exception):
+    pass
+
+
 # ==================================================================================================================== #
 # General utility functions
 # ==================================================================================================================== #
@@ -133,6 +138,13 @@ def get_config(config_path):
         print('Error while parsing configuration file %s' % config_path)
         print("*** Reason: '%s'" % e)
         raise
+
+    # Check for version mismatch
+    try:
+        if config_dict['version'] != thetae.__version__:
+            raise IncompatibleVersionError('config version does not match module (%s)' % thetae.__version__)
+    except KeyError:
+        raise KeyError("'version' must be specified in config file")
 
     # Make sure debug level is there
     try:

@@ -130,7 +130,7 @@ def main(config, stid, forecast_date):
 
     # Get the file directory and attempt to create it if it doesn't exist
     try:
-        file_dir = config['Web']['Options']['json_file_dir']
+        file_dir = config['Web']['Options']['web_directory']
     except KeyError:
         file_dir = '%s/site_data' % config['THETAE_ROOT']
         print('web.json warning: setting output directory to default')
