@@ -58,7 +58,7 @@ def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img
     leg = plt.legend(loc=8, ncol=6, mode='expand')
     leg.get_frame().set_alpha(0.5)
     leg_texts = leg.get_texts()
-    plt.setp(leg_texts, fontsize='small')
+    plt.setp(leg_texts, fontsize='x-small')
 
     # x-axis range and label formatting
     ax.set_xlabel('Valid time')
@@ -71,7 +71,7 @@ def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img
     # y-axis range and label formatting
     ax.set_ylabel(variable)
     y_range = plt.ylim()[1]-plt.ylim()[0]
-    ax.set_ylim(int(plt.ylim()[0])-y_range*0.10, int(plt.ylim()[1])+y_range*0.05)
+    ax.set_ylim(int(plt.ylim()[0])-y_range*0.13, (plt.ylim()[1])+y_range*0.05)
     minv, maxv = ax.get_ylim()
     if variable == 'RAIN':
         if maxv > 0.1:
@@ -79,7 +79,10 @@ def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img
         else:
             ax.set_yticks(np.arange(np.round(minv, 1) - 0.10, np.round(maxv, 1) + 0.11, 0.01))
     else:
-        ax.set_yticks(range(int(minv), int(maxv+1)))
+        if y_range < 30:
+            ax.set_yticks(range(int(minv), int(maxv+1)))
+        else:
+            ax.set_yticks(range(int(minv), int(maxv + 2), 2))
 
     # Gray out non-forecast times
     plt.axvspan(dates.date2num(forecast_date-timedelta(hours=12)), dates.date2num(forecast_date+timedelta(hours=6)),

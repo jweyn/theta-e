@@ -531,6 +531,16 @@ def mph_to_kt(val):
         return val * 0.868976
 
 
+def ms_to_kt(val):
+    """
+    Converts m/s to knots; accepts numeric or string
+    """
+    try:
+        return float(val) * 1.94384
+    except (TypeError, ValueError):
+        return val * 1.94384
+
+
 def inhg_to_mb(val):
     """
     Converts inches of mercury to millibars; accepts numeric or string
@@ -559,6 +569,18 @@ def wind_dir_to_deg(val):
     dir_deg = [22.5 * x for x in range(len(dir_text))]
     conversion = dict(zip(dir_text, dir_deg))
     return conversion[val]
+
+
+def wind_uv_to_speed_dir(uval, vval):
+    """
+    Converts U and V component of wind to a speed and direction
+    """
+    vel_val = np.sqrt(uval**2 + vval**2)
+    wdir = 180/np.pi * np.arctan2(uval, vval)
+    wdir += 180
+    if wdir < 0:
+        wdir += 360
+    return vel_val, wdir
 
 
 def dewpoint_from_t_rh(t, rh, is_f=False):
