@@ -5,6 +5,9 @@
 #
 
 """
+Module for processing BUFKIT model data. Currently, the string operations performed in bufr_surface_parser() are
+incompatible with Python 3.
+
 Retrieve BUFKIT model data
 Write BUFKIT surface data to Forecast object
 Remove old BUFKIT files
@@ -19,67 +22,61 @@ from thetae.util import c_to_f, ms_to_kt, wind_uv_to_speed_dir
 from thetae import Forecast
 
 
-def bufr_delete_old(config,stid,forecast_date):
-    # delete yesterday's bufkit files
+def bufr_delete_yesterday(bufr_dir, stid, date):
+    """
+    Delete the BUFKIT archived files for a specific date.
 
-    yesterday_date = (forecast_date - timedelta(days=2)).strftime('%Y%m%d')
-    os.system('rm -rf %s/site_data/bufkit/%s*%s.buf' % (config['THETAE_ROOT'], yesterday_date, stid.lower()))
-    os.system('rm -rf %s/site_data/gempak/%s*' % (config['THETAE_ROOT'], yesterday_date))
-    os.system('rm -rf %s/site_data/bufr/*%s*' % (config['THETAE_ROOT'], yesterday_date))
+    :param config:
+    :param stid:
+    :param date: date of files to delete
+    :return:
+    """
+    yesterday_date = (date - timedelta(days=1)).strftime('%Y%m%d')
+    os.system('rm -rf %s/bufkit/%s*%s.buf' % (bufr_dir, yesterday_date, stid.lower()))
+    os.system('rm -rf %s/gempak/%s*' % (bufr_dir, yesterday_date))
+    os.system('rm -rf %s/bufr/*%s*' % (bufr_dir, yesterday_date))
     return
 
 
-def bufr_download(config, model, stid, forecast_date):
+def get_bufkit_forecast(bufr, bufkit_dir, model, bufr_name, cycle, stid, forecast_date):
     """
-    Downloads bufkit models usinf bufrgruven
-    :param model: the bufkit model to download
-    :param forecast_date: date of the forecast--the model is downloaded from 1 day before
-    :return: forecast object if a forecast is found, otherwise return nothing
+    Produce a Forecast from retrieved bufkit files.
     """
-
-    curdir = os.getcwd()
-    os.chdir(config['BUFR_ROOT'])
-
-    model_cycle = re.search(r'\d+', config['Models'][model]['run_time']).group()
+    model_cycle = re.search(r'\d+', cycle).group()
     model_time = '%s%s' % ((forecast_date - timedelta(days=1)).strftime('%Y%m%d'), model_cycle)
 
     # Specify the correct filenames and account for some odd bufrgruven naming conventions
-    bufr_dir = '%s/site_data' % config['THETAE_ROOT']
     bufr_search_model = re.search(r'[^0-2]*', model).group().lower()
     if bufr_search_model == 'fv3':
         bufr_search_model = 'fv3gfsx'
-    bufr_model = config['Models'][model]['bufr_name']
-    bufr_file_name = '%s/bufkit/%s.%s_%s.buf' % (bufr_dir, model_time, bufr_model, stid.lower())
+    bufr_file_name = '%s/bufkit/%s.%s_%s.buf' % (bufkit_dir, model_time, bufr_name, stid.lower())
 
     # Check if bufkit file was already downloaded
     if os.path.isfile(bufr_file_name):
-        forecast = bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name)
+        forecast = bufr_surface_parser(model, stid, forecast_date, bufr_file_name)
         return forecast
     else:
         # Call bufrgruven, save files in specified bufr directory
-        os.system('./bufr_gruven.pl --dset %s --cycle %s --stations %s --noascii --nozipit --metdat %s --date %s '
-                  '--ftp --noverbose'% (bufr_search_model, model_cycle, stid.lower(), bufr_dir, model_time[:-2]))
+        command = ('%s --dset %s --cycle %s --stations %s --noascii --nozipit --metdat %s --date %s --ftp --verbose' %
+                   (bufr, bufr_search_model, model_cycle, stid.lower(), bufkit_dir, model_time[:-2]))
+        os.system(command)
 
         # Check again for bufkit file, if it exists then create forecast object
         if os.path.isfile(bufr_file_name):
-            forecast = bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name)
+            forecast = bufr_surface_parser(model, stid, forecast_date, bufr_file_name)
             return forecast
 
-    print('No forecast found for %s for date %s' % (model, forecast_date.strftime('%Y%m%d')))
-    return
+    # If we get here, we're missing the bufkit file
+    raise IOError('bufr file %s not found' % bufr_file_name)
 
 
-def bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name):
+def bufr_surface_parser(model, stid, forecast_date, bufr_file_name):
     """
     By Luke Madaus. Modified by jweyn and joejoezz.
-    Returns a forecast object of surface data from a BUFKIT file.
-    :return: forecast: forecast object
+    Parse surface data from a bufkit file.
     """
 
-    bufr_model = config['Models'][model]['bufr_name']
-    cycle = re.search(r'\d+', config['Models'][model]['run_time']).group()
-
-    # open file
+    # Open bufkit file
     infile = open(bufr_file_name, 'r')
 
     # define variables
@@ -94,9 +91,9 @@ def bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name):
     block_lines = []
     inblock = False
     for line in infile:
-        if re.search('SELV', line):
+        if re.search(r'SELV', line):
             try:  # jweyn
-                elev = re.search('SELV = -?(\d{1,4})', line).groups()[0]  # jweyn: -?
+                elev = re.search(r'SELV = -?(\d{1,4})', line).groups()[0]  # jweyn: -?
                 elev = float(elev)
             except:
                 elev = 0.0
@@ -106,23 +103,23 @@ def bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name):
             block_lines.append(line)
         elif inblock:
             # Keep appending lines until we start hitting numbers
-            if re.search('\d{6}', line):
+            if re.search(r'\d{6}', line):
                 inblock = False
             else:
                 block_lines.append(line)
 
     # Build an re search pattern based on this
     # We know the first two parts of the section are station id num and date
-    re_string = "(\d{6}|\w{4}) (\d{6})/(\d{4})"
+    re_string = r"(\d{6}|\w{4}) (\d{6})/(\d{4})"
     # Now compute the remaining number of variables
     dum_num = len(block_lines[0].split()) - 2
     for n in range(dum_num):
-        re_string = re_string + " (-?\d{1,4}.\d{2})"
+        re_string = re_string + r" (-?\d{1,4}.\d{2})"
     re_string = re_string + '\r\n'
     for line in block_lines[1:]:
         dum_num = len(line.split())
         for n in range(dum_num):
-            re_string = re_string + '(-?\d{1,4}.\d{2}) '
+            re_string = re_string + r'(-?\d{1,4}.\d{2}) '
         re_string = re_string[:-1]  # Get rid of the trailing space
         re_string = re_string + '\r\n'
 
@@ -134,7 +131,7 @@ def bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name):
     for r in block_lines:
         full_line = full_line + r[:-2] + ' '
     # Now split it
-    varlist = re.split('[ /]', full_line)
+    varlist = re.split(r'[ /]', full_line)
 
     with open(bufr_file_name) as infile:
         # Now loop through all blocks that match the search pattern we defined above
@@ -194,8 +191,9 @@ def bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name):
     try:
         # unlike the mos code, we always use the 'include'
         iloc_start_include = df.index.get_loc(forecast_start)
-    except BaseException:
-        print('bufkit %s%s: error getting start time index in db; check data.' % (bufr_model, cycle))
+    except BaseException as e:
+        print('bufkit: error getting start time index for %s; check data' % model)
+        raise
 
     # Create forecast object and save timeseries
     forecast = Forecast(stid, model, forecast_date)
@@ -210,7 +208,7 @@ def bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name):
         total_rain = np.sum(df.iloc[iloc_start_include + 1:iloc_end]['rain'])
         forecast.daily.setValues(high, low, max_wind, total_rain)
     else:
-        print('bufkit %s%s: model does not extend to end of forecast period' % (bufr_model, cycle))
+        print('bufkit warning: model %s does not extend to end of forecast period; omitting daily values' % model)
 
     return forecast
 
@@ -219,12 +217,35 @@ def main(config, model, stid, forecast_date):
     """
     Produce a Forecast object from bufkit data.
     """
+    # Get parameters from the config
+    try:
+        bufr = config['BUFKIT']['BUFR']
+    except KeyError:
+        raise KeyError('bufkit: missing BUFR executable path in config BUFKIT options')
+    try:
+        bufkit_directory = config['BUFKIT']['BUFKIT_directory']
+    except KeyError:
+        bufkit_directory = '%s/site_data' % config['THETAE_ROOT']
+        if config['debug'] > 50:
+            print('bufkit warning: setting bufkit file directory to %s' % bufkit_directory)
+    try:
+        run_time = config['Models'][model]['run_time']
+    except KeyError:
+        raise KeyError('bufkit: no run_time parameter defined for model %s in config!' % model)
+    try:
+        bufr_name = config['Models'][model]['bufr_name']
+    except KeyError:
+        raise KeyError('bufkit: no bufr_name parameter defined for model %s in config!' % model)
 
     # Delete yesterday's bufkit files
-    bufr_delete_old(config, stid, forecast_date)
+    try:
+        if not(config['BUFKIT']['archive']):
+            bufr_delete_yesterday(bufkit_directory, stid, forecast_date - timedelta(days=1))
+    except KeyError:
+        bufr_delete_yesterday(bufkit_directory, stid, forecast_date - timedelta(days=1))
 
     # Get bufkit forecasts
-    forecast = bufr_download(config, model, stid, forecast_date)
+    forecast = get_bufkit_forecast(bufr, bufkit_directory, model, bufr_name, run_time, stid, forecast_date)
 
     return forecast
 
@@ -233,17 +254,40 @@ def historical(config, model, stid, forecast_dates):
     """
     Produce a list of Forecast objects from bufkit for each date in forecast_dates.
     """
+    # Get parameters from the config
+    try:
+        bufr = config['BUFKIT']['BUFR']
+    except KeyError:
+        raise KeyError('bufkit: missing BUFR executable path in config BUFKIT options')
+    try:
+        bufkit_directory = config['BUFKIT']['BUFKIT_directory']
+    except KeyError:
+        bufkit_directory = '%s/site_data' % config['THETAE_ROOT']
+        if config['debug'] > 50:
+            print('bufkit warning: setting bufkit file directory to %s' % bufkit_directory)
+    try:
+        run_time = config['Models'][model]['run_time']
+    except KeyError:
+        raise KeyError('bufkit: no run_time parameter defined for model %s in config!' % model)
+    try:
+        bufr_name = config['Models'][model]['bufr_name']
+    except KeyError:
+        raise KeyError('bufkit: no bufr_name parameter defined for model %s in config!' % model)
 
     forecasts = []
     for forecast_date in forecast_dates:
         try:
-            forecast = bufr_download(config, model, stid, forecast_date)
+            forecast = get_bufkit_forecast(bufr, bufkit_directory, model, bufr_name, run_time, stid, forecast_date)
             forecasts.append(forecast)
         except BaseException as e:
             if int(config['debug']) > 9:
                 print('bufkit: failed to retrieve historical forecast for %s on %s' % (model, forecast_date))
                 print("*** Reason: '%s'" % str(e))
-        # delete the bufkit files after processing
-        bufr_delete_old(forecast_date+timedelta(days=1))
+        # Delete the bufkit files after processing, unless archived
+        try:
+            if not (config['BUFKIT']['archive']):
+                bufr_delete_yesterday(bufkit_directory, stid, forecast_date)
+        except KeyError:
+            bufr_delete_yesterday(bufkit_directory, stid, forecast_date)
 
     return forecasts
