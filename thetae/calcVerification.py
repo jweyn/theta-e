@@ -124,7 +124,8 @@ def main(config):
                                       start_date=start_date+timedelta(days=1), end_date=end_date)
                 forecasts = list_to_dict(forecasts)
             except ValueError:
-                print('calcVerification warning: no data found for model %s at %s' % (model, stid))
+                if config['debug'] > 9:
+                    print('calcVerification warning: no data found for model %s at %s' % (model, stid))
                 continue
             verif_days = [d for d in forecasts.keys() if (d in verification.keys() and d in climo.keys() and
                                                           d in persistence.keys())]

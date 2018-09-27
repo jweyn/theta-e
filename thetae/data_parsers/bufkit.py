@@ -38,7 +38,7 @@ def bufr_delete_yesterday(bufr_dir, stid, date):
     return
 
 
-def get_bufkit_forecast(bufr, bufkit_dir, model, bufr_name, cycle, stid, forecast_date):
+def get_bufkit_forecast(config, bufr, bufkit_dir, model, bufr_name, cycle, stid, forecast_date):
     """
     Produce a Forecast from retrieved bufkit files.
     """
@@ -63,14 +63,14 @@ def get_bufkit_forecast(bufr, bufkit_dir, model, bufr_name, cycle, stid, forecas
 
         # Check again for bufkit file, if it exists then create forecast object
         if os.path.isfile(bufr_file_name):
-            forecast = bufr_surface_parser(model, stid, forecast_date, bufr_file_name)
+            forecast = bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name)
             return forecast
 
     # If we get here, we're missing the bufkit file
     raise IOError('bufr file %s not found' % bufr_file_name)
 
 
-def bufr_surface_parser(model, stid, forecast_date, bufr_file_name):
+def bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name):
     """
     By Luke Madaus. Modified by jweyn and joejoezz.
     Parse surface data from a bufkit file.
@@ -208,7 +208,8 @@ def bufr_surface_parser(model, stid, forecast_date, bufr_file_name):
         total_rain = np.sum(df.iloc[iloc_start_include + 1:iloc_end]['rain'])
         forecast.daily.setValues(high, low, max_wind, total_rain)
     else:
-        print('bufkit warning: model %s does not extend to end of forecast period; omitting daily values' % model)
+        if config['debug'] > 9:
+            print('bufkit warning: model %s does not extend to end of forecast period; omitting daily values' % model)
 
     return forecast
 
@@ -245,7 +246,7 @@ def main(config, model, stid, forecast_date):
         bufr_delete_yesterday(bufkit_directory, stid, forecast_date - timedelta(days=1))
 
     # Get bufkit forecasts
-    forecast = get_bufkit_forecast(bufr, bufkit_directory, model, bufr_name, run_time, stid, forecast_date)
+    forecast = get_bufkit_forecast(config, bufr, bufkit_directory, model, bufr_name, run_time, stid, forecast_date)
 
     return forecast
 
@@ -277,7 +278,8 @@ def historical(config, model, stid, forecast_dates):
     forecasts = []
     for forecast_date in forecast_dates:
         try:
-            forecast = get_bufkit_forecast(bufr, bufkit_directory, model, bufr_name, run_time, stid, forecast_date)
+            forecast = get_bufkit_forecast(config, bufr, bufkit_directory, model, bufr_name, run_time, stid,
+                                           forecast_date)
             forecasts.append(forecast)
         except BaseException as e:
             if int(config['debug']) > 9:
