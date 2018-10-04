@@ -18,7 +18,7 @@ from datetime import timedelta, datetime
 import re
 import numpy as np
 import pandas as pd
-from thetae.util import c_to_f, ms_to_kt, wind_uv_to_speed_dir
+from thetae.util import c_to_f, ms_to_kt, wind_uv_to_speed_dir, mm_to_in
 from thetae import Forecast
 
 
@@ -160,14 +160,14 @@ def bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name):
             dewpoint.append(c_to_f(vals[varlist.index('TD2M')]))
             uwind = ms_to_kt(vals[varlist.index('UWND')])
             vwind = ms_to_kt(vals[varlist.index('VWND')])
-            speed, dir = wind_uv_to_speed_dir(uwind,vwind)
+            speed, dir = wind_uv_to_speed_dir(uwind, vwind)
             windSpeed.append(speed)
             windDirection.append(dir)
             if 'P01M' in varlist:
-                rain.append(float(vals[varlist.index('P01M')]))
+                rain.append(mm_to_in(vals[varlist.index('P01M')]))
             else:
                 # This condition only applies to FV3 model: save 3 hr precipitation instead of 1 hour
-                rain.append(float(vals[varlist.index('P03M')]))
+                rain.append(mm_to_in(vals[varlist.index('P03M')]))
 
     # first element of rain should be zero (sometimes it is -9999.99)
     rain[0] = '0.0'
