@@ -317,7 +317,7 @@ def get_ghcn_stid(config, stid):
     station_wbans = []
     station_ghcns = []
     for line in infile:
-        if stid.upper() in line:
+        if stid.upper() + ' ' in line:
             linesp = line.split()
             if (not linesp[0].startswith('99999') and not site_found
                     and not linesp[1].startswith('99999')):
