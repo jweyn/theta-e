@@ -77,7 +77,12 @@ def get_cf6_files(config, stid, num_files=1):
         body = body_and_footer.split('[REMARKS]')[0]
 
         # Find the month and year of the file
-        current_year = re.search('YEAR: *(\d{4})', body).groups()[0]
+        try:
+            current_year = re.search('YEAR: *(\d{4})', body).groups()[0]
+        except BaseException:
+            if config['debug'] > 9:
+                print('get_cf6_files warning: file from request version %d is faulty' % r)
+            continue
         try:
             current_month = re.search('MONTH: *(\D{3,9})', body).groups()[0]
             current_month = current_month.strip()  # Gets rid of newlines and whitespace

@@ -53,7 +53,7 @@ def get_bufkit_forecast(config, bufr, bufkit_dir, model, bufr_name, cycle, stid,
 
     # Check if bufkit file was already downloaded
     if os.path.isfile(bufr_file_name):
-        forecast = bufr_surface_parser(model, stid, forecast_date, bufr_file_name)
+        forecast = bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name)
         return forecast
     else:
         # Call bufrgruven, save files in specified bufr directory
