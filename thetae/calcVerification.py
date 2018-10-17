@@ -108,6 +108,7 @@ def main(config):
                 climo_day.date = current_date
             except ValueError:  # missing climo data
                 climo_day = Daily(stid, current_date)
+                climo_day.setValues(np.nan, np.nan, np.nan, np.nan)
             climo.append(climo_day)
             current_date += timedelta(days=1)
 
