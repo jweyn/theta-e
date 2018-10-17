@@ -296,7 +296,7 @@ def get_ghcn_stid(config, stid):
     main_addr = 'ftp://ftp.ncdc.noaa.gov/pub/data/noaa'
 
     site_directory = '%s/site_data' % config['THETAE_ROOT']
-    # Check to see that ish-history.txt exists
+    # Check to see that isd-history.txt exists
     stations_file = 'isd-history.txt'
     stations_filename = '%s/%s' % (site_directory, stations_file)
     if not os.path.exists(stations_filename):
@@ -317,16 +317,14 @@ def get_ghcn_stid(config, stid):
     station_wbans = []
     station_ghcns = []
     for line in infile:
-        if stid.upper() + ' ' in line:
+        if stid.upper() + ' ' in line[48:]:  # make sure we look past the long name
             linesp = line.split()
-            if (not linesp[0].startswith('99999') and not site_found
-                    and not linesp[1].startswith('99999')):
+            if not linesp[0].startswith('99999') and not site_found and not linesp[1].startswith('99999'):
                 try:
                     site_wban = int(linesp[0])
                     station_ghcn = int(linesp[1])
-                    # site_found = True
-                    print('get_ghcn_stid: site found for %s (%s)' %
-                          (stid, station_ghcn))
+                    if config['debug'] > 1:
+                        print('get_ghcn_stid: site found for %s (%s)' % (stid, station_ghcn))
                     station_wbans.append(site_wban)
                     station_ghcns.append(station_ghcn)
                 except:

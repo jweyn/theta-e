@@ -11,7 +11,7 @@ Calculate verification scores and metrics. These are not saved to the database, 
 import numpy as np
 from thetae.db import readDaily
 from datetime import datetime, timedelta
-from thetae.util import date_to_string, last_leap_year, date_to_datetime
+from thetae.util import date_to_string, last_leap_year, date_to_datetime, Daily
 from collections import OrderedDict
 import json
 
@@ -103,8 +103,11 @@ def main(config):
         current_date = start_date
         while current_date <= end_date:
             climo_date = current_date.replace(year=last_leap_year())
-            climo_day = readDaily(config, stid, data_binding, 'climo', start_date=climo_date, end_date=climo_date)
-            climo_day.date = current_date
+            try:
+                climo_day = readDaily(config, stid, data_binding, 'climo', start_date=climo_date, end_date=climo_date)
+                climo_day.date = current_date
+            except ValueError:  # missing climo data
+                climo_day = Daily(stid, current_date)
             climo.append(climo_day)
             current_date += timedelta(days=1)
 
