@@ -35,6 +35,30 @@ def remove_last_char(value):
     return new_value
 
 
+def check_if_usl_forecast_exists(stid, usl_run_start):
+    """
+    Checks the parent USL directory to see if USL has run for specified stid and run time.
+    Return True if run exists, otherwise return False
+    """
+    from urllib2 import Request
+    model_strtime = usl_run_start.strftime('%Y%m%d_%H')
+    webaddr = 'http://www.microclimates.org/forecast/{}/'.format(stid)
+    req = Request(webaddr)
+    try:
+        response = urlopen(req)
+    except:
+        print('USL page does not exist for {}'.format(stid))
+        return False
+    page = response.read().decode('utf-8', 'ignore')
+
+    # Look for string of USL run time in the home menu for this station ID (equal to -1 if not found)
+    if page.find(model_strtime) != -1:
+        return True
+    else:
+        print('USL has not run yet for {} {}'.format(stid,model_strtime))
+        return False
+
+
 def get_usl_forecast(config, stid, run, forecast_date):
 
     # Retrieve data
@@ -129,10 +153,15 @@ def main(config, model, stid, forecast_date):
               "defaulting to 22Z" % (run_time, model))
         run_time = '22Z'
 
-    # Get forecast
-    forecast = get_usl_forecast(config, stid, run_time[:-1], forecast_date)
+    # Check if forecast exists, retrieve if it does exists, otherwise raise error
+    usl_run_start = forecast_date-timedelta(days=1)+timedelta(hours=int(run_time[:-1]))
+    usl_exists = check_if_usl_forecast_exists(stid, usl_run_start)
 
-    return forecast
+    if usl_exists:
+        forecast = get_usl_forecast(config, stid, run_time[:-1], forecast_date)
+        return forecast
+    else:
+        raise IOError('usl: forecast for %s at run time %s does not exist' % (stid, run_time))
 
 
 def historical(config, model, stid, forecast_dates):
@@ -157,8 +186,11 @@ def historical(config, model, stid, forecast_dates):
     forecasts = []
     for forecast_date in forecast_dates:
         try:
-            forecast = get_usl_forecast(config, stid, run_time[:-1], forecast_date)
-            forecasts.append(forecast)
+            usl_run_start = forecast_date - timedelta(days=1) + timedelta(hours=int(run_time[:-1]))
+            usl_exists = check_if_usl_forecast_exists(stid, usl_run_start)
+            if usl_exists:
+                forecast = get_usl_forecast(config, stid, run_time[:-1], forecast_date)
+                forecasts.append(forecast)
         except BaseException as e:
             if int(config['debug']) > 9:
                 print('usl: failed to retrieve historical forecast for %s' % forecast_date)
