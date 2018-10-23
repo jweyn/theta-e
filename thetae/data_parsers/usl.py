@@ -53,9 +53,7 @@ def check_if_usl_forecast_exists(config, stid, run, forecast_date):
     page = response.read().decode('utf-8', 'ignore')
 
     # Look for string of USL run time in the home menu for this station ID (equal to -1 if not found)
-    if page.find(run_strtime) != -1:
-        return
-    else:
+    if page.find(run_strtime) == -1:
         if config['debug'] > 9:
             print("usl: forecast for %s at run time %s hasn't run yet" % (stid, run_date))
         raise URLError("- usl: no correct date/time choice")
