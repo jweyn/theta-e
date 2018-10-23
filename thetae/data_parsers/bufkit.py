@@ -5,12 +5,7 @@
 #
 
 """
-Module for processing BUFKIT model data. Currently, the string operations performed in bufr_surface_parser() are
-incompatible with Python 3.
-
-Retrieve BUFKIT model data
-Write BUFKIT surface data to Forecast object
-Remove old BUFKIT files
+Module for processing BUFKIT model data.
 """
 
 import os
@@ -26,7 +21,7 @@ def bufr_delete_yesterday(bufr_dir, stid, date):
     """
     Delete the BUFKIT archived files for a specific date.
 
-    :param config:
+    :param bufr_dir: directory where bufrgruven is told to save bufr files
     :param stid:
     :param date: date of files to delete
     :return:
@@ -77,7 +72,7 @@ def bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name):
     """
 
     # Open bufkit file
-    infile = open(bufr_file_name, 'r')
+    infile = open(bufr_file_name, 'r', newline='')
 
     # define variables
     dateTime = []
@@ -133,41 +128,43 @@ def bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name):
     # Now split it
     varlist = re.split(r'[ /]', full_line)
 
-    with open(bufr_file_name) as infile:
-        # Now loop through all blocks that match the search pattern we defined above
-        blocknum = -1
+    # Now loop through all blocks that match the search pattern we defined above
+    blocknum = -1
+    infile.seek(0)
 
-        for block_match in block_expr.finditer(infile.read()):
-            blocknum += 1
-            # Split out the match into each component number
-            vals = block_match.groups()
-            # Check for missing values
-            for v in range(len(vals)):
-                if vals[v] == -9999.:
-                    vals[v] = np.nan
-            # Set the time
-            dt = '20' + vals[varlist.index('YYMMDD')] + vals[varlist.index('HHMM')]
-            validtime = datetime.strptime(dt, '%Y%m%d%H%M')
+    for block_match in block_expr.finditer(infile.read()):
+        blocknum += 1
+        # Split out the match into each component number
+        vals = list(block_match.groups())
+        # Check for missing values
+        for v in range(len(vals)):
+            if vals[v] == -9999.:
+                vals[v] = np.nan
+        # Set the time
+        dt = '20' + vals[varlist.index('YYMMDD')] + vals[varlist.index('HHMM')]
+        validtime = datetime.strptime(dt, '%Y%m%d%H%M')
 
-            # End loop if we are more than 60 hours past the start of the forecast date
-            if validtime > forecast_date + timedelta(hours=60):
-                break
+        # End loop if we are more than 60 hours past the start of the forecast date
+        if validtime > forecast_date + timedelta(hours=60):
+            break
 
-            # Append values at this time step
-            dateTime.append(validtime)
-            pressure.append(vals[varlist.index('PMSL')])
-            temperature.append(c_to_f(vals[varlist.index('T2MS')]))
-            dewpoint.append(c_to_f(vals[varlist.index('TD2M')]))
-            uwind = ms_to_kt(vals[varlist.index('UWND')])
-            vwind = ms_to_kt(vals[varlist.index('VWND')])
-            speed, dir = wind_uv_to_speed_dir(uwind, vwind)
-            windSpeed.append(speed)
-            windDirection.append(dir)
-            if 'P01M' in varlist:
-                rain.append(mm_to_in(vals[varlist.index('P01M')]))
-            else:
-                # This condition only applies to FV3 model: save 3 hr precipitation instead of 1 hour
-                rain.append(mm_to_in(vals[varlist.index('P03M')]))
+        # Append values at this time step
+        dateTime.append(validtime)
+        pressure.append(vals[varlist.index('PMSL')])
+        temperature.append(c_to_f(vals[varlist.index('T2MS')]))
+        dewpoint.append(c_to_f(vals[varlist.index('TD2M')]))
+        uwind = ms_to_kt(vals[varlist.index('UWND')])
+        vwind = ms_to_kt(vals[varlist.index('VWND')])
+        speed, dir = wind_uv_to_speed_dir(uwind, vwind)
+        windSpeed.append(speed)
+        windDirection.append(dir)
+        if 'P01M' in varlist:
+            rain.append(mm_to_in(vals[varlist.index('P01M')]))
+        else:
+            # This condition only applies to FV3 model: save 3 hr precipitation instead of 1 hour
+            rain.append(mm_to_in(vals[varlist.index('P03M')]))
+
+    infile.close()
 
     # first element of rain should be zero (sometimes it is -9999.99)
     rain[0] = '0.0'
