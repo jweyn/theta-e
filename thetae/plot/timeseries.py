@@ -132,7 +132,7 @@ def main(config, stid, forecast_date):
     except KeyError:
         image_type = 'svg'
         if config['debug'] > 50:
-            print('plot.climo warning: using default image file format (svg)')
+            print('plot.timeseries warning: using default image file format (svg)')
 
     # Get list of models
     models = list(config['Models'].keys())

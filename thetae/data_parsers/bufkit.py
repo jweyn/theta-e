@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from thetae.util import c_to_f, ms_to_kt, wind_uv_to_speed_dir, mm_to_in
 from thetae import Forecast
+from io import open
 
 
 def bufr_delete_yesterday(bufr_dir, stid, date):
