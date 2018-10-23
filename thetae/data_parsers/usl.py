@@ -17,9 +17,9 @@ import re
 import pandas as pd
 import numpy as np
 try:
-    from urllib.request import urlopen, HTTPError
+    from urllib.request import urlopen, Request, HTTPError, URLError
 except ImportError:
-    from urllib2 import urlopen, HTTPError
+    from urllib2 import urlopen, Request, HTTPError, URLError
 
 default_model_name = 'USL'
 
@@ -33,6 +33,30 @@ def remove_last_char(value):
     except (TypeError, KeyError):
         return np.nan
     return new_value
+
+
+def check_if_usl_forecast_exists(config, stid, run, forecast_date):
+    """
+    Checks the parent USL directory to see if USL has run for specified stid and run time. This avoids the server
+    automatically returning a "close enough" date instead of an "Error 300: multiple choices."
+    """
+    run_date = (forecast_date - timedelta(days=1)).replace(hour=int(run))
+    run_strtime = run_date.strftime('%Y%m%d_%H')
+    api_url = 'http://www.microclimates.org/forecast/{}/'.format(stid)
+    req = Request(api_url)
+    try:
+        response = urlopen(req)
+    except HTTPError:
+        if config['debug'] > 9:
+            print("usl: forecast for %s at run time %s doesn't exist" % (stid, run_date))
+        raise
+    page = response.read().decode('utf-8', 'ignore')
+
+    # Look for string of USL run time in the home menu for this station ID (equal to -1 if not found)
+    if page.find(run_strtime) == -1:
+        if config['debug'] > 9:
+            print("usl: forecast for %s at run time %s hasn't run yet" % (stid, run_date))
+        raise URLError("- usl: no correct date/time choice")
 
 
 def get_usl_forecast(config, stid, run, forecast_date):
@@ -129,9 +153,9 @@ def main(config, model, stid, forecast_date):
               "defaulting to 22Z" % (run_time, model))
         run_time = '22Z'
 
-    # Get forecast
+    # Check if forecast exists, retrieve if it does exists, otherwise raise error
+    check_if_usl_forecast_exists(config, stid, run_time[:-1], forecast_date)
     forecast = get_usl_forecast(config, stid, run_time[:-1], forecast_date)
-
     return forecast
 
 
@@ -157,6 +181,7 @@ def historical(config, model, stid, forecast_dates):
     forecasts = []
     for forecast_date in forecast_dates:
         try:
+            check_if_usl_forecast_exists(config, stid, run_time[:-1], forecast_date)
             forecast = get_usl_forecast(config, stid, run_time[:-1], forecast_date)
             forecasts.append(forecast)
         except BaseException as e:
