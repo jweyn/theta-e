@@ -17,9 +17,9 @@ import re
 import pandas as pd
 import numpy as np
 try:
-    from urllib.request import urlopen, HTTPError
+    from urllib.request import urlopen, Request, HTTPError, URLError
 except ImportError:
-    from urllib2 import urlopen, HTTPError
+    from urllib2 import urlopen, Request, HTTPError, URLError
 
 default_model_name = 'USL'
 
@@ -35,28 +35,30 @@ def remove_last_char(value):
     return new_value
 
 
-def check_if_usl_forecast_exists(stid, usl_run_start):
+def check_if_usl_forecast_exists(config, stid, run, forecast_date):
     """
-    Checks the parent USL directory to see if USL has run for specified stid and run time.
-    Return True if run exists, otherwise return False
+    Checks the parent USL directory to see if USL has run for specified stid and run time. This avoids the server
+    automatically returning a "close enough" date instead of an "Error 300: multiple choices."
     """
-    from urllib2 import Request
-    model_strtime = usl_run_start.strftime('%Y%m%d_%H')
-    webaddr = 'http://www.microclimates.org/forecast/{}/'.format(stid)
-    req = Request(webaddr)
+    run_date = (forecast_date - timedelta(days=1)).replace(hour=int(run))
+    run_strtime = run_date.strftime('%Y%m%d_%H')
+    api_url = 'http://www.microclimates.org/forecast/{}/'.format(stid)
+    req = Request(api_url)
     try:
         response = urlopen(req)
-    except:
-        print('USL page does not exist for {}'.format(stid))
-        return False
+    except HTTPError:
+        if config['debug'] > 9:
+            print("usl: forecast for %s at run time %s doesn't exist" % (stid, run_date))
+        raise
     page = response.read().decode('utf-8', 'ignore')
 
     # Look for string of USL run time in the home menu for this station ID (equal to -1 if not found)
-    if page.find(model_strtime) != -1:
-        return True
+    if page.find(run_strtime) != -1:
+        return
     else:
-        print('USL has not run yet for {} {}'.format(stid,model_strtime))
-        return False
+        if config['debug'] > 9:
+            print("usl: forecast for %s at run time %s hasn't run yet" % (stid, run_date))
+        raise URLError("- usl: no correct date/time choice")
 
 
 def get_usl_forecast(config, stid, run, forecast_date):
@@ -154,14 +156,9 @@ def main(config, model, stid, forecast_date):
         run_time = '22Z'
 
     # Check if forecast exists, retrieve if it does exists, otherwise raise error
-    usl_run_start = forecast_date-timedelta(days=1)+timedelta(hours=int(run_time[:-1]))
-    usl_exists = check_if_usl_forecast_exists(stid, usl_run_start)
-
-    if usl_exists:
-        forecast = get_usl_forecast(config, stid, run_time[:-1], forecast_date)
-        return forecast
-    else:
-        raise IOError('usl: forecast for %s at run time %s does not exist' % (stid, run_time))
+    check_if_usl_forecast_exists(config, stid, run_time[:-1], forecast_date)
+    forecast = get_usl_forecast(config, stid, run_time[:-1], forecast_date)
+    return forecast
 
 
 def historical(config, model, stid, forecast_dates):
@@ -186,11 +183,9 @@ def historical(config, model, stid, forecast_dates):
     forecasts = []
     for forecast_date in forecast_dates:
         try:
-            usl_run_start = forecast_date - timedelta(days=1) + timedelta(hours=int(run_time[:-1]))
-            usl_exists = check_if_usl_forecast_exists(stid, usl_run_start)
-            if usl_exists:
-                forecast = get_usl_forecast(config, stid, run_time[:-1], forecast_date)
-                forecasts.append(forecast)
+            check_if_usl_forecast_exists(config, stid, run_time[:-1], forecast_date)
+            forecast = get_usl_forecast(config, stid, run_time[:-1], forecast_date)
+            forecasts.append(forecast)
         except BaseException as e:
             if int(config['debug']) > 9:
                 print('usl: failed to retrieve historical forecast for %s' % forecast_date)
