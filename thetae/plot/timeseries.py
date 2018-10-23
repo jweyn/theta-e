@@ -16,6 +16,8 @@ import numpy as np
 from pandas import to_datetime
 from thetae.db import readForecast, readTimeSeries
 from datetime import datetime, timedelta
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from matplotlib import dates
 
