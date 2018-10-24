@@ -19,11 +19,15 @@ def _cloud(series):
     """
     Changes the cloud code to a fractional coverage.
     """
-    translator = {1: 0.,
-                  2: 0.5,
-                  3: 0.75,
-                  4: 1.,
-                  6: 0.25
+    translator = {1: 0.,  # clear
+                  2: 0.5,  # scattered
+                  3: 0.75,  # broken
+                  4: 1.,  # overcast
+                  5: 1.,  # obscured
+                  6: 0.25,  # thin scattered
+                  7: 0.5,  # thin broken
+                  8: 0.75,  # thin overcast
+                  9: 0.75,  # thin obscured
                   }
     new_series = series.copy()
     for index, value in series.iteritems():
