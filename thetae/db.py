@@ -529,7 +529,7 @@ def readTimeSeries(config, stid, data_binding, table_type, model=None, start_dat
     return timeseries
 
 
-def readDaily(config, stid, data_binding, table_type, model=None, start_date=None, end_date=None):
+def readDaily(config, stid, data_binding, table_type, model=None, start_date=None, end_date=None, force_list=False):
     """
     Read a Daily or list of Dailys from a specified data_binding at a certain station id and of a given table type.
     table_type must be 'verif', 'climo', 'daily_forecast', or something defined in the schema of data_binding as
@@ -545,6 +545,7 @@ def readDaily(config, stid, data_binding, table_type, model=None, start_date=Non
     :param model: str: model name
     :param start_date: datetime or str: starting date
     :param end_date: datetime or str: ending date
+    :param force_list: bool: if True, returns a list even if there is only one Daily object
     :return: Daily or list of Dailys of requested data
     """
     # Get the database and table names
@@ -566,25 +567,23 @@ def readDaily(config, stid, data_binding, table_type, model=None, start_date=Non
         daily.setValues(row['HIGH'], row['LOW'], row['WIND'], row['RAIN'])
         daily.model = model
         daily_list.append(daily)
-    if len(data.index) > 1:
+
+    if len(data.index) == 0:
+        raise ValueError('db.readDaily error: no data found.')
+    elif len(data.index) > 1 or force_list:
         if config['debug'] > 9:
-            print('db.readDaily: generating list of daily objects')
+            print('db.readDaily: returning list of daily objects')
         return daily_list
-    else:
-        try:
-            return daily_list[0]
-        except:
-            raise ValueError('db.readDaily error: no data found.')
+    elif len(data.index) == 1:
+        return daily_list[0]
 
 
 def readForecast(config, stid, model, date, hour_start=6, hour_padding=6, no_hourly_ok=False):
     """
-    Return a Forecast object from the main theta-e database for a given model
-    and date. This is specifically designed to return a Forecast for a single
-    model and a single day.
+    Return a Forecast object from the main theta-e database for a given model and date. This is specifically designed
+    to return a Forecast for a single model and a single day.
     hour_start is the starting hour for the 24-hour forecast period.
-    hour_padding is the number of hours on either side of the forecast period
-    to include in the timeseries.
+    hour_padding is the number of hours on either side of the forecast period to include in the timeseries.
 
     :param config:
     :param stid: str: station ID

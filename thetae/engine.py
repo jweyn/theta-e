@@ -21,6 +21,7 @@ import os
 import thetae
 from thetae.util import get_object, get_config
 from builtins import str
+import warnings
 
 
 service_groups = list(thetae.all_service_groups)
@@ -34,6 +35,8 @@ def main(args):
 
     # Get the config file.
     config = get_config(args.config)
+    if config['suppress_warnings']:
+        warnings.filterwarnings('ignore')
 
     # Create the site_data archive directory, if necessary.
     site_directory = '%s/site_data' % config['THETAE_ROOT']

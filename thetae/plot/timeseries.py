@@ -21,6 +21,9 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from matplotlib import dates
 
+prop_cycle = plt.rcParams['axes.prop_cycle']
+default_colors = prop_cycle.by_key()['color']
+
 
 def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img_type):
     """
@@ -34,16 +37,22 @@ def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img
     ax = fig.add_subplot(1, 1, 1)
 
     # Loop through models to plot
+    c = 0
     for model in models:
         try:
             forecast = readForecast(config, stid, model, forecast_date, hour_padding=18)
-            forecast = compute_rain_accumulation(forecast, forecast_date)
-            data = forecast.timeseries.data[variable]
-            ax.plot(to_datetime(forecast.timeseries.data['DATETIME']), data, label=model,
-                    color=config['Models'][model]['color'])
         except ValueError:
             if config['debug'] > 9:
                 print('plot.timeseries warning: no hourly data for %s, %s' % (stid, model))
+            continue
+        forecast = compute_rain_accumulation(forecast, forecast_date)
+        data = forecast.timeseries.data[variable]
+        try:
+            color = config['Models'][model]['color']
+        except KeyError:
+            color = default_colors[c]
+            c += 1
+        ax.plot(to_datetime(forecast.timeseries.data['DATETIME']), data, label=model, color=color)
 
     # Plot observations
     obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=25),

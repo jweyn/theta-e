@@ -125,7 +125,7 @@ def main(config):
                 print('calcVerification: loading forecast data for %s' % model)
             try:
                 forecasts = readDaily(config, stid, data_binding, 'daily_forecast', model=model,
-                                      start_date=start_date+timedelta(days=1), end_date=end_date)
+                                      start_date=start_date+timedelta(days=1), end_date=end_date, force_list=True)
                 forecasts = list_to_dict(forecasts)
             except ValueError:
                 if config['debug'] > 9:

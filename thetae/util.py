@@ -151,8 +151,7 @@ def get_config(config_path):
         config_dict['debug'] = int(config_dict['debug'])
     except KeyError:
         config_dict['debug'] = 1
-        print("Setting debug level to 1 because apparently you didn't want "
-              "to put it in the config file...")
+        print("Setting debug level to 1 because apparently you didn't want to put it in the config file...")
     except ValueError:
         config_dict['debug'] = 1
         print("Invalid debugging level specified; setting debug level to 1.")
@@ -166,6 +165,12 @@ def get_config(config_path):
         config_dict['traceback'] = False
     if int(config_dict['debug']) > 1 and config_dict['traceback']:
         print('Using traceback option: program will crash upon exception raised.')
+
+    # Check if suppress_warnings is there
+    try:
+        config_dict['suppress_warnings'] = to_bool(config_dict['suppress_warnings'])
+    except KeyError:
+        config_dict['suppress_warnings'] = False
 
     return config_dict
 
