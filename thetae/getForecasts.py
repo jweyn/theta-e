@@ -18,7 +18,8 @@ from builtins import str
 
 def main(config):
     """
-    Main function. Iterates through models and sites and writes each to the 'forecast' database.
+    Main function. Iterates through sites and models and writes each to the 'forecast' database. The outer loop over
+    sites is more efficient for those APIs which have limited calls/minute.
     """
 
     # Figure out which day we are forecasting for: the next UTC day.
@@ -27,18 +28,19 @@ def main(config):
     print('getForecasts: forecast date %s' % forecast_date)
 
     # Go through the models in config
-    for model in config['Models'].keys():
-        try:
-            driver = config['Models'][model]['driver']
-        except KeyError:
-            print('getForecasts warning: driver not specified for model %s' % model)
-            continue
-        print('getForecasts: getting forecasts from %s' % model)
+    for stid in config['Stations'].keys():
+        print('getForecasts: getting forecasts for station %s' % stid)
 
         # Get the forecast from the driver at each site
-        for stid in config['Stations'].keys():
-            if config['debug'] > 9:
-                print('getForecasts: getting forecast for station %s' % stid)
+        for model in config['Models'].keys():
+            try:
+                driver = config['Models'][model]['driver']
+            except KeyError:
+                print('getForecasts warning: driver not specified for model %s' % model)
+                continue
+            if config['debug'] > 0:
+                print('getForecasts: getting forecast from %s' % model)
+
             try:
                 # Each forecast has a function 'main' which returns a Forecast
                 forecast = get_object(driver).main(config, model, stid, forecast_date)
