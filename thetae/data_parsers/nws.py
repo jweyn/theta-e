@@ -184,8 +184,7 @@ def get_nws_forecast(config, stid, lat, lon, forecast_date):
     daily['windSpeed'] = daily['windSpeed'].apply(wind_speed_interpreter)
     # De-localize the starting time so we can do an explicit datetime comparison
     daily['startTime'] = [parse_iso(daily['startTime'].iloc[j]) for j in range(len(daily['startTime']))]
-    daily['startTime'] = [daily['startTime'].iloc[j].to_pydatetime().replace(tzinfo=None) for j in
-                          range(len(daily['startTime']))]
+    daily['startTime'] = [daily['startTime'].iloc[j].replace(tzinfo=None) for j in range(len(daily['startTime']))]
     daily.set_index('startTime', inplace=True)
     try:
         daily_high = daily.loc[forecast_date + timedelta(hours=6), 'temperature']
