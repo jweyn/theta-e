@@ -74,7 +74,8 @@ def json_verif(config, stid, start_date):
         print('web.json: retrieving verification for %s' % stid)
     dailys = readDaily(config, stid, 'forecast', 'verif', start_date=start_date, end_date=datetime.utcnow())
     for v in variables:
-        verif[v.upper()] = [getattr(dailys[j], v) for j in range(len(dailys))]
+        verif[v.upper()] = [getattr(dailys[j], v) if not(np.isnan(getattr(dailys[j], v))) else None
+                            for j in range(len(dailys))]
     verif['DATETIME'] = [getattr(dailys[j], 'date').isoformat() + 'Z' for j in range(len(dailys))]
 
     return verif
