@@ -12,8 +12,9 @@ from datetime import datetime, timedelta
 import json
 import os
 import pandas as pd
+import numpy as np
 from collections import OrderedDict
-from thetae.util import Forecast, date_to_string, last_leap_year, date_to_datetime
+from thetae.util import Daily, Forecast, last_leap_year
 from thetae.db import readForecast, readTimeSeries, readDaily
 
 
@@ -106,8 +107,12 @@ def json_climo(config, stid, start_date):
     current_date = start_date
     while current_date <= end_date:
         climo_date = current_date.replace(year=last_leap_year())
-        daily = readDaily(config, stid, 'forecast', 'climo', start_date=climo_date, end_date=climo_date)
-        daily.date = current_date
+        try:
+            daily = readDaily(config, stid, 'forecast', 'climo', start_date=climo_date, end_date=climo_date)
+            daily.date = current_date
+        except ValueError:  # missing climo data
+            daily = Daily(stid, current_date)
+            daily.setValues(np.nan, np.nan, np.nan, np.nan)
         dailys.append(daily)
         current_date += timedelta(days=1)
     for v in variables:
