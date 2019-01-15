@@ -117,7 +117,8 @@ def json_climo(config, stid, start_date):
         dailys.append(daily)
         current_date += timedelta(days=1)
     for v in variables:
-        climo[v.upper()] = [getattr(dailys[j], v) for j in range(len(dailys))]
+        climo[v.upper()] = [getattr(dailys[j], v) if not(np.isnan(getattr(dailys[j], v))) else None
+                            for j in range(len(dailys))]
     climo['DATETIME'] = [getattr(dailys[j], 'date').isoformat() + 'Z' for j in range(len(dailys))]
 
     return climo
