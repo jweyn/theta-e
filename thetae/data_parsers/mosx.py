@@ -26,8 +26,8 @@ def get_mosx_forecast(stid, mosx_dir, forecast_date):
 
     # Create a Forecast object and add daily values
     forecast = Forecast(stid, default_model_name, forecast_date)
-    forecast.daily.setValues(data['daily']['high'], data['daily']['low'], data['daily']['wind'],
-                             data['daily']['precip'])
+    forecast.daily.set_values(data['daily']['high'], data['daily']['low'], data['daily']['wind'],
+                              data['daily']['precip'])
 
     # Set the hourly data if it is present. Column names are already set!
     if 'hourly' in data:

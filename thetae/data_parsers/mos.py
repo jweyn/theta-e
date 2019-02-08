@@ -110,7 +110,7 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     nx_high = df.iloc[iloc_start_exclude:iloc_end]['n_x'].max()
     nx_low = df.iloc[iloc_start_exclude:iloc_end]['n_x'].min()
     # Set the daily
-    forecast.daily.setValues(np.nanmax([raw_high, nx_high]), np.nanmin([raw_low, nx_low]),
+    forecast.daily.set_values(np.nanmax([raw_high, nx_high]), np.nanmin([raw_low, nx_low]),
                              df.iloc[iloc_start_include:iloc_end]['wsp'].max(),
                              df.iloc[iloc_start_exclude:iloc_end]['q06'].sum())
 

@@ -204,7 +204,7 @@ def bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name):
         low = int(np.round(df.iloc[iloc_start_include:iloc_end]['temperature'].min()))
         max_wind = int(np.round(df.iloc[iloc_start_include:iloc_end]['windSpeed'].max()))
         total_rain = np.sum(df.iloc[iloc_start_include + 1:iloc_end]['rain'])
-        forecast.daily.setValues(high, low, max_wind, total_rain)
+        forecast.daily.set_values(high, low, max_wind, total_rain)
     else:
         if config['debug'] > 9:
             print('bufkit warning: model %s does not extend to end of forecast period; omitting daily values' % model)

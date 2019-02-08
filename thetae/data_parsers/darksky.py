@@ -38,8 +38,7 @@ def get_darksky_forecast(stid, lat, lon, api_key, forecast_date):
     darksky_df = pd.DataFrame(darksky_data['hourly']['data'])
     darksky_df['DateTime'] = np.nan
     for idx in darksky_df.index:
-        darksky_df.loc[idx, 'DateTime'] = epoch_time_to_datetime(darksky_df.loc[idx, 'time'],
-                                                                 timezone=darksky_data['timezone'])
+        darksky_df.loc[idx, 'DateTime'] = epoch_time_to_datetime(darksky_df.loc[idx, 'time'])  # already UTC
     darksky_df.set_index('DateTime', inplace=True)
     column_names_dict = {
         'cloudCover': 'cloud',
@@ -63,7 +62,7 @@ def get_darksky_forecast(stid, lat, lon, api_key, forecast_date):
 
     # Create Forecast object
     forecast = Forecast(stid, default_model_name, forecast_date)
-    forecast.daily.setValues(daily_high, daily_low, daily_wind, daily_rain)
+    forecast.daily.set_values(daily_high, daily_low, daily_wind, daily_rain)
     forecast.timeseries.data = darksky_df.reset_index()
 
     return forecast

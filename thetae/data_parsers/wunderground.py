@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017-18 Thomas Lamb <lambt@uw.edu>
+# Copyright (c) 2017-19 Thomas Lamb <lambt@uw.edu> and Jonathan Weyn
 #
 # See the file LICENSE for your rights.
 #
@@ -20,7 +20,7 @@ default_model_name = 'Weather Underground'
 
 # Helper methods
 
-def convert_fcttime(fcttime_series, timezone):
+def convert_fcttime(fcttime_series, timezone=None):
     """
     Convert API's FCTTIME from epoch time to UTC time
     """
@@ -85,7 +85,7 @@ def get_wunderground_forecast(stid, api_key, forecast_date):
     wunderground_df = pd.DataFrame(wunderground_data['hourly_forecast'])
     timezone_df = pd.DataFrame(wunderground_data['forecast']['simpleforecast'])
     timezone = get_timezone(timezone_df['forecastday'])
-    time_series = convert_fcttime(wunderground_df['FCTTIME'], timezone)
+    time_series = convert_fcttime(wunderground_df['FCTTIME'])  # already UTC
 
     for column in wunderground_df.columns.values:
         wunderground_df[column] = wunderground_df[column].apply(get_english_units)
@@ -119,7 +119,7 @@ def get_wunderground_forecast(stid, api_key, forecast_date):
 
     # create Forecast object
     forecast = Forecast(stid, default_model_name, forecast_date)
-    forecast.daily.setValues(daily_high, daily_low, daily_wind, daily_rain)
+    forecast.daily.set_values(daily_high, daily_low, daily_wind, daily_rain)
     forecast.timeseries.data = wunderground_df.reset_index()
 
     return forecast

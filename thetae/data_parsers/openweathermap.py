@@ -104,7 +104,7 @@ def get_owm_forecast(stid, lat, lon, api_key, forecast_date):
 
     # Create Forecast object
     forecast = Forecast(stid, default_model_name, forecast_date)
-    forecast.daily.setValues(daily_high, daily_low, daily_wind, daily_rain)
+    forecast.daily.set_values(daily_high, daily_low, daily_wind, daily_rain)
     forecast.timeseries.data = owm_df.reset_index()
 
     return forecast

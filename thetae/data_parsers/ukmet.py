@@ -164,7 +164,7 @@ def get_ukmet_forecast(stid, ukmet_code, forecast_date):
 
     forecast = Forecast(stid, default_model_name, days[0])        
     forecast.timeseries.data = df
-    forecast.daily.setValues(highs[0], lows[0], winds[0], None)
+    forecast.daily.set_values(highs[0], lows[0], winds[0], None)
 
     # # Make list of forecast objects for future days--currently not implemented
     #

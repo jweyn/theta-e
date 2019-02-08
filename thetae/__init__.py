@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017 Jonathan Weyn <jweyn@uw.edu>
+# Copyright (c) 2019 Jonathan Weyn <jweyn@uw.edu>
 #
 # See the file LICENSE for your rights.
 #
@@ -8,7 +8,7 @@
 Initialize thetae.
 """
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 
 # ==============================================================================
 # Service groups.

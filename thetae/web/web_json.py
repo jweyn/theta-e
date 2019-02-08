@@ -113,7 +113,7 @@ def json_climo(config, stid, start_date):
             daily.date = current_date
         except ValueError:  # missing climo data
             daily = Daily(stid, current_date)
-            daily.setValues(np.nan, np.nan, np.nan, np.nan)
+            daily.set_values(np.nan, np.nan, np.nan, np.nan)
         dailys.append(daily)
         current_date += timedelta(days=1)
     for v in variables:

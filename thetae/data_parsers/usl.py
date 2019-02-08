@@ -132,7 +132,7 @@ def get_usl_forecast(config, stid, run, forecast_date):
 
     # Create Forecast object
     forecast = Forecast(stid, default_model_name, forecast_date)
-    forecast.daily.setValues(high, low, max_wind, precip)
+    forecast.daily.set_values(high, low, max_wind, precip)
     forecast.timeseries.data = usl_df
 
     return forecast

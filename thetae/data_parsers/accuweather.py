@@ -119,7 +119,7 @@ def get_accuwx_forecast(config, stid, location_key, api_key, forecast_date):
 
     # Create Forecast object
     forecast = Forecast(stid, default_model_name, forecast_date)
-    forecast.daily.setValues(high, low, None, None)
+    forecast.daily.set_values(high, low, None, None)
 
     return forecast
 

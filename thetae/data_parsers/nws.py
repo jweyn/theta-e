@@ -160,7 +160,7 @@ def get_nws_forecast(config, stid, lat, lon, forecast_date):
 
     # Create the Forecast object
     forecast = Forecast(stid, default_model_name, forecast_date)
-    forecast.daily.setValues(hourly_high, hourly_low, hourly_wind, hourly_rain)
+    forecast.daily.set_values(hourly_high, hourly_low, hourly_wind, hourly_rain)
     forecast.timeseries.data = hourly
 
     # Now do the daily data from the Forecast API
@@ -197,8 +197,8 @@ def get_nws_forecast(config, stid, lat, lon, forecast_date):
     daily_wind = mph_to_kt(np.max(daily.loc[forecast_start:forecast_end]['windSpeed']))
 
     # Update the Forecast object
-    forecast.daily.setValues(np.nanmax([hourly_high, daily_high]), np.nanmin([hourly_low, daily_low]),
-                             np.nanmax([hourly_wind, daily_wind]), hourly_rain)
+    forecast.daily.set_values(np.nanmax([hourly_high, daily_high]), np.nanmin([hourly_low, daily_low]),
+                              np.nanmax([hourly_wind, daily_wind]), hourly_rain)
 
     return forecast
 

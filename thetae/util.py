@@ -50,13 +50,13 @@ class Daily(object):
         self.wind = None
         self.rain = None
 
-    def setValues(self, high, low, wind, rain):
+    def set_values(self, high, low, wind, rain):
         self.high = to_float(high)
         self.low = to_float(low)
         self.wind = to_float(wind)
         self.rain = to_float(rain)
 
-    def getValues(self):
+    def get_values(self):
         return self.high, self.low, self.wind, self.rain
 
 
@@ -75,7 +75,7 @@ class Forecast(object):
         self.daily = Daily(stid, date)
         self.daily.model = model
 
-    def setModel(self, model):
+    def set_model(self, model):
         """
         Changes the model name in the Forecast object and in the embedded
         TimeSeries and Daily.
@@ -141,7 +141,7 @@ def get_config(config_path):
 
     # Check for version mismatch
     try:
-        if config_dict['version'] != thetae.__version__:
+        if config_dict['version'].split('.')[:2] != thetae.__version__.split('.')[:2]:
             raise IncompatibleVersionError('config version does not match module (%s)' % thetae.__version__)
     except KeyError:
         raise KeyError("'version' must be specified in config file")
@@ -255,9 +255,9 @@ def write_ensemble_daily(config, forecasts, ensemble_file):
         daily_array[f, 0] = date_to_string(forecasts[f].date)
         daily_array[f, 1] = forecasts[f].model
         try:
-            daily_array[f, 2:] = forecasts[f].daily.getValues()
+            daily_array[f, 2:] = forecasts[f].daily.get_values()
         except AttributeError:
-            daily_array[f, 2:] = forecasts[f].getValues()
+            daily_array[f, 2:] = forecasts[f].get_values()
     np.savetxt(ensemble_file_name, daily_array, fmt='%s', delimiter=',', header=header)
 
 
@@ -286,7 +286,7 @@ def read_ensemble_daily(config, ensemble_file, stid=None, forecast_date=None):
     for day in range(daily_array.shape[0]):
         daily = Daily(stid, forecast_date)
         daily.model = daily_array[day, 0]
-        daily.setValues(*tuple(daily_array[day, 2:]))
+        daily.set_values(*tuple(daily_array[day, 2:]))
         dailys.append(daily)
 
     return dailys
@@ -425,14 +425,15 @@ def localized_date_to_utc(date):
 def epoch_time_to_datetime(timestamp, timezone=None):
     """
     Return a timezone-unaware datetime from an epoch time representation. If timezone string is provided, then
-    localized_date_to_utc will be applied on the resulting datetime object.
+    converts a localized epoch time.
     """
-    date = datetime.fromtimestamp(timestamp)
-    if timezone is not None:
+    if timezone is None:
+        return datetime.utcfromtimestamp(timestamp)
+    else:
+        date = datetime.fromtimestamp(timestamp)
         tz = pytz.timezone(timezone)
         date = tz.localize(date)
-        return date.astimezone(pytz.utc).replace(tzinfo=None)
-    return date
+        return localized_date_to_utc(date)
 
 
 def last_leap_year(date=None):

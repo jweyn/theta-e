@@ -107,7 +107,7 @@ def get_gefs_mos_forecast(stid, forecast_date):
         # Add each member to the list of Daily objects, for writing to a file
         daily = Daily(stid, forecast_date)
         daily.model = 'GEFS MOS %d' % ii
-        daily.setValues(ens_highs[-1], ens_lows[-1], None, ens_precips[-1])
+        daily.set_values(ens_highs[-1], ens_lows[-1], None, ens_precips[-1])
         dailys.append(daily)
 
     # Get ensemble mean
@@ -117,7 +117,7 @@ def get_gefs_mos_forecast(stid, forecast_date):
 
     # Create ensemble mean Forecast object
     mean_forecast = Forecast(stid, default_model_name, forecast_date)
-    mean_forecast.daily.setValues(high_mean, low_mean, None, precip_mean)
+    mean_forecast.daily.set_values(high_mean, low_mean, None, precip_mean)
 
     return mean_forecast, dailys
 

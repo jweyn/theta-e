@@ -31,12 +31,13 @@ def get_forecast_stats(forecasts, verifs, day_list=None):
     stats_dict['attrs']['verifyingDays'] = [date_to_datetime(d).isoformat() + 'Z' for d in days]
     stats_dict['stats'] = OrderedDict()
 
+    for var in ['high', 'low', 'wind', 'rain']:
+        stats_dict['stats'][var] = OrderedDict()
+
     if num_days < 1:
         return stats_dict
 
     for var in ['high', 'low', 'wind', 'rain']:
-        stats_dict['stats'][var] = OrderedDict()
-
         forecast_values = np.array([getattr(forecasts[day], var) for day in days], dtype=np.float)
         verif_values = np.array([getattr(verifs[day], var) for day in days], dtype=np.float)
 
@@ -108,7 +109,7 @@ def main(config):
                 climo_day.date = current_date
             except ValueError:  # missing climo data
                 climo_day = Daily(stid, current_date)
-                climo_day.setValues(np.nan, np.nan, np.nan, np.nan)
+                climo_day.set_values(np.nan, np.nan, np.nan, np.nan)
             climo.append(climo_day)
             current_date += timedelta(days=1)
 
@@ -144,14 +145,26 @@ def main(config):
 
             # Add in the skill scores
             for var in ['high', 'low', 'wind', 'rain']:
-                model_stats['stats'][var]['skillClimo'] = 1. - (model_stats['stats'][var]['rmse'] /
-                                                                climo_stats['stats'][var]['rmse'])
-                model_stats['stats'][var]['skillClimoNoBias'] = 1. - (model_stats['stats'][var]['rmseNoBias'] /
-                                                                      climo_stats['stats'][var]['rmse'])
-                model_stats['stats'][var]['skillPersist'] = 1. - (model_stats['stats'][var]['rmse'] /
-                                                                  persist_stats['stats'][var]['rmse'])
-                model_stats['stats'][var]['skillPersistNoBias'] = 1. - (model_stats['stats'][var]['rmseNoBias'] /
-                                                                        persist_stats['stats'][var]['rmse'])
+                try:
+                    model_stats['stats'][var]['skillClimo'] = 1. - (model_stats['stats'][var]['rmse'] /
+                                                                    climo_stats['stats'][var]['rmse'])
+                except KeyError:
+                    model_stats['stats'][var]['skillClimo'] = None
+                try:
+                    model_stats['stats'][var]['skillClimoNoBias'] = 1. - (model_stats['stats'][var]['rmseNoBias'] /
+                                                                          climo_stats['stats'][var]['rmse'])
+                except KeyError:
+                    model_stats['stats'][var]['skillClimoNoBias'] = None
+                try:
+                    model_stats['stats'][var]['skillPersist'] = 1. - (model_stats['stats'][var]['rmse'] /
+                                                                      persist_stats['stats'][var]['rmse'])
+                except KeyError:
+                    model_stats['stats'][var]['skillPersist'] = None
+                try:
+                    model_stats['stats'][var]['skillPersistNoBias'] = 1. - (model_stats['stats'][var]['rmseNoBias'] /
+                                                                            persist_stats['stats'][var]['rmse'])
+                except KeyError:
+                    model_stats['stats'][var]['skillPersistNoBias'] = None
 
             # Remove NaN (not interpreted by json) and add to the large dictionary
             replace_nan_in_dict(model_stats)
