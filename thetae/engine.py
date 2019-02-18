@@ -52,6 +52,10 @@ def main(args):
         service_groups = ['output_services']
         print('thetae.engine: doing output only')
 
+    # Step 1: check the database initialization
+    print('thetae.engine: running database initialization checks')
+    add_sites = thetae.db.init(config)
+
     # Check for backfill-historical sites
     if args.b_stid is not None:
         print('thetae.engine: running backfill of historical data')
@@ -73,10 +77,6 @@ def main(args):
         for stid in args.r_stid:
             thetae.db.remove(config, stid)
         sys.exit(0)
-
-    # Step 1: check the database initialization
-    print('thetae.engine: running database initialization checks')
-    add_sites = thetae.db.init(config)
 
     # Step 2: for each site in add_sites above, run historical data
     for stid in add_sites:
