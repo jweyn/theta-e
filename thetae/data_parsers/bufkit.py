@@ -47,6 +47,8 @@ def get_bufkit_forecast(config, bufr, bufkit_dir, model, bufr_name, cycle, stid,
         bufr_search_model = 'fv3gfsx'
     if bufr_search_model == 'hrrr' and stid.upper()[0] == 'P':
         bufr_search_model = 'hrrrak'
+    if bufr_search_model == 'namnest' and stid.upper()[0] == 'P':
+        bufr_search_model = 'aknest'
     bufr_file_name = '%s/bufkit/%s.%s_%s.buf' % (bufkit_dir, model_time, bufr_name, stid.lower())
 
     # Check if bufkit file was already downloaded
