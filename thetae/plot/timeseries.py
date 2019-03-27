@@ -115,7 +115,7 @@ def compute_rain_accumulation(forecast, forecast_date):
     Keeps rain prior to start of forecast as 'negative' rain to show timing uncertainties.
     """
     cum_rain = np.cumsum(forecast.timeseries.data['RAIN'].fillna(value=0))
-    fcst_start_loc = pd.PeriodIndex(pd.to_datetime(forecast.timeseries.data['DATETIME'])).get_loc(
+    fcst_start_loc = pd.Index(pd.to_datetime(forecast.timeseries.data['DATETIME'])).get_loc(
         pd.Timestamp(forecast_date+timedelta(hours=6)), 'nearest')
     offset = cum_rain[fcst_start_loc]
     cum_rain -= offset
