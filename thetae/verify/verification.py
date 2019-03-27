@@ -251,7 +251,7 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
             obspd = obspd.assign(**{var: np.nan})
 
     # Change datetime column to datetime object, subtract 6 hours to use 6Z days
-    dateobj = pd.to_datetime(obspd['date_time']) - timedelta(hours=6)
+    dateobj = pd.Index(pd.to_datetime(obspd['date_time'])).tz_localize(None) - timedelta(hours=6)
     obspd['date_time'] = dateobj
     datename = 'DATETIME'
     obspd = obspd.rename(columns={'date_time': datename})

@@ -133,7 +133,7 @@ def get_obs(config, stid, start, end):
     obs_hourly['cloud'] = cloud
 
     # Reformat dates, using pandas Timestamp
-    date_obj = pd.to_datetime(obs_hourly[datename])
+    date_obj = pd.Index(pd.to_datetime(obs_hourly[datename])).tz_localize(None)
     obs_hourly[datename] = date_obj
     if config['debug'] > 50:
         print('obs: here is the timeseries')

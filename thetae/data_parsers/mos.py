@@ -64,7 +64,7 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     # Raise exception if DataFrame is empty
     if len(df.index) == 0:
         raise ValueError('mos: error: empty DataFrame; data missing.')
-    date_index = pd.to_datetime(df['ftime'])
+    date_index = pd.Index(pd.to_datetime(df['ftime'])).tz_localize(None)
     df['datetime'] = date_index
     # Remove duplicate rows
     df = df.drop_duplicates()

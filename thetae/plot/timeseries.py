@@ -13,8 +13,9 @@ Gray background shading does not account for different wind forecast period
 
 import os
 import numpy as np
-from pandas import to_datetime
+import pandas as pd
 from thetae.db import readForecast, readTimeSeries
+from thetae.util import date_to_datetime
 from datetime import datetime, timedelta
 import matplotlib
 matplotlib.use('agg')
@@ -52,13 +53,13 @@ def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img
         except KeyError:
             color = default_colors[c]
             c += 1
-        ax.plot(to_datetime(forecast.timeseries.data['DATETIME']), data, label=model, color=color)
+        ax.plot(pd.to_datetime(forecast.timeseries.data['DATETIME']), data, label=model, color=color)
 
     # Plot observations
     obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=25),
                          end_date=forecast_date+timedelta(hours=24))
     if variable != 'RAIN':
-        ax.plot(to_datetime(obs.data['DATETIME']), obs.data[variable], label='OBS',
+        ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data[variable], label='OBS',
                 color='black', linestyle=':', marker='o', ms=4)
 
     # Plot configurations and saving
@@ -114,8 +115,8 @@ def compute_rain_accumulation(forecast, forecast_date):
     Keeps rain prior to start of forecast as 'negative' rain to show timing uncertainties.
     """
     cum_rain = np.cumsum(forecast.timeseries.data['RAIN'].fillna(value=0))
-    fcst_start_loc = np.where((to_datetime(forecast.timeseries.data['DATETIME']) ==
-                               forecast_date+timedelta(hours=6)))[0][0]
+    fcst_start_loc = pd.PeriodIndex(pd.to_datetime(forecast.timeseries.data['DATETIME'])).get_loc(
+        pd.Timestamp(forecast_date+timedelta(hours=6)), 'nearest')
     offset = cum_rain[fcst_start_loc]
     cum_rain -= offset
     forecast.timeseries.data['RAIN'] = cum_rain
