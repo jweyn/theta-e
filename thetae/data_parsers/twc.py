@@ -9,7 +9,7 @@ Retrieve forecasts from the new weather.com API.
 """
 
 from thetae import Forecast
-from thetae.util import epoch_time_to_datetime, mph_to_kt, inhg_to_mb
+from thetae.util import epoch_time_to_datetime, mph_to_kt, dewpoint_from_t_rh
 from datetime import datetime, timedelta
 import requests
 import pandas as pd
@@ -54,6 +54,9 @@ def get_twc_forecast(stid, api_key, forecast_date):
     if twc_df['dayOrNight'][0] is None:
         twc_df.drop(0, axis=0, inplace=True)
 
+    # Add dew point, fix units, and rename
+    twc_df['dewpoint'] = dewpoint_from_t_rh(twc_df['temperature'], twc_df['relativeHumidity'])
+    twc_df['windSpeed'] = twc_df['windSpeed'].apply(mph_to_kt)
     column_names_dict = {
           'cloudCover': 'cloud',
           'qpf': 'rain',
