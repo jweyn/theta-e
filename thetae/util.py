@@ -77,12 +77,20 @@ class Forecast(object):
 
     def set_model(self, model):
         """
-        Changes the model name in the Forecast object and in the embedded
-        TimeSeries and Daily.
+        Changes the model name in the Forecast object and in the embedded TimeSeries and Daily.
         """
         self.model = model
         self.timeseries.model = model
         self.daily.model = model
+        return self
+
+    def set_stid(self, stid):
+        """
+        Changes the station ID name in the Forecast object and in the embedded TimeSeries and Daily.
+        """
+        self.stid = stid
+        self.timeseries.stid = stid
+        self.daily.stid = stid
         return self
 
 

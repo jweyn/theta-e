@@ -254,7 +254,7 @@ def main(config, model, stid, forecast_date):
 
     # Get bufkit forecasts
     forecast = get_bufkit_forecast(config, bufr, bufkit_directory, model, bufr_name, run_time, bufr_stid, forecast_date)
-    forecast.stid = str(stid)
+    forecast.set_stid(str(stid))
 
     return forecast
 
@@ -292,7 +292,7 @@ def historical(config, model, stid, forecast_dates):
         try:
             forecast = get_bufkit_forecast(config, bufr, bufkit_directory, model, bufr_name, run_time, bufr_stid,
                                            forecast_date)
-            forecast.stid = str(stid)
+            forecast.set_stid(str(stid))
             forecasts.append(forecast)
         except BaseException as e:
             if int(config['debug']) > 9:
