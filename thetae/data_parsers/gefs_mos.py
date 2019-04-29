@@ -80,10 +80,10 @@ def get_gefs_mos_forecast(stid, forecast_date):
             hour = int(text[6])
             model_time = datetime(int(dates[2]), int(dates[0]), int(dates[1]), hour)
         # find all of the forecast hours (every 12 hr)
-        forecast_hours_tmp = pars[ii].text.split('FHR')[1].split('    ')[0]
+        forecast_hours_tmp = pars[ii].text.split('FHR')[1].split('\n')[0][:-6]
         forecast_hours = list(map(int, re.findall(r'\d+', forecast_hours_tmp)))
         # find all of the temperatures that match the forecast hours
-        forecast_temps_tmp = pars[ii].text.split('X/N')[1].split('    ')[0]
+        forecast_temps_tmp = pars[ii].text.split('X/N')[1].split('\n')[0][:-6]
         forecast_temps = list(map(int, re.findall(r'-?\d+', forecast_temps_tmp)))
         # find all of the 24 hour precips
         forecast_precip_tmp = pars[ii].text.split('Q24')[1].split('|')[1]
