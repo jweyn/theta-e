@@ -240,16 +240,20 @@ def main(config, model, stid, forecast_date):
         bufr_name = config['Models'][model]['bufr_name']
     except KeyError:
         raise KeyError('bufkit: no bufr_name parameter defined for model %s in config!' % model)
+    if 'bufr_stid' in config['Stations'][stid]:
+        bufr_stid = config['Stations'][stid]['bufr_stid']
+    else:
+        bufr_stid = str(stid)
 
     # Delete yesterday's bufkit files
     try:
         if not(config['BUFKIT']['archive']):
-            bufr_delete_yesterday(bufkit_directory, stid, forecast_date - timedelta(days=1))
+            bufr_delete_yesterday(bufkit_directory, bufr_stid, forecast_date - timedelta(days=1))
     except KeyError:
-        bufr_delete_yesterday(bufkit_directory, stid, forecast_date - timedelta(days=1))
+        bufr_delete_yesterday(bufkit_directory, bufr_stid, forecast_date - timedelta(days=1))
 
     # Get bufkit forecasts
-    forecast = get_bufkit_forecast(config, bufr, bufkit_directory, model, bufr_name, run_time, stid, forecast_date)
+    forecast = get_bufkit_forecast(config, bufr, bufkit_directory, model, bufr_name, run_time, bufr_stid, forecast_date)
 
     return forecast
 
@@ -277,11 +281,15 @@ def historical(config, model, stid, forecast_dates):
         bufr_name = config['Models'][model]['bufr_name']
     except KeyError:
         raise KeyError('bufkit: no bufr_name parameter defined for model %s in config!' % model)
+    if 'bufr_stid' in config['Stations'][stid]:
+        bufr_stid = config['Stations'][stid]['bufr_stid']
+    else:
+        bufr_stid = str(stid)
 
     forecasts = []
     for forecast_date in forecast_dates:
         try:
-            forecast = get_bufkit_forecast(config, bufr, bufkit_directory, model, bufr_name, run_time, stid,
+            forecast = get_bufkit_forecast(config, bufr, bufkit_directory, model, bufr_name, run_time, bufr_stid,
                                            forecast_date)
             forecasts.append(forecast)
         except BaseException as e:
@@ -291,8 +299,8 @@ def historical(config, model, stid, forecast_dates):
         # Delete the bufkit files after processing, unless archived
         try:
             if not (config['BUFKIT']['archive']):
-                bufr_delete_yesterday(bufkit_directory, stid, forecast_date)
+                bufr_delete_yesterday(bufkit_directory, bufr_stid, forecast_date)
         except KeyError:
-            bufr_delete_yesterday(bufkit_directory, stid, forecast_date)
+            bufr_delete_yesterday(bufkit_directory, bufr_stid, forecast_date)
 
     return forecasts
