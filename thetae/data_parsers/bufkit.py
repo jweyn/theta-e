@@ -65,7 +65,7 @@ def get_bufkit_forecast(config, bufr, bufkit_dir, model, bufr_name, cycle, stid,
         else:
             # wget WRF bufkit files from University of Washington, save files in specified bufr directory
             domain = bufr_name[-2:]
-            os.system('wget http://www.atmos.washington.edu/mm5rt/bufkit_wrfgfs%s/%s/wrf%s_ksea.buf -O '
+            os.system('wget -q http://www.atmos.washington.edu/mm5rt/bufkit_wrfgfs%s/%s/wrf%s_ksea.buf -O '
                       '%s/bufkit/%s.wrf%s_ksea.buf' % (domain, model_time, domain, bufkit_dir, model_time, domain))
 
         # Check again for bufkit file, if it exists then create forecast object
