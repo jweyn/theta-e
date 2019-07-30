@@ -65,7 +65,8 @@ def get_bufkit_forecast(config, bufr, bufkit_dir, model, bufr_name, cycle, stid,
         else:
             # wget WRF bufkit files from University of Washington, save files in specified bufr directory
             domain = bufr_name[-2:]
-            os.system('wget -q http://www.atmos.washington.edu/mm5rt/bufkit_wrfgfs%s/%s/wrf%s_%s.buf' % 
+            os.system('wget -q --timeout=5 --tries=2 '
+                      'http://www.atmos.washington.edu/mm5rt/bufkit_wrfgfs%s/%s/wrf%s_%s.buf' %
                       (domain, model_time, domain, stid.lower()))
             os.system('mv wrf%s_%s.buf %s/bufkit/%s.wrf%s_%s.buf' % 
                       (domain, stid.lower(), bufkit_dir, model_time, domain, stid.lower()))
