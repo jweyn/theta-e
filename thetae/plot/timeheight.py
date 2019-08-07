@@ -5,7 +5,7 @@
 #
 
 """
-Generates bufit timeheight plots for various models.
+Generates bufkit timeheight plots for various models.
 
 """
 
@@ -15,39 +15,94 @@ import re
 import numpy as np
 from scipy import interpolate
 import pandas as pd
-from thetae.db import readForecast, readTimeSeries
-from thetae.util import date_to_datetime
+from thetae.db import readTimeSeries
 from datetime import datetime, timedelta
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
-from matplotlib import dates
-import pdb
+import pdb #depete later
 
-def plot_timeheight(config, stid, model, forecast_date, variable, profile, plot_dir, img_type):
+
+def plot_timeheight(config, stid, model, forecast_date, variable, df, plot_dir, img_type):
     """
     Timeseries plotting function
+
+    Currently designed to convert the Profile to a Pandas MultiIndex which is easy to manipulate for plotting.
+    Future implementations should probably get rid of the Profile OrderedDict construct altogether.
     """
+    # can get rid of this
+    var_names = ['temperature', 'dewPointDep', 'cloud', 'windSpeed', 'omega']
 
-    # stuff that I might need...
-    #var_names = ['temperature', 'dewPointDep', 'cloud', 'windSpeed', 'omega']
-    variable = variable.upper()
-    bufr_vars = ['TMPC', 'DWPC', 'UWND', 'VWND', 'HGHT', 'OMEG', 'CFRL']
-
-    # Get surface pressure from forecast timeseries
+    # get forecast surface pressure trace
+    # if this fails then presumably the bufkit data isn't available for this model run yet
     try:
-        obs = readTimeSeries(config, stid, 'forecast', 'hourly_forecast', model=model, start_date=profile.keys()[0],
-                             end_date=profile.keys()[-1])
+        fcst = readTimeSeries(config, stid, 'forecast', 'hourly_forecast', model=model,
+                              start_date=pd.to_datetime(df.columns.values[0]),
+                              end_date=pd.to_datetime(df.columns.values[-1]))
     except ValueError:
         if config['debug'] > 9:
             print('plot.timeheight warning: no hourly timeseries data for %s, %s' % (stid, model))
 
-    datetimes = obs.data['DATETIME']
-    pressure = obs.data['PRESSURE']
+    pres_surf = pd.Series(fcst.data['PRESSURE'].values, index=fcst.data['DATETIME'])
 
+    # slice dataframe depending on which variable we are plotting
+    idx = pd.IndexSlice
+    if variable == 'temperature':
+        temperature = df.loc[idx[:, 'TMPC'], :]
+        cmap = 'jet'
+        vrange = [-20,25]
+        plot_variable = np.ma.masked_array(temperature.values.astype('float'))
 
+    # get x and y values
+    times = df.loc[idx[:, 'TMPC'], :].columns
+    p_levels = np.flip(np.unique(df.index.get_level_values('pressure').values),0)
 
+    # set up the plot
+    fig = plt.figure()
+    fig.set_size_inches(8, 6)
+    ax = fig.add_subplot(1, 1, 1)
 
+    # meshplot of variable
+    plot_variable = np.ma.masked_where(np.isnan(plot_variable), plot_variable)
+    meshplot = ax.pcolormesh(times, p_levels, plot_variable, cmap=cmap, vmin=vrange[0],
+                             vmax=vrange[1])
+
+    # plot 0 deg C line on temperature plot
+    if variable == 'temperature':
+        zero_line = plt.contour(times, p_levels, plot_variable, [0.0], colors='k', linewidths=3,
+                                linestyles='dashed')
+        plt.clabel(zero_line, colors='k', inline_spacing=1, fmt='%1.0f C', rightside_up=True)
+
+    # shade the area black below the pressure "surface"
+    #ax.fill_between(pres_surf.index, pres_surf.values, [ax.get_ylim()[1]]*len(pres_surf.values),facecolor='saddlebrown')
+
+    # vertical lines at start and end of forecast period
+    ax.plot([forecast_date + timedelta(hours=6)]*2, [p_levels[0], p_levels[-1]], color='k', lw=2.0)
+    ax.plot([forecast_date + timedelta(hours=30)]*2, [p_levels[0], p_levels[-1]], color='k', lw=2.0)
+
+    # Plot configurations and saving
+    ax.grid()
+    ax.set_title('{} forecast {} time-height at {}'.format(model, variable.upper(), stid))
+    ax.set_xlabel('Valid time')
+    ax.set_ylabel('Pressure (hPa)')
+
+    # axis range and label formatting
+    from matplotlib import dates
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    ax.set_xlim(times[0],forecast_date+timedelta(hours=42))
+    ax.set_ylim(1020,450)
+    ax.xaxis.set_major_locator(dates.HourLocator(byhour=list(range(0, 25, 3))))
+    ax.xaxis.set_major_formatter(dates.DateFormatter('%HZ'))
+    ax.xaxis.set_minor_locator(dates.DayLocator())
+    ax.xaxis.set_minor_formatter(dates.DateFormatter('%h %d'))
+    ax.xaxis.set_tick_params(which='minor', pad=15)
+
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="3%", pad=0.15)
+    plt.colorbar(meshplot, cax)
+
+    # Save plot
+    plt.savefig('{}/{}_timeheight_{}.{}'.format(plot_dir, stid, variable.upper(), img_type), dpi=150)
 
 
 
@@ -183,7 +238,19 @@ def bufr_timeheight_parser(config, model, stid, forecast_date):
                 final_vars['VWND'] = list(wspd * np.cos(wdir * np.pi/180. - np.pi))
             profile[fcst_dt] = final_vars
 
-    return profile
+    # convert Profile (OrderedDict) into MultiIndex DataFrame
+    bufr_vars = profile[profile.keys()[0]].keys()
+    pressure_inds = profile[profile.keys()[0]]['PRES']*len(bufr_vars)
+    bufr_vars_inds = np.repeat(bufr_vars, len(profile[profile.keys()[0]]['PRES']))
+    index = pd.MultiIndex.from_tuples(zip(pressure_inds, bufr_vars_inds), names=['pressure', 'var'])
+    df = pd.DataFrame(index=index, columns=profile.keys())
+
+    # populate DataFrame from Profile
+    for var in bufr_vars:
+        for dt in profile.keys():
+            df[dt].loc[:, var] = np.array(profile[dt][var])
+
+    return df
 
 
 def main(config, stid, forecast_date):
@@ -216,9 +283,9 @@ def main(config, stid, forecast_date):
     # Make plots for models that have a bufkit file
     for model in models:
         if 'bufr_name' in config['Models'][model].keys():
-            profile = bufr_timeheight_parser(config, model, stid, forecast_date)
+            df = bufr_timeheight_parser(config, model, stid, forecast_date)
             for variable in variables:
                 if config['debug'] > 50:
                     print('plot.timeheight: plotting %s for %s' % (variable,model))
-                plot_timeheight(config, stid, model, forecast_date, variable, profile, plot_directory, image_type)
+                plot_timeheight(config, stid, model, forecast_date, variable, df, plot_directory, image_type)
     return
