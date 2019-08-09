@@ -345,8 +345,8 @@ def compute_bl_winds(bufkit_df):
         b_loc = np.min(free_atm)
         bl_df['height'][i] = hght[b_loc, i]
         bl_df['pressure'][i] = p_levels[b_loc]
-        bl_df['mean_wind'][i] = np.nanmean(sknt[b_loc, i])
-        bl_df['max_wind'][i] = np.nanmax(sknt[b_loc, i])
+        bl_df['mean_wind'][i] = np.nanmean(sknt[0:b_loc, i])
+        bl_df['max_wind'][i] = np.nanmax(sknt[0:b_loc, i])
 
     return bl_df
 
