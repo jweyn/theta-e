@@ -11,7 +11,6 @@ Generates model plots related to model forecast winds
 """
 
 import os
-import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 from thetae.db import readForecast, readTimeSeries
@@ -20,8 +19,6 @@ import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from matplotlib import dates
-
-import pdb
 
 
 def plot_model_winds(config, stid, models, forecast_date, plot_directory, image_type):
@@ -88,6 +85,7 @@ def plot_model_winds(config, stid, models, forecast_date, plot_directory, image_
     ax.set_xlim(forecast_date-timedelta(hours=12), forecast_date+timedelta(hours=42))
 
     plt.savefig('{}/{}_WINDBARBS.{}'.format(plot_directory, stid, image_type), bbox_inches="tight", dpi=150)
+    return
 
 def plot_mixed_layer_winds(config, stid, models, forecast_date, plot_directory, image_type):
     """
@@ -117,15 +115,17 @@ def plot_mixed_layer_winds(config, stid, models, forecast_date, plot_directory, 
             except KeyError:
                 color = 'k'
 
-            ax.plot(bl_df.index, bl_df['mean_wind'], color=color, label='%s MeanML' % model, zorder=2)
-            ax.plot(bl_df.index, bl_df['max_wind'], color=color, label='%s MaxML' % model, linestyle='dashed',
+            ax.plot(bl_df.index, bl_df['mean_wind'], color=color, label='%s meanML' % model, zorder=2)
+            ax.plot(bl_df.index, bl_df['max_wind'], color=color, label='%s maxML' % model, linestyle='dashed',
                     zorder=2)
 
-    # plot observations
+    # plot observations (both wind speed and gust)
     obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=25),
                          end_date=forecast_date+timedelta(hours=24))
-    ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data['WINDSPEED'], label='OBS', color='black', linestyle=':',
-            marker='o', ms=4)
+    ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data['WINDSPEED'], label='OBS speed', color='black',
+            linestyle=':', marker='o', ms=4)
+    ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data['WINDGUST'].values, label='OBS gust', color='black',
+            linestyle='None', marker='x', ms=5)
 
     # Plot configurations and saving
     ax.grid()
@@ -158,7 +158,7 @@ def plot_mixed_layer_winds(config, stid, models, forecast_date, plot_directory, 
     ax.set_xlim(forecast_date-timedelta(hours=12), forecast_date+timedelta(hours=42))
 
     plt.savefig('{}/{}_MIXEDLAYERWINDS.{}'.format(plot_directory, stid, image_type), dpi=150)
-    pdb.set_trace()
+    return
 
 
 def main(config, stid, forecast_date):
