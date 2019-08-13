@@ -565,7 +565,10 @@ def readDaily(config, stid, data_binding, table_type, model=None, start_date=Non
         row = data.iloc[index]
         daily = Daily(stid, date_to_datetime(row['DATETIME']))
         daily.set_values(row['HIGH'], row['LOW'], row['WIND'], row['RAIN'])
-        daily.model = model
+        if 'MODEL' in row.index:
+            daily.model = row['MODEL']
+        else:
+            daily.model = model
         daily_list.append(daily)
 
     if len(data.index) == 0:
