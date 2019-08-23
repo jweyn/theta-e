@@ -87,6 +87,7 @@ def plot_model_winds(config, stid, models, forecast_date, plot_directory, image_
     plt.savefig('{}/{}_WINDBARBS.{}'.format(plot_directory, stid, image_type), bbox_inches="tight", dpi=150)
     return
 
+
 def plot_mixed_layer_winds(config, stid, models, forecast_date, plot_directory, image_type):
     """
     model mixed-layer winds plotting function
@@ -120,12 +121,16 @@ def plot_mixed_layer_winds(config, stid, models, forecast_date, plot_directory, 
                     zorder=2)
 
     # plot observations (both wind speed and gust)
-    obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=25),
-                         end_date=forecast_date+timedelta(hours=24))
-    ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data['WINDSPEED'], label='OBS speed', color='black',
-            linestyle=':', marker='o', ms=4)
-    ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data['WINDGUST'].values, label='OBS gust', color='black',
-            linestyle='None', marker='x', ms=5)
+    try:
+        obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=25),
+                             end_date=forecast_date+timedelta(hours=24))
+        ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data['WINDSPEED'], label='OBS speed', color='black',
+                linestyle=':', marker='o', ms=4)
+        ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data['WINDGUST'].values, label='OBS gust', color='black',
+                linestyle='None', marker='x', ms=5)
+    except ValueError:
+        if config['debug'] > 9:
+            print('plot.timeseries warning: no data found for observations at %s' % stid)
 
     # Plot configurations and saving
     ax.grid()
