@@ -55,12 +55,16 @@ def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img
             c += 1
         ax.plot(pd.to_datetime(forecast.timeseries.data['DATETIME']), data, label=model, color=color)
 
-    # Plot observations
-    obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=25),
-                         end_date=forecast_date+timedelta(hours=24))
-    if variable != 'RAIN':
-        ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data[variable], label='OBS',
-                color='black', linestyle=':', marker='o', ms=4)
+    # Plot observations, if available
+    try:
+        obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=25),
+                             end_date=forecast_date+timedelta(hours=24))
+        if variable != 'RAIN':
+            ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data[variable], label='OBS',
+                    color='black', linestyle=':', marker='o', ms=4)
+    except ValueError:
+        if config['debug'] > 9:
+            print('plot.timeseries warning: no data found for observations at %s' % stid)
 
     # Plot configurations and saving
     ax.grid()

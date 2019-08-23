@@ -116,8 +116,7 @@ def plot_timeheight(config, stid, model, forecast_date, variable, df, plot_dir, 
 
     # meshplot of variable
     plot_variable = np.ma.masked_where(np.isnan(plot_variable), plot_variable)
-    meshplot = ax.pcolormesh(times, p_levels, plot_variable, cmap=cmap, vmin=vrange[0],
-                             vmax=vrange[1])
+    meshplot = ax.pcolormesh(np.array(times), p_levels, plot_variable, cmap=cmap, vmin=vrange[0], vmax=vrange[1])
 
     # plot 0 deg C line on temperature plot
     if variable == 'temperature':
@@ -190,7 +189,7 @@ def bufr_timeheight_parser(config, model, stid, forecast_date):
     try:
         infile = open(file_name, 'r')
     except IOError:
-        print('plot.timeheight: missing bufkit file %s' % file_name)
+        raise IOError('plot.timeheight: missing bufkit file %s' % file_name)
 
     profile = OrderedDict()
 
@@ -206,20 +205,20 @@ def bufr_timeheight_parser(config, model, stid, forecast_date):
             block_lines.append(line)
         elif inblock:
             # Keep appending lines until we start hitting numbers
-            if re.match('^\d{3}|^\d{4}', line):
+            if re.match(r'^\d{3}|^\d{4}', line):
                 inblock = False
                 block_found = True
             else:
-                block_lines.append(line)
+                block_lines.append(''.join(line.split('\r')))  # jweyn: remove any returns
 
     # Now compute the remaining number of variables
     re_string = ''
     for line in block_lines:
         dum_num = len(line.split())
         for n in range(dum_num):
-            re_string = re_string + '(-?\d{1,5}.\d{2}) '
+            re_string = re_string + r'(-?\d{1,5}.\d{2}) '
         re_string = re_string[:-1]  # Get rid of the trailing space
-        re_string = re_string + '\r\n'
+        re_string = re_string + r'\n'
 
     # Compile this re_string for more efficient re searches
     block_expr = re.compile(re_string)
@@ -227,11 +226,9 @@ def bufr_timeheight_parser(config, model, stid, forecast_date):
     # Now get corresponding indices of the variables we need
     full_line = ''
     for r in block_lines:
-        full_line = full_line + r[:-2] + ' '
+        full_line = full_line + ''.join(r.split('\n')) + ' '
     # Now split it
-    varlist = re.split('[ /]', full_line)
-    # Get rid of trailing space
-    varlist = varlist[:-1]
+    varlist = full_line.strip().split(' ')
 
     # Variables we want
     vars_desired = ['TMPC', 'DWPC', 'UWND', 'VWND', 'HGHT', 'OMEG', 'CFRL']
@@ -242,69 +239,70 @@ def bufr_timeheight_parser(config, model, stid, forecast_date):
 
     # We now need to break everything up into a chunk for each
     # forecast date and time
-    with open(file_name) as infile:
-        blocks = infile.read().split('STID')
-        for block in blocks:
-            interp_plevs = []
-            header = block
-            if header.split()[0] != '=':
-                continue
-            fcst_time = re.search('TIME = (\d{6}/\d{4})', header).groups()[0]
-            fcst_dt = datetime.strptime(fcst_time, '%y%m%d/%H%M')
+    infile.seek(0)
+    blocks = infile.read().split('STID')
+    infile.close()
+    for block in blocks:
+        interp_plevs = []
+        header = block
+        if header.split()[0] != '=':
+            continue
+        fcst_time = re.search(r'TIME = (\d{6}/\d{4})', header).groups()[0]
+        fcst_dt = datetime.strptime(fcst_time, '%y%m%d/%H%M')
 
-            # End loop if we are more than 60 hours past the start of the forecast date
-            if fcst_dt > forecast_date + timedelta(hours=60):
-                break
-            temp_vars = OrderedDict()
-            for var in varlist:
-                temp_vars[var] = []
-            temp_vars['PRES'] = []
-            for block_match in block_expr.finditer(block):
-                vals = block_match.groups()
-                for val, name in zip(vals, varlist):
-                    if float(val) == -9999.:
-                        temp_vars[name].append(np.nan)
-                    else:
-                        temp_vars[name].append(float(val))
+        # End loop if we are more than 60 hours past the start of the forecast date
+        if fcst_dt > forecast_date + timedelta(hours=60):
+            break
+        temp_vars = OrderedDict()
+        for var in varlist:
+            temp_vars[var] = []
+        temp_vars['PRES'] = []
+        for block_match in block_expr.finditer(block):
+            vals = block_match.groups()
+            for val, name in zip(vals, varlist):
+                if float(val) == -9999.:
+                    temp_vars[name].append(np.nan)
+                else:
+                    temp_vars[name].append(float(val))
 
-            # Unfortunately, bufkit values aren't always uniformly distributed.
-            final_vars = OrderedDict()
-            cur_plevs = temp_vars['PRES']
-            cur_plevs.reverse()
-            for var in varlist[1:]:
-                if var in (vars_desired + ['SKNT', 'DRCT']):
-                    values = temp_vars[var]
-                    values.reverse()
-                    interp_plevs = list(plevs)
-                    num_plevs = len(interp_plevs)
-                    f = interpolate.interp1d(cur_plevs, values, bounds_error=False)
-                    interp_vals = f(interp_plevs)
-                    interp_array = np.full((len(plevs)), np.nan)
-                    # Array almost certainly missing values at high pressures
-                    interp_array[:num_plevs] = interp_vals
-                    interp_vals = list(interp_array)
-                    interp_plevs = list(plevs)  # use original array
-                    interp_vals.reverse()
-                    interp_plevs.reverse()
-                    if var == 'SKNT':
-                        wspd = np.array(interp_vals)
-                    if var == 'DRCT':
-                        wdir = np.array(interp_vals)
-                if var in vars_desired:
-                    final_vars[var] = interp_vals
-            final_vars['PRES'] = interp_plevs
-            if 'UWND' not in final_vars.keys():
-                final_vars['UWND'] = list(wspd * np.sin(wdir * np.pi / 180. - np.pi))
-            if 'VWND' not in final_vars.keys():
-                final_vars['VWND'] = list(wspd * np.cos(wdir * np.pi / 180. - np.pi))
-            profile[fcst_dt] = final_vars
+        # Unfortunately, bufkit values aren't always uniformly distributed.
+        final_vars = OrderedDict()
+        cur_plevs = temp_vars['PRES']
+        cur_plevs.reverse()
+        for var in varlist[1:]:
+            if var in (vars_desired + ['SKNT', 'DRCT']):
+                values = temp_vars[var]
+                values.reverse()
+                interp_plevs = list(plevs)
+                num_plevs = len(interp_plevs)
+                f = interpolate.interp1d(cur_plevs, values, bounds_error=False)
+                interp_vals = f(interp_plevs)
+                interp_array = np.full((len(plevs)), np.nan)
+                # Array almost certainly missing values at high pressures
+                interp_array[:num_plevs] = interp_vals
+                interp_vals = list(interp_array)
+                interp_plevs = list(plevs)  # use original array
+                interp_vals.reverse()
+                interp_plevs.reverse()
+                if var == 'SKNT':
+                    wspd = np.array(interp_vals)
+                if var == 'DRCT':
+                    wdir = np.array(interp_vals)
+            if var in vars_desired:
+                final_vars[var] = interp_vals
+        final_vars['PRES'] = interp_plevs
+        if 'UWND' not in final_vars.keys():
+            final_vars['UWND'] = list(wspd * np.sin(wdir * np.pi / 180. - np.pi))
+        if 'VWND' not in final_vars.keys():
+            final_vars['VWND'] = list(wspd * np.cos(wdir * np.pi / 180. - np.pi))
+        profile[fcst_dt] = final_vars
 
     # convert Profile (OrderedDict) into MultiIndex DataFrame
-    bufr_vars = profile[list(profile.keys())[0]].keys()
+    bufr_vars = list(profile[list(profile.keys())[0]].keys())
     pressure_inds = profile[list(profile.keys())[0]]['PRES'] * len(bufr_vars)
     bufr_vars_inds = np.repeat(bufr_vars, len(profile[list(profile.keys())[0]]['PRES']))
     index = pd.MultiIndex.from_tuples(list(zip(pressure_inds, bufr_vars_inds)), names=['pressure', 'var'])
-    df = pd.DataFrame(index=index, columns=profile.keys())
+    df = pd.DataFrame(index=index, columns=list(profile.keys()))
 
     # populate DataFrame from Profile
     for var in bufr_vars:
@@ -362,7 +360,7 @@ def main(config, stid, forecast_date):
         plot_directory = config['Plot']['Options']['plot_directory']
     except KeyError:
         plot_directory = '%s/site_data' % config['THETAE_ROOT']
-        print('plot.timeseries warning: setting output directory to default')
+        print('plot.timeheight warning: setting output directory to default')
     if not (os.path.isdir(plot_directory)):
         os.makedirs(plot_directory)
     if config['debug'] > 9:
@@ -372,7 +370,7 @@ def main(config, stid, forecast_date):
     except KeyError:
         image_type = 'svg'
         if config['debug'] > 50:
-            print('plot.timeseries warning: using default image file format (svg)')
+            print('plot.timeheight warning: using default image file format (svg)')
 
     # Get list of models
     models = list(config['Models'].keys())
