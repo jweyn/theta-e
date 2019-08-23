@@ -14,6 +14,7 @@ import re
 import numpy as np
 from scipy import interpolate
 import pandas as pd
+from scipy.ndimage.filters import gaussian_filter
 from math import ceil
 from datetime import datetime, timedelta
 from io import open
