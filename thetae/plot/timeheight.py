@@ -381,9 +381,14 @@ def main(config, stid, forecast_date):
     # Make plots for models that have a bufkit file
     for model in models:
         if 'bufr_name' in config['Models'][model].keys():
-            df = bufr_timeheight_parser(config, model, stid, forecast_date)
-            for variable in variables:
-                if config['debug'] > 50:
-                    print('plot.timeheight: plotting %s for %s' % (variable, model))
-                plot_timeheight(config, stid, model, forecast_date, variable, df, plot_directory, image_type)
+            try:
+                df = bufr_timeheight_parser(config, model, stid, forecast_date)
+                for variable in variables:
+                    if config['debug'] > 50:
+                        print('plot.timeheight: plotting %s for %s' % (variable, model))
+                    plot_timeheight(config, stid, model, forecast_date, variable, df, plot_directory, image_type)
+            except BaseException:
+                if config['traceback']:
+                    raise
+                pass
     return
