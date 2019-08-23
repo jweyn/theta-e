@@ -595,6 +595,17 @@ def wind_uv_to_speed_dir(uval, vval):
     return vel_val, wdir
 
 
+def wind_speed_dir_to_uv(vel, wdir):
+    """
+    Converts a wind speed and direction (degrees) to U and V components
+    """
+    polar_dir = 90 - wdir
+    polar_dir_rad = np.radians(polar_dir)
+    u = -vel * np.cos(polar_dir_rad)
+    v = -vel * np.sin(polar_dir_rad)
+    return u, v
+
+
 def dewpoint_from_t_rh(t, rh, is_f=False):
     """
     Calculate dewpoint from temperature relative humidity in %.
