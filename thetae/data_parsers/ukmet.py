@@ -7,175 +7,140 @@
 """
 Retrieve UKMET data
 
-Daily: high, low, wind speed
-Hourly: temp, dewpt, wind speed, wind gust, wind direction
 """
 
 from thetae import Forecast
-from datetime import datetime, timedelta
+from thetae.util import c_to_f, ms_to_kt, mm_to_in, check_cache_file
+from datetime import timedelta
+import requests
 import pandas as pd
-import numpy as np
-from bs4 import BeautifulSoup
-from thetae.util import get_codes, c_to_f, mph_to_kt, wind_dir_to_deg, dewpoint_from_t_rh
-from selenium import webdriver
-try:
-    from urllib.request import Request, urlopen
-except ImportError:
-    from urllib2 import Request, urlopen
+import json
 
 default_model_name = 'UKMET'
 
-# Header that is needed for urllib2 to work properly
-hdr = {
-    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 '
-                  'Safari/537.11',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-    'Accept-Encoding': 'none',
-    'Accept-Language': 'en-US,en;q=0.8',
-    'Connection': 'keep-alive'
-}
 
+def get_ukmet_forecast(config, stid, lat, lon, api_id, api_secret, forecast_date):
+    json_url = 'https://api-metoffice.apiconnect.ibmcloud.com/metoffice/production/v0/forecasts/point'
+    headers = {
+        'x-ibm-client-id': api_id,
+        'x-ibm-client-secret': api_secret,
+        'accept': "application/json"
+    }
 
-# needs ukmet code
-def get_ukmet_forecast(stid, ukmet_code, forecast_date):
-    """
-    Retrieve UKMET data. 
+    api_options = {
+        'excludeParameterMetaData': 'false',
+        'includeLocationName': 'false',
+        'latitude': lat,
+        'longitude': lon,
+    }
 
-    :param stid: station ID
-    :param ukmet_code: site-specific URL code from ukmet.codes
-    :param forecast_date: datetime of day to forecast
-    :return: Forecast object for high, low, max wind for next 6Z--6Z. No precip.
-    """
-    # Retrieve the model data
-    url = 'https://www.metoffice.gov.uk/public/weather/forecast/%s' % ukmet_code
-    req = Request(url, headers=hdr)
-    response = urlopen(req)
-    page = response.read().decode('utf-8', 'ignore')
-    soup = BeautifulSoup(page, 'lxml')
+    # Get hourly forecast data
+    # Check if we have a cached hourly file and if it is recent enough
+    site_directory = '%s/site_data' % config['THETAE_ROOT']
+    cache_file = '%s/%s_ukmet_hourly.txt' % (site_directory, stid)
+    cache_ok = check_cache_file(config, cache_file, interval=4)
 
-    # Find UTC offset and current time in HTML
-    utcoffset = int(soup.find(id='country').text.split('-')[1][0:2])
-    epoch = float(soup.find("td", {"id": "firstTimeStep"})['data-epoch'])
-    utcnow = datetime.utcfromtimestamp(epoch)
+    if not cache_ok:
+        response = requests.get('%s/hourly' % json_url, params=api_options, headers=headers)
+        ukmet_data_hourly = response.json()
+        # Raise error for invalid HTTP response
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError:
+            print('ukmet: got HTTP error when querying API for hourly data')
+            raise
+        # Cache the response
+        with open(cache_file, 'w') as f:
+            f.write(response.text)
+    else:
+        ukmet_data_hourly = json.load(open(cache_file))
 
-    # Store daily variables 
-    days = []
-    highs = []  # this can be overwritten by hourly
-    lows = []  # this can be overwritten by hourly
-    winds = []  # this comes from hourly
+    # model run date--currently not using this but might be of interest later
+    model_run_date = ukmet_data_hourly['features'][0]['properties']['modelRunDate']
 
-    # Pull in daily data using li tabs
-    tabids = ['tabDay1', 'tabDay2', 'tabDay3']
-    for ids in tabids:
-        pars = soup.find(id=ids)
-        days.append(datetime.strptime(pars['data-date'], '%Y-%m-%d')) 
-        highs.append(c_to_f(pars.findAll("span", {"title": "Maximum daytime temperature"})[0]['data-value-raw']))
-        lows.append(c_to_f(pars.findAll("span", {"title": "Minimum nighttime temperature"})[0]['data-value-raw']))
+    ukmet_df = pd.DataFrame(ukmet_data_hourly['features'][0]['properties']['timeSeries'])
+    ukmet_df.set_index('time', inplace=True)
+    ukmet_df.index.name = 'dateTime'
+    ukmet_df.index = pd.to_datetime(ukmet_df.index)
 
-    # Pull in hourly data
-    # This requires PhantomJS to pull out additional HTML code
-    driver = webdriver.PhantomJS(executable_path='/home/disk/p/wxchallenge/bin/phantomjs')
-    driver.get(url + '#?date=2017-09-21')
-    source = driver.page_source
-    soup = BeautifulSoup(source, 'html.parser')
+    # rename columns
+    column_names_dict = {
+        'screenTemperature': 'temperature',
+        'screenDewPointTemperature': 'dewpoint',
+        'windSpeed10m': 'windSpeed',
+        'windGustSpeed10m': 'windGust',
+        'windDirectionFrom10m': 'windDirection',
+        'totalPrecipAmount': 'rain',
+        'mslp': 'pressure',
+    }
+    ukmet_df = ukmet_df.rename(columns=column_names_dict)
 
-    dateTime = []
-    temperature = []
-    temperature_c = []
-    dewpoint = []
-    windSpeed = []
-    windGust = []
-    windDirection = []
-    humidity = []  # this is temporary--converted to dew point below
+    # drop columns that we are not using
+    ukmet_df.drop(['feelsLikeTemperature', 'probOfPrecipitation', 'screenRelativeHumidity', 'significantWeatherCode',
+                   'precipitationRate', 'totalSnowAmount', 'uvIndex', 'visibility'], inplace=True, axis=1)
 
-    divids = ['divDayModule0', 'divDayModule1', 'divDayModule2', 'divDayModule3']
-    for i, divs in enumerate(divids):
-        day0 = datetime.strptime(soup.find("div", {"id": "divDayModule0"})['data-content-id'], '%Y-%m-%d')
-        day1 = (day0+timedelta(days=1)).strftime('%Y-%m-%d')
-        pars = soup.find(id=divs)
-        divdate = datetime.strptime(pars['data-content-id'], '%Y-%m-%d').date()
-        hourels = pars.findAll("tr", {"class": "weatherTime"})[0].find_all('td')
-        for ii, ele in enumerate(hourels):
-            if ele.text == 'Now':
-                dateTime.append(utcnow)
-            else:
-                dtmp = datetime(divdate.year, divdate.month, divdate.day, int(ele.text.split(':')[0]),
-                                int(ele.text.split(':')[1]))
-                dateTime.append(dtmp + timedelta(hours=utcoffset))
-        tempels = pars.findAll("tr", {"class": "weatherTemp"})[0].findAll("i", {"class": "icon icon-animated"})
-        for ele in tempels:
-            temperature_c.append(float(ele['data-value-raw']))
-            temperature.append(c_to_f(ele['data-value-raw']))
-        # relative humidity for conversion to dew point
-        humels = pars.findAll("tr", {"class": "weatherHumidity"})[0].text.split() 
-        for ele in humels:
-            humidity.append(float(ele.split('%')[0]))
-        # add wind 
-        speedels = pars.findAll("i", {"data-type": "windSpeed"})  
-        for ele in speedels:
-            windSpeed.append(np.round(mph_to_kt(ele['data-value-raw']), 2))
-        gustels = pars.findAll("span", {"class": "gust"})  
-        for ele in gustels:
-            windGust.append(mph_to_kt(ele['data-value-raw']))
-        direls = pars.findAll("span", {"class": "direction"})  
-        for ele in direls:
-            windDirection.append(wind_dir_to_deg(ele.text))
+    # correct units
+    ukmet_df['pressure'] /= 100.
+    ukmet_df['temperature'] = c_to_f(ukmet_df['temperature'])
+    ukmet_df['dewpoint'] = c_to_f(ukmet_df['dewpoint'])
+    ukmet_df['windSpeed'] = ms_to_kt(ukmet_df['windSpeed'])
+    ukmet_df['windGust'] = ms_to_kt(ukmet_df['windGust'])
+    ukmet_df['rain'] = mm_to_in(ukmet_df['rain'])
 
-    # Convert T and humidity to dewpt
-    for ii, rh in enumerate(humidity):
-        td_tmp = dewpoint_from_t_rh(temperature_c[ii], rh)
-        dewpoint.append(c_to_f(td_tmp))
+    # Create Forecast object, save timeseries
+    forecast = Forecast(stid, default_model_name, forecast_date)
+    forecast.timeseries.data = ukmet_df.reset_index()
 
-    # Make into dataframe
-    df = pd.DataFrame({
-        'temperature': temperature,
-        'dewpoint': dewpoint,
-        'windSpeed': windSpeed,
-        'windGust': windGust,
-        'windDirection': windDirection,
-        'dateTime': dateTime
-    }, index=dateTime)
-
-    # Correct the highs and lows with the hourly data, find max wind speed
     forecast_start = forecast_date.replace(hour=6)
     forecast_end = forecast_start + timedelta(days=1)
-    for d in range(0, len(days)):
-        try:
-            # unlike the mos code, we always use the 'include'
-            iloc_start_include = df.index.get_loc(forecast_start)
-        except BaseException:
-            print('ukmet: error getting start time index in db; check data.')
-            break
-        try:
-            iloc_end = df.index.get_loc(forecast_end)
-        except BaseException:
-            print('ukmet: error getting end time index in db; check data.')
-            break
-        raw_high = df.iloc[iloc_start_include:iloc_end]['temperature'].max()
-        raw_low = df.iloc[iloc_start_include:iloc_end]['temperature'].min()
-        winds.append(int(np.round(df.iloc[iloc_start_include:iloc_end]['windSpeed'].max())))
-        if raw_high > highs[d]:
-            highs[d] = raw_high
-        if raw_low < lows[d]:
-            lows[d] = raw_low
-        forecast_start = forecast_start + timedelta(days=1)
-        forecast_end = forecast_end + timedelta(days=1)
 
-    forecast = Forecast(stid, default_model_name, days[0])        
-    forecast.timeseries.data = df
-    forecast.daily.set_values(highs[0], lows[0], winds[0], None)
+    # Now use the daily API to find daily values
+    # Check if we have a cached daily file and if it is recent enough
+    site_directory = '%s/site_data' % config['THETAE_ROOT']
+    cache_file = '%s/%s_ukmet_daily.txt' % (site_directory, stid)
+    cache_ok = check_cache_file(config, cache_file, interval=4)
 
-    # # Make list of forecast objects for future days--currently not implemented
-    #
-    # forecast = []
-    #
-    # for i in range(0,len(days)):
-    #     forecast_tmp = Forecast(stid, default_model_name, days[i])
-    #     forecast_tmp.daily.date = days[i]
-    #     forecast_tmp.daily.high = highs[i]
-    #     forecast_tmp.daily.low = lows[i]
-    #     forecast.append(forecast_tmp)
+    have_daily_values = True
+    if not cache_ok:
+        response = requests.get('%s/daily' % json_url, params=api_options, headers=headers)
+        ukmet_data_daily = response.json()
+        # Raise error for invalid HTTP response
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError:
+            print('ukmet warning: got HTTP error when querying API for daily data; using hourly values')
+            have_daily_values = False
+        # Cache the response
+        with open(cache_file, 'w') as f:
+            f.write(response.text)
+    else:
+        ukmet_data_daily = json.load(open(cache_file))
+
+    # extract daily values for the forecast date
+    if have_daily_values:
+        ukmet_df_daily = pd.DataFrame(ukmet_data_daily['features'][0]['properties']['timeSeries'])
+        ukmet_df_daily.set_index('time', inplace=True)
+        ukmet_df_daily.index = pd.to_datetime(ukmet_df_daily.index)
+        daily_forecast = ukmet_df_daily.loc[forecast_date]
+        daytime_max = c_to_f(daily_forecast['dayMaxScreenTemperature'])
+        nighttime_min = c_to_f(daily_forecast['nightMinScreenTemperature'])
+    else:
+        daytime_max = -1000.
+        nighttime_min = 1000.
+
+    # compare hourly temperature to daily--update if needed
+    daily_high = ukmet_df.loc[forecast_start:forecast_end, 'temperature'].max()
+    if daytime_max > daily_high:
+        daily_high = daytime_max
+
+    daily_low = ukmet_df.loc[forecast_start:forecast_end, 'temperature'].min()
+    if nighttime_min < daily_low:
+        daily_low = nighttime_min
+
+    daily_wind = ukmet_df.loc[forecast_start:forecast_end, 'windSpeed'].max()
+    daily_rain = ukmet_df.loc[forecast_start:forecast_end - timedelta(hours=1), 'rain'].sum()
+
+    forecast.daily.set_values(daily_high, daily_low, daily_wind, daily_rain)
 
     return forecast
 
@@ -185,18 +150,24 @@ def main(config, model, stid, forecast_date):
     Produce a Forecast object from UKMET data.
     """
 
-    # Get the codes file from config and the specific codes for stid
+    # Get latitude and longitude from the config
     try:
-        ukmet_codes_file = config['Models'][model]['codes_file']
+        lat = float(config['Stations'][stid]['latitude'])
+        lon = float(config['Stations'][stid]['longitude'])
     except KeyError:
-        raise KeyError('ukmet: no codes file specified for model %s in config!' % model)
+        raise (KeyError('ukmet: missing or invalid latitude or longitude for station %s' % stid))
+
+    # Get the API ID and Secret from the config
     try:
-        ukmet_code = get_codes(config, ukmet_codes_file, stid)
-    except BaseException as e:
-        print("'ukmet: can't find code in %s for site %s!" % (ukmet_codes_file, stid))
-        raise
+        api_id = config['Models'][model]['api_id']
+    except KeyError:
+        raise KeyError('ukmet: no api_id parameter defined for model %s in config!' % model)
+    try:
+        api_secret = config['Models'][model]['api_secret']
+    except KeyError:
+        raise KeyError('ukmet: no api_secret parameter defined for model %s in config!' % model)
 
     # Get forecast
-    forecast = get_ukmet_forecast(stid, ukmet_code, forecast_date)
+    forecast = get_ukmet_forecast(config, stid, lat, lon, api_id, api_secret, forecast_date)
 
     return forecast

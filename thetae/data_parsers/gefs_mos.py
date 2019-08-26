@@ -22,6 +22,9 @@ import numpy as np
 import requests
 from bs4 import BeautifulSoup
 
+import warnings
+warnings.warn('GEFS MOS is now deprecated', DeprecationWarning)
+
 default_model_name = 'GEFS MOS'
 
 
