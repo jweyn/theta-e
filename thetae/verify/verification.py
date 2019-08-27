@@ -311,8 +311,10 @@ def get_verification(config, stid, start_dt, end_dt, use_climo=False, use_cf6=Tr
             print('verification: missing data in db for hourly obs; retrieving from MesoWest')
         obs_hour = get_obs(config, stid, start, end).data
 
+    # Set DateTime column and round precipitation to avoid trace accumulations
     dateobj = pd.Index(pd.to_datetime(obs_hour[datename])).tz_localize(None) - timedelta(hours=6)
     obs_hour[datename] = dateobj
+    obs_hour['RAINHOUR'] = obs_hour['RAINHOUR'].round(2)
 
     aggregate = {datename: day}
     aggregate['TEMPERATURE'] = {'high': np.max, 'low': np.min}
@@ -364,7 +366,7 @@ def get_verification(config, stid, start_dt, end_dt, use_climo=False, use_cf6=Tr
 
 def main(config, stid):
     """
-    Retrieves yesterday and today's verification.
+    Retrieves the latest verification.
     """
     end_date = datetime.utcnow()
 
