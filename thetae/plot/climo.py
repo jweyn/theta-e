@@ -276,8 +276,8 @@ def historical(config, stid):
     Ds['PRCP'] = np.floor(Ds['PRCP'] / 2.54) / 100.
 
     # Sanity checks: remove data that seems far extreme
-    min_bound = {'TM': -100., 'PR': 0.}
-    max_bound = {'TM': 140., 'PR': 50.}
+    min_bound = {'TM': -100., 'PR': 0., 'WS': 0., 'WD': 0.}
+    max_bound = {'TM': 140., 'PR': 50., 'WS': 150., 'WD': 360.}
     for v in vars_used:
         try:
             Ds[v][Ds[v] < min_bound[v[:2]]] = np.nan

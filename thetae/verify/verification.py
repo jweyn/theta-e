@@ -15,7 +15,7 @@ import numpy as np
 import os
 import re
 from thetae.util import meso_api_dates, Daily
-from thetae.db import readTimeSeries
+from thetae.db import readTimeSeries, get_latest_date
 from thetae import MissingDataError
 from datetime import datetime, timedelta
 import requests
@@ -377,15 +377,11 @@ def main(config, stid):
             num_files = 1
         get_cf6_files(config, stid, num_files)
 
-    # If the previous day is likely incomplete, add it
-    if end_date.hour < 10:
-        yesterday = end_date - timedelta(hours=24)
-        start_date = datetime(yesterday.year, yesterday.month, yesterday.day, 6)
-    else:
-        start_date = datetime(end_date.year, end_date.month, end_date.day, 6)
+    # Get the first incomplete date in the OBS table - subtract 5 hours since the 6Z ob is just before 6Z
+    first_date = get_latest_date(config, 'forecast', stid, 'OBS') - timedelta(hours=5)
+    start_date = datetime(first_date.year, first_date.month, first_date.day, 6)
 
     # Get the daily verification
-    start, end = meso_api_dates(start_date, end_date)
     dailys = get_verification(config, stid, start_date, end_date)
 
     return dailys
