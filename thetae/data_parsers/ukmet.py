@@ -59,9 +59,8 @@ def get_ukmet_forecast(config, stid, lat, lon, api_id, api_secret, forecast_date
     model_run_date = ukmet_data_hourly['features'][0]['properties']['modelRunDate']
 
     ukmet_df = pd.DataFrame(ukmet_data_hourly['features'][0]['properties']['timeSeries'])
-    ukmet_df.set_index('time', inplace=True)
-    ukmet_df.index.name = 'dateTime'
-    ukmet_df.index = pd.to_datetime(ukmet_df.index)
+    ukmet_df['DateTime'] = ukmet_df['time'].apply(pd.to_datetime).apply(lambda x: x.replace(tzinfo=None))
+    ukmet_df.set_index('DateTime', inplace=True)
 
     # rename columns
     column_names_dict = {

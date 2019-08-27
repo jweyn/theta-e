@@ -15,7 +15,7 @@ import numpy as np
 from matplotlib.projections.polar import PolarAxes
 from numpy.lib.twodim_base import histogram2d
 import matplotlib.pyplot as plt
-from pylab import poly_between
+from matplotlib.pylab import poly_between
 
 RESOLUTION = 100
 ZBASE = -1000  # The starting zorder for all drawing, negative to have the grid on
@@ -655,7 +655,7 @@ def plot_windrose_np(direction, var, kind='contour', clean_flag=True, **kwargs):
     if kind in D_KIND_PLOT.keys():
         f_plot = D_KIND_PLOT[kind]
     else:
-        raise (Exception("kind=%r but it must be in %r" % (kind, d.keys())))
+        raise (Exception("kind=%r but it must be in %r" % (kind, D_KIND_PLOT.keys())))
     # if f_clean is not None:
     #    df = f_clean(df)
     # var = df[var_name].values
