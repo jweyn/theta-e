@@ -12,6 +12,7 @@ from .MesoPy import Meso
 import pandas as pd
 import numpy as np
 from thetae.util import meso_api_dates, date_to_string, TimeSeries
+from thetae.db import get_latest_date
 from datetime import datetime, timedelta
 
 
@@ -54,12 +55,9 @@ def get_obs(config, stid, start, end):
     """
     Retrieve data from MesoPy
     """
-
     # MesoWest token and init
     meso_token = config['Verify']['api_key']
     m = Meso(token=meso_token)
-    if config['debug'] > 9:
-        print('obs: MesoPy initialized for station %s' % stid)
 
     # Look for desired variables
     vars_request = ['air_temp', 'dew_point_temperature', 'wind_speed', 'wind_gust', 'wind_direction',
@@ -161,11 +159,12 @@ def get_obs(config, stid, start, end):
 
 def main(config, stid):
     """
-    Retrieves the latest 24 hours of observations at site stid.
+    Retrieves the latest observations at site stid.
     """
-
     end_date = datetime.utcnow()
-    start_date = end_date - timedelta(hours=24)
+    start_date = get_latest_date(config, 'forecast', stid, 'OBS') + timedelta(minutes=5)
+    if start_date is None:
+        start_date = end_date - timedelta(hours=24)
     start, end = meso_api_dates(start_date, end_date)
 
     timeseries = get_obs(config, stid, start, end)
@@ -177,7 +176,6 @@ def historical(config, stid, start_date):
     """
     Retrieves observations at site stid starting at start_date.
     """
-
     end_date = datetime.utcnow()
     start, end = meso_api_dates(start_date, end_date)
 

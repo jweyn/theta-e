@@ -110,35 +110,6 @@ def historical(config, stid):
     print('getVerification: getting historical data for %s starting %s' %
           (stid, start_date))
 
-    # Verification
-    # Find the verification driver
-    try:
-        verif_driver = config['Verify']['Verification']['driver']
-    except KeyError:
-        print('getVerification error: no driver specified for Verification!')
-        raise
-    # Get verification
-    if config['debug'] > 9:
-        print('getVerification: getting historical verification')
-    try:
-        # Verification and obs historical() need config, stid, start_date
-        verification = get_object(verif_driver).historical(config, stid, start_date)
-    except BaseException as e:
-        print('getVerification: failed to get historical verification for %s' % stid)
-        print("*** Reason: '%s'" % str(e))
-        if config['traceback']:
-            raise
-    # Write to the database
-    try:
-        if config['debug'] > 9:
-            print('getVerification: writing historical verification to database')
-        writeDaily(config, verification, data_binding, 'verif')
-    except BaseException as e:
-        print('getVerification: failed to write historical verification to database')
-        print("*** Reason: '%s'" % str(e))
-        if config['traceback']:
-            raise
-
     # Obs
     # Find the obs driver
     try:
@@ -164,6 +135,35 @@ def historical(config, stid):
         writeTimeSeries(config, obs, data_binding, 'obs')
     except BaseException as e:
         print('getVerification: failed to write historical obs to database')
+        print("*** Reason: '%s'" % str(e))
+        if config['traceback']:
+            raise
+
+    # Verification
+    # Find the verification driver
+    try:
+        verif_driver = config['Verify']['Verification']['driver']
+    except KeyError:
+        print('getVerification error: no driver specified for Verification!')
+        raise
+    # Get verification
+    if config['debug'] > 9:
+        print('getVerification: getting historical verification')
+    try:
+        # Verification and obs historical() need config, stid, start_date
+        verification = get_object(verif_driver).historical(config, stid, start_date)
+    except BaseException as e:
+        print('getVerification: failed to get historical verification for %s' % stid)
+        print("*** Reason: '%s'" % str(e))
+        if config['traceback']:
+            raise
+    # Write to the database
+    try:
+        if config['debug'] > 9:
+            print('getVerification: writing historical verification to database')
+        writeDaily(config, verification, data_binding, 'verif')
+    except BaseException as e:
+        print('getVerification: failed to write historical verification to database')
         print("*** Reason: '%s'" % str(e))
         if config['traceback']:
             raise
