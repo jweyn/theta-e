@@ -8,7 +8,8 @@
 Initialize thetae.
 """
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
+
 
 # ==============================================================================
 # Service groups.
@@ -17,6 +18,15 @@ __version__ = '0.0.2'
 all_service_groups = [
     'retrieve_services', 'calc_services', 'output_services'
 ]
+
+
+# ==============================================================================
+# Exception classes
+# ==============================================================================
+
+class MissingDataError(Exception):
+    pass
+
 
 # ==============================================================================
 # Make sure we import everything we need.

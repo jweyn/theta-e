@@ -9,11 +9,14 @@ Retrieve verification from MesoWest, NWS CF6 files, and NCDC data.
 """
 
 from .MesoPy import Meso
+from .obs import get_obs
 import pandas as pd
 import numpy as np
 import os
 import re
 from thetae.util import meso_api_dates, Daily
+from thetae.db import readTimeSeries, get_latest_date
+from thetae import MissingDataError
 from datetime import datetime, timedelta
 import requests
 from builtins import str
@@ -26,7 +29,6 @@ def get_cf6_files(config, stid, num_files=1):
     Retrieves CF6 climate verification data released by the NWS. Parameter num_files determines how many recent files
     are downloaded.
     """
-
     # Create directory if it does not exist
     site_directory = '%s/site_data' % config['THETAE_ROOT']
     if config['debug'] > 50:
@@ -133,7 +135,6 @@ def _cf6_wind(config, stid):
     Generates wind verification values from climate CF6 files stored in site_directory. These files can be generated
     by _get_cf6_files.
     """
-
     site_directory = '%s/site_data' % config['THETAE_ROOT']
     if config['debug'] > 9:
         print('verification: searching for CF6 files in %s' % site_directory)
@@ -175,7 +176,6 @@ def _climo_wind(config, stid, dates=None):
 
     Fetches climatological wind data using ulmo package to retrieve NCDC archives.
     """
-
     import ulmo
     from thetae.util import get_ghcn_stid
 
@@ -194,122 +194,72 @@ def _climo_wind(config, stid, dates=None):
     return wind_dict
 
 
-def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
+def get_verification(config, stid, start_dt, end_dt, use_climo=False, use_cf6=True):
     """
     Generates verification data from MesoWest API. If use_climo is True, then fetch climate data from NCDC using ulmo
     to fill in wind values. (We probably generally don't want to do this, because it is slow and is delayed by 1-2
     weeks from present.) If use_cf6 is True, then any CF6 files found in ~/site_data will be used for wind values.
     These files are retrieved by get_cf6_files.
     """
-
     # MesoWest token and init
     meso_token = config['Verify']['api_key']
     m = Meso(token=meso_token)
-    if config['debug'] > 9:
-        print('verification: MesoPy initialized for station %s' % stid)
 
     # Look for desired variables
-    vars_request = ['air_temp', 'wind_speed', 'precip_accum_one_hour']
-    vars_option = ['air_temp_low_6_hour', 'air_temp_high_6_hour', 'precip_accum_six_hour']
-
-    # Add variables to the api request if they exist
-    if config['debug'] > 50:
-        print('verification: searching for 6-hourly variables')
-    latest = m.latest(stid=stid)
-    obs_list = list(latest['STATION'][0]['SENSOR_VARIABLES'].keys())
-    for var in vars_option:
-        if var in obs_list:
-            if config['debug'] > 9:
-                print('verification: using variable %s' % var)
-            vars_request += [var]
+    vars_request = ['air_temp_low_6_hour', 'air_temp_high_6_hour', 'precip_accum_six_hour']
     vars_api = ','.join(vars_request)
 
     # Units
     units = 'temp|f,precip|in,speed|kts'
 
-    # Retrieve data
-    print('verification: retrieving data from %s to %s' % (start, end))
-    obs = m.timeseries(stid=stid, start=start, end=end, vars=vars_api, units=units)
-    obspd = pd.DataFrame.from_dict(obs['STATION'][0]['OBSERVATIONS'])
+    # Retrieve 6-hourly data
+    start, end = meso_api_dates(start_dt, end_dt)
+    print('verification: retrieving 6-hourly data from %s to %s' % (start, end))
+    obs = m.timeseries(stid=stid, start=start, end=end, vars=vars_api, units=units, hfmetars='0')
+    obs_6hour = pd.DataFrame.from_dict(obs['STATION'][0]['OBSERVATIONS'])
 
     # Rename columns to requested vars. This changes the columns in the DataFrame to corresponding names in
     # vars_request, because otherwise the columns returned by MesoPy are weird.
     obs_var_names = obs['STATION'][0]['SENSOR_VARIABLES']
     obs_var_keys = list(obs_var_names.keys())
-    col_names = list(map(''.join, obspd.columns.values))
+    col_names = list(map(''.join, obs_6hour.columns.values))
     for c in range(len(col_names)):
         col = col_names[c]
         for k in range(len(obs_var_keys)):
             key = obs_var_keys[k]
             if col == list(obs_var_names[key].keys())[0]:
                 col_names[c] = key
-    obspd.columns = col_names
+    obs_6hour.columns = col_names
 
     # Let's add a check here to make sure that we do indeed have all of the variables we want
-    for var in vars_request:
+    for var in vars_request + ['wind_speed']:
         if var not in col_names:
-            obspd = obspd.assign(**{var: np.nan})
+            obs_6hour = obs_6hour.assign(**{var: np.nan})
 
     # Change datetime column to datetime object, subtract 6 hours to use 6Z days
-    dateobj = pd.Index(pd.to_datetime(obspd['date_time'])).tz_localize(None) - timedelta(hours=6)
-    obspd['date_time'] = dateobj
+    dateobj = pd.Index(pd.to_datetime(obs_6hour['date_time'])).tz_localize(None) - timedelta(hours=6)
+    obs_6hour['date_time'] = dateobj
     datename = 'DATETIME'
-    obspd = obspd.rename(columns={'date_time': datename})
+    obs_6hour = obs_6hour.rename(columns={'date_time': datename})
 
-    # Now we're going to group the data into daily values. First, we group by hour to be sure we have the right
-    # precipitation accumulations, which are officially recorded by hour.
-
-    def hour(dates):
-        date = dates.iloc[0]
-        return datetime(date.year, date.month, date.day, date.hour)
-
+    # Now we're going to group the data into daily values.
     # Define an aggregation function for pandas groupby
-    aggregate = {datename: hour}
-    if 'air_temp_high_6_hour' in vars_request and 'air_temp_low_6_hour' in vars_request:
-        aggregate['air_temp_high_6_hour'] = np.max
-        aggregate['air_temp_low_6_hour'] = np.min
-    aggregate['air_temp'] = {'air_temp_max': np.max, 'air_temp_min': np.min}
-    if 'precip_accum_six_hour' in vars_request:
-        aggregate['precip_accum_six_hour'] = np.max
+    def day(dt):
+        d = dt.iloc[0]
+        return datetime(d.year, d.month, d.day)
+
+    aggregate = {datename: day}
+    aggregate['air_temp_high_6_hour'] = np.max
+    aggregate['air_temp_low_6_hour'] = np.min
     aggregate['wind_speed'] = np.max
-    aggregate['precip_accum_one_hour'] = np.max
-
-    if config['debug'] > 50:
-        print('verification: grouping data by hour')
-    obs_hourly = obspd.groupby([pd.DatetimeIndex(obspd[datename]).year,
-                                pd.DatetimeIndex(obspd[datename]).month,
-                                pd.DatetimeIndex(obspd[datename]).day,
-                                pd.DatetimeIndex(obspd[datename]).hour]).agg(aggregate)
-
-    # Rename columns
-    col_names = obs_hourly.columns.values
-    col_names_new = []
-    for c in range(len(col_names)):
-        if col_names[c][0] == 'air_temp':
-            col_names_new.append(col_names[c][1])
-        else:
-            col_names_new.append(col_names[c][0])
-    obs_hourly.columns = col_names_new
+    aggregate['precip_accum_six_hour'] = np.sum
 
     # Now group by day. Note that we changed the time to subtract 6 hours, so days are nicely defined as 6Z to 6Z.
-    def day(dates):
-        date = dates.iloc[0]
-        return datetime(date.year, date.month, date.day)
-
-    aggregate[datename] = day
-    aggregate['air_temp_min'] = np.min
-    aggregate['air_temp_max'] = np.max
-    aggregate['precip_accum_six_hour'] = np.sum
-    try:
-        aggregate.pop('air_temp')
-    except:
-        pass
-
     if config['debug'] > 50:
         print('verification: grouping data by day')
-    obs_daily = obs_hourly.groupby([pd.DatetimeIndex(obs_hourly[datename]).year,
-                                    pd.DatetimeIndex(obs_hourly[datename]).month,
-                                    pd.DatetimeIndex(obs_hourly[datename]).day]).agg(aggregate)
+    obs_daily = obs_6hour.groupby([pd.DatetimeIndex(obs_6hour[datename]).year,
+                                   pd.DatetimeIndex(obs_6hour[datename]).month,
+                                   pd.DatetimeIndex(obs_6hour[datename]).day]).agg(aggregate)
 
     # Now we check for wind values from the CF6 files, which are the actual verification
     if use_climo or use_cf6:
@@ -346,36 +296,50 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
         if config['debug'] > 9:
             print('verification: found %d matching rows for wind' % count_rows)
 
-    # Round values to nearest degree, knot, and centi-inch
-    round_dict = {'wind_speed': 0}
-    if 'air_temp_high_6_hour' in vars_request:
-        round_dict['air_temp_high_6_hour'] = 0
-    if 'air_temp_low_6_hour' in vars_request:
-        round_dict['air_temp_low_6_hour'] = 0
-    round_dict['air_temp_max'] = 0
-    round_dict['air_temp_min'] = 0
-    if 'precip_accum_six_hour' in vars_request:
-        round_dict['precip_accum_six_hour'] = 2
-    round_dict['precip_accum_one_hour'] = 2
-    obs_daily = obs_daily.round(round_dict)
-
-    # Lastly, place all the values we found into a list of Daily objects. Rename the columns and then iterate over rows.
-    if 'air_temp_high_6_hour' in vars_request:
-        obs_daily.rename(columns={'air_temp_high_6_hour': 'high'}, inplace=True)
-    else:
-        obs_daily.rename(columns={'air_temp_max': 'high'}, inplace=True)
-    if 'air_temp_low_6_hour' in vars_request:
-        obs_daily.rename(columns={'air_temp_low_6_hour': 'low'}, inplace=True)
-    else:
-        obs_daily.rename(columns={'air_temp_min': 'low'}, inplace=True)
-    if 'precip_accum_six_hour' in vars_request:
-        obs_daily.rename(columns={'precip_accum_six_hour': 'rain'}, inplace=True)
-    else:
-        obs_daily.rename(columns={'precip_accum_one_hour': 'rain'}, inplace=True)
+    # Rename the columns
+    obs_daily.rename(columns={'air_temp_high_6_hour': 'high'}, inplace=True)
+    obs_daily.rename(columns={'air_temp_low_6_hour': 'low'}, inplace=True)
     obs_daily.rename(columns={'wind_speed': 'wind'}, inplace=True)
+    obs_daily.rename(columns={'precip_accum_six_hour': 'rain'}, inplace=True)
+
+    # For hourly data, retrieve the data from the database. Only if the database returns an error do we retrieve data
+    # from MesoWest.
+    try:
+        obs_hour = readTimeSeries(config, stid, 'forecast', 'OBS', start_date=start_dt, end_date=end_dt).data
+    except MissingDataError:
+        if config['debug'] > 9:
+            print('verification: missing data in db for hourly obs; retrieving from MesoWest')
+        obs_hour = get_obs(config, stid, start, end).data
+
+    # Set DateTime column and round precipitation to avoid trace accumulations
+    dateobj = pd.Index(pd.to_datetime(obs_hour[datename])).tz_localize(None) - timedelta(hours=6)
+    obs_hour[datename] = dateobj
+    obs_hour['RAINHOUR'] = obs_hour['RAINHOUR'].round(2)
+
+    aggregate = {datename: day}
+    aggregate['TEMPERATURE'] = {'high': np.max, 'low': np.min}
+    aggregate['WINDSPEED'] = {'wind': np.max}
+    aggregate['RAINHOUR'] = {'rain': np.sum}
+
+    obs_hour_day = obs_hour.groupby([pd.DatetimeIndex(obs_hour[datename]).year,
+                                     pd.DatetimeIndex(obs_hour[datename]).month,
+                                     pd.DatetimeIndex(obs_hour[datename]).day]).agg(aggregate)
+
+    obs_hour_day.columns = [v[-1] for v in obs_hour_day.columns.values]
+
+    # Compare the daily to hourly values
+    obs_daily['high'] = np.fmax(obs_daily['high'], obs_hour_day['high'])
+    obs_daily['low'] = np.fmin(obs_daily['low'], obs_hour_day['low'])
+    obs_daily['wind'] = np.fmax(obs_daily['wind'], obs_hour_day['wind'])
+    obs_daily['rain'] = np.fmax(obs_daily['rain'], obs_hour_day['rain'])
 
     # Make sure rain has no missing values rather than zeros. Groupby appropriately dealt with missing values earlier.
     obs_daily['rain'].fillna(0.0, inplace=True)
+
+    # Round values to nearest degree, knot, and centi-inch
+    obs_daily = obs_daily.round({'high': 0, 'low': 0, 'wind': 0, 'rain': 2})
+
+    # Lastly, place all the values we found into a list of Daily objects.
     # Set datetime as the index. This will help use datetime in the creation of the Dailys.
     obs_daily = obs_daily.set_index(datename)
     # Remove extraneous columns
@@ -402,18 +366,9 @@ def get_verification(config, stid, start, end, use_climo=False, use_cf6=True):
 
 def main(config, stid):
     """
-    Retrieves yesterday and today's verification.
-
-    We need to be careful about what the starting date is. If it is an incomplete verification day, then that incomplete
-    data will overwrite the previous day's verification. It is important, however, to make sure that we get the final
-    values for yesterday. Therefore, let's make sure it starts at 6Z yesterday.
+    Retrieves the latest verification.
     """
-
-    # Get dates
     end_date = datetime.utcnow()
-    yesterday = end_date - timedelta(hours=24)
-    start_date = datetime(yesterday.year, yesterday.month, yesterday.day, 6)
-    start, end = meso_api_dates(start_date, end_date)
 
     # Download latest CF6 files. There's no need to do this all the time
     if 12 <= end_date.hour < 20:
@@ -424,8 +379,12 @@ def main(config, stid):
             num_files = 1
         get_cf6_files(config, stid, num_files)
 
+    # Get the first incomplete date in the OBS table - subtract 5 hours since the 6Z ob is just before 6Z
+    first_date = get_latest_date(config, 'forecast', stid, 'OBS') - timedelta(hours=5)
+    start_date = datetime(first_date.year, first_date.month, first_date.day, 6)
+
     # Get the daily verification
-    dailys = get_verification(config, stid, start, end)
+    dailys = get_verification(config, stid, start_date, end_date)
 
     return dailys
 
@@ -435,16 +394,14 @@ def historical(config, stid, start_date):
     Retrieves historical verifications starting at start (datetime). Sets the hour of start to 6, so that we don't get
     incomplete verifications.
     """
-
     # Get dates
     start_date = start_date.replace(hour=6)
     end_date = datetime.utcnow()
-    start, end = meso_api_dates(start_date, end_date)
 
     # Download CF6 files
     get_cf6_files(config, stid, 12)
 
     # Get the daily verification
-    dailys = get_verification(config, stid, start, end, use_climo=True)
+    dailys = get_verification(config, stid, start_date, end_date, use_climo=True)
 
     return dailys

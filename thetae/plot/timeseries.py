@@ -15,8 +15,8 @@ import os
 import numpy as np
 import pandas as pd
 from thetae.db import readForecast, readTimeSeries
-from thetae.util import date_to_datetime
-from datetime import datetime, timedelta
+from thetae import MissingDataError
+from datetime import timedelta
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
@@ -42,7 +42,7 @@ def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img
     for model in models:
         try:
             forecast = readForecast(config, stid, model, forecast_date, hour_padding=18)
-        except ValueError:
+        except MissingDataError:
             if config['debug'] > 9:
                 print('plot.timeseries warning: no hourly data for %s, %s' % (stid, model))
             continue
@@ -62,7 +62,7 @@ def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img
         if variable != 'RAIN':
             ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data[variable], label='OBS',
                     color='black', linestyle=':', marker='o', ms=4)
-    except ValueError:
+    except MissingDataError:
         if config['debug'] > 9:
             print('plot.timeseries warning: no data found for observations at %s' % stid)
 

@@ -12,9 +12,10 @@ Generates model plots related to model forecast winds
 
 import os
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import timedelta
 from thetae.db import readForecast, readTimeSeries
 from thetae.util import wind_speed_dir_to_uv
+from thetae import MissingDataError
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
@@ -39,7 +40,7 @@ def plot_model_winds(config, stid, models, forecast_date, plot_directory, image_
     for i, model in enumerate(models):
         try:
             forecast = readForecast(config, stid, model, forecast_date, hour_padding=18)
-        except ValueError:
+        except MissingDataError:
             if config['debug'] > 9:
                 print('plot.timeseries warning: no hourly data for %s, %s' % (stid, model))
             continue
@@ -128,7 +129,7 @@ def plot_mixed_layer_winds(config, stid, models, forecast_date, plot_directory, 
                 linestyle=':', marker='o', ms=4)
         ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data['WINDGUST'].values, label='OBS gust', color='black',
                 linestyle='None', marker='x', ms=5)
-    except ValueError:
+    except MissingDataError:
         if config['debug'] > 9:
             print('plot.timeseries warning: no data found for observations at %s' % stid)
 

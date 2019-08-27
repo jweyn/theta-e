@@ -16,6 +16,7 @@ import numpy as np
 from collections import OrderedDict
 from thetae.util import Daily, Forecast, last_leap_year
 from thetae.db import readForecast, readTimeSeries, readDaily
+from thetae import MissingDataError
 
 
 def json_daily(config, stid, models, forecast_date, start_date=None):
@@ -35,7 +36,7 @@ def json_daily(config, stid, models, forecast_date, start_date=None):
         for date in dates:
             try:
                 forecasts.append(readForecast(config, stid, model, date, no_hourly_ok=True))
-            except (ValueError, IndexError):
+            except (ValueError, IndexError, MissingDataError):
                 forecasts.append(Forecast(stid, model, date))
         daily[model] = {v.upper(): [getattr(forecasts[f].daily, v) for f in range(len(forecasts))] for v in variables}
         daily[model]['DATETIME'] = [d.isoformat() + 'Z' for d in dates]
@@ -57,7 +58,7 @@ def json_hourly(config, stid, models, forecast_date):
             ts = forecast.timeseries.data.where(pd.notnull(forecast.timeseries.data), None)
             ts['DATETIME'] = pd.to_datetime(ts['DATETIME']).dt.strftime('%Y-%m-%dT%H:%M:%SZ')
             hourly[model] = ts.to_dict(orient='list', into=OrderedDict)
-        except (ValueError, KeyError):
+        except (ValueError, KeyError, MissingDataError):
             hourly[model] = OrderedDict()
 
     return hourly
@@ -111,7 +112,7 @@ def json_climo(config, stid, start_date):
         try:
             daily = readDaily(config, stid, 'forecast', 'climo', start_date=climo_date, end_date=climo_date)
             daily.date = current_date
-        except ValueError:  # missing climo data
+        except MissingDataError:  # missing climo data
             daily = Daily(stid, current_date)
             daily.set_values(np.nan, np.nan, np.nan, np.nan)
         dailys.append(daily)
