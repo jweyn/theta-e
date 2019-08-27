@@ -162,7 +162,7 @@ def main(config, stid):
     Retrieves the latest observations at site stid.
     """
     end_date = datetime.utcnow()
-    start_date = get_latest_date(config, 'forecast', stid, 'OBS') + timedelta(minutes=5)
+    start_date = get_latest_date(config, 'forecast', stid, 'OBS')
     if start_date is None:
         start_date = end_date - timedelta(hours=24)
     start, end = meso_api_dates(start_date, end_date)
