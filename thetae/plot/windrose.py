@@ -15,7 +15,6 @@ import numpy as np
 from matplotlib.projections.polar import PolarAxes
 from numpy.lib.twodim_base import histogram2d
 import matplotlib.pyplot as plt
-from matplotlib.pylab import poly_between
 
 RESOLUTION = 100
 ZBASE = -1000  # The starting zorder for all drawing, negative to have the grid on
@@ -334,9 +333,9 @@ class WindroseAxes(PolarAxes):
             val = vals[i, :] + offset
             offset += vals[i, :]
             zorder = ZBASE + nbins - i
-            xs, ys = poly_between(angles, 0, val)
-            patch = self.fill(xs, ys, facecolor=colors[i],
-                              edgecolor=colors[i], zorder=zorder, **kwargs)
+            patch = self.fill(np.append(angles, 0), np.append(val, 0),
+                              facecolor=colors[i], edgecolor=colors[i],
+                              zorder=zorder, ** kwargs)
             self.patches_list.extend(patch)
 
     def bar(self, direction, var, **kwargs):

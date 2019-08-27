@@ -170,6 +170,7 @@ def plot_precip(x, start_date=None, end_date=None, start_year=None, stid=None, o
 def main(config, *args):
     if config['debug'] > 50:
         print('plot.climo: nothing to do')
+    historical(config, 'KSEA')
 
     return
 
@@ -286,8 +287,11 @@ def historical(config, stid):
             pass
 
     # Remove missing values for analysis
-    for v in vars_used:
+    for v in ['TMAX', 'TMIN', 'PRCP']:
         Ds[v] = Ds[v][~np.isnan(Ds[v])]
+    w = np.vstack((Ds['WDF2'], Ds['WSF2'])).T
+    w = w[~np.isnan(w).any(axis=1)]
+    Ds['WDF2'], Ds['WSF2'] = w.T
 
     # Create another dictionary with rounded values to fix for unit corrections
     Dr = {}
