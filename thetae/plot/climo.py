@@ -170,7 +170,6 @@ def plot_precip(x, start_date=None, end_date=None, start_year=None, stid=None, o
 def main(config, *args):
     if config['debug'] > 50:
         print('plot.climo: nothing to do')
-    historical(config, 'KSEA')
 
     return
 
