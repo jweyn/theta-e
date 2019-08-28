@@ -111,7 +111,7 @@ def plot_mixed_layer_winds(config, stid, models, forecast_date, plot_directory, 
             except IOError:
                 if config['debug'] > 50:
                     print('plot.modelwinds: bufkit import error for %s' % model)
-                break
+                continue
             try:
                 color = config['Models'][model]['color']
             except KeyError:
