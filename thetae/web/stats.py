@@ -18,9 +18,10 @@ def main(config, stid, forecast_date):
     """
     # Get the file directory and attempt to create it if it doesn't exist
     try:
-        file_dir = config['Web']['Options']['web_directory']
+        file_dir = os.path.join(config['Web']['Settings']['web_directory'],
+                                config['Web']['Settings']['json_directory'])
     except KeyError:
-        raise KeyError("stats error: no 'web_directory' specified in config Web Options")
+        raise KeyError("stats error: check config Web Settings parameters")
 
     if not(os.path.isdir(file_dir)):
         os.makedirs(file_dir)
