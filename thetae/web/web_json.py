@@ -138,10 +138,10 @@ def main(config, stid, forecast_date):
 
     # Get the file directory and attempt to create it if it doesn't exist
     try:
-        file_dir = config['Web']['Options']['web_directory']
+        file_dir = os.path.join(config['Web']['Settings']['web_directory'],
+                                config['Web']['Settings']['json_directory'])
     except KeyError:
-        file_dir = '%s/site_data' % config['THETAE_ROOT']
-        print('web.json warning: setting output directory to default')
+        raise KeyError('web.json error: check config Web Settings parameters')
     if not(os.path.isdir(file_dir)):
         os.makedirs(file_dir)
     if config['debug'] > 9:
