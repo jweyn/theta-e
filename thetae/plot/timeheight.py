@@ -356,6 +356,10 @@ def main(config, stid, forecast_date):
     """
     Make timeseries plots for a given station.
     """
+    # Use the previous date if we're not at 6Z yet
+    if datetime.utcnow().hour < 6:
+        forecast_date -= timedelta(days=1)
+
     # Get the file directory and attempt to create it if it doesn't exist
     try:
         plot_directory = config['Plot']['Options']['plot_directory']

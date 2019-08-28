@@ -12,7 +12,7 @@ Generates model plots related to model forecast winds
 
 import os
 import pandas as pd
-from datetime import timedelta
+from datetime import datetime, timedelta
 from thetae.db import readForecast, readTimeSeries
 from thetae.util import wind_speed_dir_to_uv
 from thetae import MissingDataError
@@ -139,9 +139,10 @@ def plot_mixed_layer_winds(config, stid, models, forecast_date, plot_directory, 
 
     # Legend configuration
     leg = plt.legend(loc=9, ncol=4, mode='expand')
-    leg.get_frame().set_alpha(0.5)
-    leg_texts = leg.get_texts()
-    plt.setp(leg_texts, fontsize='x-small')
+    if leg is not None:
+        leg.get_frame().set_alpha(0.5)
+        leg_texts = leg.get_texts()
+        plt.setp(leg_texts, fontsize='x-small')
 
     # x-axis range and label formatting
     ax.set_xlabel('Valid time')
@@ -171,6 +172,10 @@ def main(config, stid, forecast_date):
     """
     Make model winds plots for a given station.
     """
+    # Use the previous date if we're not at 6Z yet
+    if datetime.utcnow().hour < 6:
+        forecast_date -= timedelta(days=1)
+
     # Get the file directory and attempt to create it if it doesn't exist
     try:
         plot_directory = config['Plot']['Options']['plot_directory']

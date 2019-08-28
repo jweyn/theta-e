@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 from thetae.db import readForecast, readTimeSeries
 from thetae import MissingDataError
-from datetime import timedelta
+from datetime import datetime, timedelta
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
@@ -72,9 +72,10 @@ def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img
 
     # Legend configuration
     leg = plt.legend(loc=8, ncol=6, mode='expand')
-    leg.get_frame().set_alpha(0.5)
-    leg_texts = leg.get_texts()
-    plt.setp(leg_texts, fontsize='x-small')
+    if leg is not None:
+        leg.get_frame().set_alpha(0.5)
+        leg_texts = leg.get_texts()
+        plt.setp(leg_texts, fontsize='x-small')
 
     # x-axis range and label formatting
     ax.set_xlabel('Valid time')
@@ -131,6 +132,10 @@ def main(config, stid, forecast_date):
     """
     Make timeseries plots for a given station.
     """
+    # Use the previous date if we're not at 6Z yet
+    if datetime.utcnow().hour < 6:
+        forecast_date -= timedelta(days=1)
+
     # Get the file directory and attempt to create it if it doesn't exist
     try:
         plot_directory = config['Plot']['Options']['plot_directory']
