@@ -18,6 +18,7 @@ $$latitude = '$latitude';
 $$longitude = '$longitude';
 $$stationName = '$long_name';
 
+$$chartColors = $colors;
 $$highChartsCreditsText = '(c) 2019 UW WxChallenge Team';
 $$graphTimeFormat = '%HZ';
 $$graphDateFormat = '%b %e';
