@@ -56,11 +56,20 @@ def get_bufkit_forecast(config, bufr, bufkit_dir, model, bufr_name, cycle, stid,
         forecast = bufr_surface_parser(config, model, stid, forecast_date, bufr_file_name)
         return forecast
     else:
-        # Call bufrgruven, save files in specified bufr directory
-        command = ('%s --dset %s --cycle %s --stations %s --noascii --nozipit --metdat %s --date %s '
-                   '--noverbose >& /dev/null' %
-                   (bufr, bufr_search_model, model_cycle, stid.lower(), bufkit_dir, model_time[:-2]))
-        os.system(command)
+        if 'wrf' not in bufr_name:
+            # Call bufrgruven, save files in specified bufr directory
+            command = ('%s --dset %s --cycle %s --stations %s --noascii --nozipit --metdat %s --date %s '
+                       '--noverbose >& /dev/null' %
+                       (bufr, bufr_search_model, model_cycle, stid.lower(), bufkit_dir, model_time[:-2]))
+            os.system(command)
+        else:
+            # wget WRF bufkit files from University of Washington, save files in specified bufr directory
+            domain = bufr_name[-2:]
+            os.system('wget -q --timeout=5 --tries=2 '
+                      'http://www.atmos.washington.edu/mm5rt/bufkit_wrfgfs%s/%s/wrf%s_%s.buf' %
+                      (domain, model_time, domain, stid.lower()))
+            os.system('mv wrf%s_%s.buf %s/bufkit/%s.wrf%s_%s.buf' % 
+                      (domain, stid.lower(), bufkit_dir, model_time, domain, stid.lower()))
 
         # Check again for bufkit file, if it exists then create forecast object
         if os.path.isfile(bufr_file_name):

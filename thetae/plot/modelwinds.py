@@ -15,6 +15,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from thetae.db import readForecast, readTimeSeries
 from thetae.util import wind_speed_dir_to_uv
+from thetae import MissingDataError
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
@@ -39,7 +40,7 @@ def plot_model_winds(config, stid, models, forecast_date, plot_directory, image_
     for i, model in enumerate(models):
         try:
             forecast = readForecast(config, stid, model, forecast_date, hour_padding=18)
-        except ValueError:
+        except MissingDataError:
             if config['debug'] > 9:
                 print('plot.timeseries warning: no hourly data for %s, %s' % (stid, model))
             continue
@@ -87,6 +88,7 @@ def plot_model_winds(config, stid, models, forecast_date, plot_directory, image_
     plt.savefig('{}/{}_WINDBARBS.{}'.format(plot_directory, stid, image_type), bbox_inches="tight", dpi=150)
     return
 
+
 def plot_mixed_layer_winds(config, stid, models, forecast_date, plot_directory, image_type):
     """
     model mixed-layer winds plotting function
@@ -109,7 +111,7 @@ def plot_mixed_layer_winds(config, stid, models, forecast_date, plot_directory, 
             except IOError:
                 if config['debug'] > 50:
                     print('plot.modelwinds: bufkit import error for %s' % model)
-                break
+                continue
             try:
                 color = config['Models'][model]['color']
             except KeyError:
@@ -120,12 +122,16 @@ def plot_mixed_layer_winds(config, stid, models, forecast_date, plot_directory, 
                     zorder=2)
 
     # plot observations (both wind speed and gust)
-    obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=25),
-                         end_date=forecast_date+timedelta(hours=24))
-    ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data['WINDSPEED'], label='OBS speed', color='black',
-            linestyle=':', marker='o', ms=4)
-    ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data['WINDGUST'].values, label='OBS gust', color='black',
-            linestyle='None', marker='x', ms=5)
+    try:
+        obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=25),
+                             end_date=forecast_date+timedelta(hours=24))
+        ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data['WINDSPEED'], label='OBS speed', color='black',
+                linestyle=':', marker='o', ms=4)
+        ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data['WINDGUST'].values, label='OBS gust', color='black',
+                linestyle='None', marker='x', ms=5)
+    except MissingDataError:
+        if config['debug'] > 9:
+            print('plot.timeseries warning: no data found for observations at %s' % stid)
 
     # Plot configurations and saving
     ax.grid()
@@ -133,9 +139,10 @@ def plot_mixed_layer_winds(config, stid, models, forecast_date, plot_directory, 
 
     # Legend configuration
     leg = plt.legend(loc=9, ncol=4, mode='expand')
-    leg.get_frame().set_alpha(0.5)
-    leg_texts = leg.get_texts()
-    plt.setp(leg_texts, fontsize='x-small')
+    if leg is not None:
+        leg.get_frame().set_alpha(0.5)
+        leg_texts = leg.get_texts()
+        plt.setp(leg_texts, fontsize='x-small')
 
     # x-axis range and label formatting
     ax.set_xlabel('Valid time')
@@ -165,6 +172,10 @@ def main(config, stid, forecast_date):
     """
     Make model winds plots for a given station.
     """
+    # Use the previous date if we're not at 6Z yet
+    if datetime.utcnow().hour < 6:
+        forecast_date -= timedelta(days=1)
+
     # Get the file directory and attempt to create it if it doesn't exist
     try:
         plot_directory = config['Plot']['Options']['plot_directory']
