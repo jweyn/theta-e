@@ -276,8 +276,8 @@ def historical(config, stid):
     Ds['PRCP'] = np.floor(Ds['PRCP'] / 2.54) / 100.
 
     # Sanity checks: remove data that seems far extreme
-    min_bound = {'TM': -100., 'PR': 0.}
-    max_bound = {'TM': 140., 'PR': 50.}
+    min_bound = {'TM': -100., 'PR': 0., 'WS': 0., 'WD': 0.}
+    max_bound = {'TM': 140., 'PR': 50., 'WS': 150., 'WD': 360.}
     for v in vars_used:
         try:
             Ds[v][Ds[v] < min_bound[v[:2]]] = np.nan
@@ -286,8 +286,11 @@ def historical(config, stid):
             pass
 
     # Remove missing values for analysis
-    for v in vars_used:
+    for v in ['TMAX', 'TMIN', 'PRCP']:
         Ds[v] = Ds[v][~np.isnan(Ds[v])]
+    w = np.vstack((Ds['WDF2'], Ds['WSF2'])).T
+    w = w[~np.isnan(w).any(axis=1)]
+    Ds['WDF2'], Ds['WSF2'] = w.T
 
     # Create another dictionary with rounded values to fix for unit corrections
     Dr = {}

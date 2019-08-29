@@ -11,6 +11,7 @@ Functions for interfacing with SQL databases.
 import sqlite3
 import os
 import pandas as pd
+from thetae import MissingDataError
 from thetae.util import get_object, TimeSeries, Daily, Forecast, date_to_datetime, date_to_string, last_leap_year
 from datetime import datetime, timedelta
 from builtins import str
@@ -181,6 +182,35 @@ def remove(config, stid):
                 cursor.execute("DROP TABLE %s;" % table)
 
         conn.close()
+
+
+def get_latest_date(config, data_binding, stid, table_type='OBS'):
+    """
+    Retrieve the latest datetime in a table for a station.
+
+    :param config:
+    :param data_binding: str: name of the data binding to use
+    :param stid: str: station ID
+    :param table_type: str: type of table
+    :return: datetime: last available observation date
+    """
+    # Get the database and the names of columns in the schema
+    database = config['DataBinding'][data_binding]['database']
+    schema_name = config['DataBinding'][data_binding]['schema']
+    schema = get_object(schema_name).schema
+    date_key = schema[table_type][0][0]
+    table = '%s_%s' % (stid.upper(), table_type.upper())
+
+    conn = connection(config, database)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT %s FROM %s ORDER BY %s DESC LIMIT 1;" % (date_key, table, date_key))
+        last_dt = date_to_datetime(cursor.fetchone()[0])
+    except:
+        last_dt = None
+
+    return last_dt
 
 
 # ==================================================================================================================== #
@@ -518,7 +548,7 @@ def readTimeSeries(config, stid, data_binding, table_type, model=None, start_dat
 
     # Check that we have data
     if data is None:
-        raise ValueError('db.readTimeSeries error: no data retrieved.')
+        raise MissingDataError('db.readTimeSeries error: no data retrieved.')
 
     # Generate TimeSeries object
     timeseries = TimeSeries(stid)
@@ -557,7 +587,7 @@ def readDaily(config, stid, data_binding, table_type, model=None, start_date=Non
 
     # Check that we have data
     if data is None:
-        raise ValueError('db.readDaily error: no data retrieved.')
+        raise MissingDataError('db.readDaily error: no data retrieved.')
 
     # Generate Daily object(s)
     daily_list = []
@@ -565,11 +595,14 @@ def readDaily(config, stid, data_binding, table_type, model=None, start_date=Non
         row = data.iloc[index]
         daily = Daily(stid, date_to_datetime(row['DATETIME']))
         daily.set_values(row['HIGH'], row['LOW'], row['WIND'], row['RAIN'])
-        daily.model = model
+        if 'MODEL' in row.index:
+            daily.model = row['MODEL']
+        else:
+            daily.model = model
         daily_list.append(daily)
 
     if len(data.index) == 0:
-        raise ValueError('db.readDaily error: no data found.')
+        raise MissingDataError('db.readDaily error: no data found.')
     elif len(data.index) > 1 or force_list:
         if config['debug'] > 9:
             print('db.readDaily: returning list of daily objects')
@@ -617,7 +650,7 @@ def readForecast(config, stid, model, date, hour_start=6, hour_padding=6, no_hou
     end_date = date + timedelta(hours=hour_start + 24 + hour_padding)
     try:
         timeseries = readTimeSeries(config, stid, data_binding, table_type, model, start_date, end_date)
-    except ValueError:
+    except MissingDataError:
         if no_hourly_ok:
             timeseries = TimeSeries(stid)
         else:

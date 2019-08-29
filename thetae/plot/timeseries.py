@@ -15,7 +15,7 @@ import os
 import numpy as np
 import pandas as pd
 from thetae.db import readForecast, readTimeSeries
-from thetae.util import date_to_datetime
+from thetae import MissingDataError
 from datetime import datetime, timedelta
 import matplotlib
 matplotlib.use('agg')
@@ -42,7 +42,7 @@ def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img
     for model in models:
         try:
             forecast = readForecast(config, stid, model, forecast_date, hour_padding=18)
-        except ValueError:
+        except MissingDataError:
             if config['debug'] > 9:
                 print('plot.timeseries warning: no hourly data for %s, %s' % (stid, model))
             continue
@@ -55,12 +55,16 @@ def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img
             c += 1
         ax.plot(pd.to_datetime(forecast.timeseries.data['DATETIME']), data, label=model, color=color)
 
-    # Plot observations
-    obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=25),
-                         end_date=forecast_date+timedelta(hours=24))
-    if variable != 'RAIN':
-        ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data[variable], label='OBS',
-                color='black', linestyle=':', marker='o', ms=4)
+    # Plot observations, if available
+    try:
+        obs = readTimeSeries(config, stid, 'forecast', 'obs', start_date=forecast_date-timedelta(hours=25),
+                             end_date=forecast_date+timedelta(hours=24))
+        if variable != 'RAIN':
+            ax.plot(pd.to_datetime(obs.data['DATETIME']), obs.data[variable], label='OBS',
+                    color='black', linestyle=':', marker='o', ms=4)
+    except MissingDataError:
+        if config['debug'] > 9:
+            print('plot.timeseries warning: no data found for observations at %s' % stid)
 
     # Plot configurations and saving
     ax.grid()
@@ -68,9 +72,10 @@ def plot_timeseries(config, stid, models, forecast_date, variable, plot_dir, img
 
     # Legend configuration
     leg = plt.legend(loc=8, ncol=6, mode='expand')
-    leg.get_frame().set_alpha(0.5)
-    leg_texts = leg.get_texts()
-    plt.setp(leg_texts, fontsize='x-small')
+    if leg is not None:
+        leg.get_frame().set_alpha(0.5)
+        leg_texts = leg.get_texts()
+        plt.setp(leg_texts, fontsize='x-small')
 
     # x-axis range and label formatting
     ax.set_xlabel('Valid time')
@@ -127,6 +132,10 @@ def main(config, stid, forecast_date):
     """
     Make timeseries plots for a given station.
     """
+    # Use the previous date if we're not at 6Z yet
+    if datetime.utcnow().hour < 6:
+        forecast_date -= timedelta(days=1)
+
     # Get the file directory and attempt to create it if it doesn't exist
     try:
         plot_directory = config['Plot']['Options']['plot_directory']

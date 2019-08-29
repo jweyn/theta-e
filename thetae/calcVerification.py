@@ -9,6 +9,7 @@ Calculate verification scores and metrics. These are not saved to the database, 
 """
 
 import numpy as np
+from thetae import MissingDataError
 from thetae.db import readDaily
 from datetime import datetime, timedelta
 from thetae.util import date_to_string, last_leap_year, date_to_datetime, Daily
@@ -107,7 +108,7 @@ def main(config):
             try:
                 climo_day = readDaily(config, stid, data_binding, 'climo', start_date=climo_date, end_date=climo_date)
                 climo_day.date = current_date
-            except ValueError:  # missing climo data
+            except MissingDataError:  # missing climo data
                 climo_day = Daily(stid, current_date)
                 climo_day.set_values(np.nan, np.nan, np.nan, np.nan)
             climo.append(climo_day)
@@ -128,7 +129,7 @@ def main(config):
                 forecasts = readDaily(config, stid, data_binding, 'daily_forecast', model=model,
                                       start_date=start_date+timedelta(days=1), end_date=end_date, force_list=True)
                 forecasts = list_to_dict(forecasts)
-            except ValueError:
+            except MissingDataError:
                 if config['debug'] > 9:
                     print('calcVerification warning: no data found for model %s at %s' % (model, stid))
                 continue
