@@ -36,21 +36,25 @@ def plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, n
 
     # load model stats json into dataframe
     json_stats = pd.read_json('%s/archive/theta-e-stats.json' % config['THETAE_ROOT'])
-    for model in json_stats.index:
-        if no_bias:
-            df['hi_skill_persist'][model] = json_stats.loc[model][stid]['stats']['high']['skillPersistNoBias']
-            df['lo_skill_persist'][model] = json_stats.loc[model][stid]['stats']['low']['skillPersistNoBias']
-            df['hi_skill_climo'][model] = json_stats.loc[model][stid]['stats']['high']['skillClimoNoBias']
-            df['lo_skill_climo'][model] = json_stats.loc[model][stid]['stats']['low']['skillClimoNoBias']
+    for model in models:
+        # this check allows models with no verification (i.e. first day of a new model) to be plotted
+        if model in json_stats.index:
+            if no_bias:
+                df['hi_skill_persist'][model] = json_stats.loc[model][stid]['stats']['high']['skillPersistNoBias']
+                df['lo_skill_persist'][model] = json_stats.loc[model][stid]['stats']['low']['skillPersistNoBias']
+                df['hi_skill_climo'][model] = json_stats.loc[model][stid]['stats']['high']['skillClimoNoBias']
+                df['lo_skill_climo'][model] = json_stats.loc[model][stid]['stats']['low']['skillClimoNoBias']
+            else:
+                df['hi_skill_persist'][model] = json_stats.loc[model][stid]['stats']['high']['skillPersist']
+                df['lo_skill_persist'][model] = json_stats.loc[model][stid]['stats']['low']['skillPersist']
+                df['hi_skill_climo'][model] = json_stats.loc[model][stid]['stats']['high']['skillClimo']
+                df['lo_skill_climo'][model] = json_stats.loc[model][stid]['stats']['low']['skillClimo']
+            df['num_days'][model] = json_stats.loc[model][stid]['attrs']['numDays']
+            df['hi_bias'][model] = json_stats.loc[model][stid]['stats']['high']['bias']
+            df['lo_bias'][model] = json_stats.loc[model][stid]['stats']['low']['bias']
         else:
-            df['hi_skill_persist'][model] = json_stats.loc[model][stid]['stats']['high']['skillPersist']
-            df['lo_skill_persist'][model] = json_stats.loc[model][stid]['stats']['low']['skillPersist']
-            df['hi_skill_climo'][model] = json_stats.loc[model][stid]['stats']['high']['skillClimo']
-            df['lo_skill_climo'][model] = json_stats.loc[model][stid]['stats']['low']['skillClimo']
-        df['num_days'][model] = json_stats.loc[model][stid]['attrs']['numDays']
+            df['num_days'][model] = 0.0
         df['color'][model] = config['Models'][model]['color']
-        df['hi_bias'][model] = json_stats.loc[model][stid]['stats']['high']['bias']
-        df['lo_bias'][model] = json_stats.loc[model][stid]['stats']['low']['bias']
 
     # change None to NaN
     df.fillna(value=np.nan, inplace=True)
@@ -76,7 +80,7 @@ def plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, n
     df['lo_skill_avg'] = np.mean([df['lo_skill_persist'], df['lo_skill_climo']], axis=0)
 
     # drop models with missing values (set threshold so if only skill scores are missing the model is still plotted)
-    df.dropna(how='any', thresh=6, inplace=True)
+    df.dropna(how='any', thresh=4, inplace=True)
 
     # sort models by average of climo and persist skill scores
     if sort_by == 'high':
@@ -85,6 +89,12 @@ def plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, n
         df.sort_values(by='lo_skill_avg', ascending=False, inplace=True)
     else:
         raise ValueError('daily.plot_hilo error: invalid sort_by value specified, must be "high" or "low"')
+
+    # make skill scores a minimum of -0.5
+    df['hi_skill_persist'] = df['hi_skill_persist'].clip(lower=-0.5)
+    df['hi_skill_climo'] = df['hi_skill_climo'].clip(lower=-0.5)
+    df['lo_skill_persist'] = df['lo_skill_persist'].clip(lower=-0.5)
+    df['lo_skill_climo'] = df['lo_skill_climo'].clip(lower=-0.5)
 
     # Initialize plot
     fig = plt.figure()
@@ -178,6 +188,7 @@ def plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, n
     else:
         plt.savefig('{}/{}_hilo_{}skill{}.{}'.format(plot_directory, stid, sort_by, nobias_txt, image_type), dpi=150,
                     bbox_inches='tight')
+
     return
 
 
