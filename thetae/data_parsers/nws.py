@@ -112,6 +112,13 @@ def get_nws_forecast(config, stid, lat, lon, forecast_date):
     """
     hourly_url = 'http://forecast.weather.gov/MapClick.php?lat=%f&lon=%f&FcstType=digitalDWML'
     response = requests.get(hourly_url % (lat, lon))
+    # Raise error for invalid HTTP response
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        print('nws: got HTTP error when querying for XML file from %s' % (hourly_url % (lat, lon)))
+        raise
+
     hourly_xml = eTree.fromstring(response.text)
     hourly_dict = etree_to_dict(hourly_xml)
 
