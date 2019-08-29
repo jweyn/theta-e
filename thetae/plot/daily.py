@@ -5,24 +5,20 @@
 #
 
 """
-Generates hi/lo and verification plots for tomorrow, current day, and yesterday
+Generates customizable hi/lo and verification plots
 """
 
 import os
 import numpy as np
 import pandas as pd
 from thetae.db import readDaily
-from thetae.util import date_to_datetime
-from datetime import datetime, timedelta
+from datetime import timedelta
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
-from matplotlib import dates
-
-import pdb
 
 
-def plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, no_bias = False, verify_lines=False,
+def plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, no_bias=False, verify_lines=False,
               sort_by='high', title_text=None):
     """
     Make bar plots of high and low temperature
@@ -108,10 +104,10 @@ def plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, n
         plt.axhline(y=obs.high, lw=2, c='r')
         plt.axhline(y=obs.low, lw=3, c='k')
         plt.axhline(y=obs.low, lw=2, c='b')
-        ylims = ax1.set_ylim((np.min(np.hstack((df['lo'].values.astype('float'), obs.low))) -4,
+        ax1.set_ylim((np.min(np.hstack((df['lo'].values.astype('float'), obs.low))) - 4,
                               np.max(np.hstack((df['hi'].values.astype('float'), obs.high)))+4))
     else:
-        ylims = ax1.set_ylim((np.min(df['lo']) - 4, np.max(df['hi']) + 4))
+        ax1.set_ylim((np.min(df['lo']) - 4, np.max(df['hi']) + 4))
     ax1.set_xlim((-1.0, len(df.index)))
 
     #add labels to plot
@@ -182,7 +178,6 @@ def plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, n
     else:
         plt.savefig('{}/{}_hilo_{}skill{}.{}'.format(plot_directory, stid, sort_by, nobias_txt, image_type), dpi=150,
                     bbox_inches='tight')
-
     return
 
 
@@ -214,7 +209,7 @@ def main(config, stid, forecast_date):
         print('plot.hilo: plotting Hi-Lo bar plots')
 
     # tomorrow sort by high
-    #plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, sort_by='high')
+    plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, sort_by='high')
     # tomorrow NO BIAS sort by high
     plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, no_bias=True, sort_by='high')
     # tomorrow sort by low
@@ -230,7 +225,5 @@ def main(config, stid, forecast_date):
     # 2 days ago
     plot_hilo(config, stid, models, forecast_date-timedelta(days=3),
               plot_directory, image_type, sort_by='high', verify_lines=True, title_text='2daysago')
-
-    pdb.set_trace()
-
     return
+
