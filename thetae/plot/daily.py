@@ -79,8 +79,9 @@ def plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, n
     df['hi_skill_avg'] = np.mean([df['hi_skill_persist'], df['hi_skill_climo']], axis=0)
     df['lo_skill_avg'] = np.mean([df['lo_skill_persist'], df['lo_skill_climo']], axis=0)
 
-    # drop models with missing values (set threshold so if only skill scores are missing the model is still plotted)
-    df.dropna(how='any', thresh=4, inplace=True)
+    # drop models with missing high/low values (if skill scores are missing it can still plot)
+    dropIndex = df[np.isnan(df['hi'])].index
+    df.drop(dropIndex, inplace=True)
 
     # sort models by average of climo and persist skill scores
     if sort_by == 'high':
