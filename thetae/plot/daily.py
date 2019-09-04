@@ -11,7 +11,7 @@ Generates customizable hi/lo and verification plots
 import os
 import numpy as np
 import pandas as pd
-from thetae.db import readDaily
+from thetae.db import readDaily, MissingDataError
 from datetime import timedelta
 import matplotlib
 matplotlib.use('agg')
@@ -60,8 +60,13 @@ def plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, n
     df.fillna(value=np.nan, inplace=True)
 
     # retrieve a list of daily forecast objects
-    forecasts = readDaily(config, stid, 'forecast', 'daily_forecast', start_date=forecast_date, end_date=forecast_date,
-                          force_list=True)
+    try:
+        forecasts = readDaily(config, stid, 'forecast', 'daily_forecast',
+                              start_date=forecast_date, end_date=forecast_date, force_list=True)
+    except MissingDataError:
+        if config['debug'] > 9:
+            print('plot.daily warning: no forecasts found for %s on %s' % (stid, forecast_date))
+        return
 
     # calculate bias-corrected forecasts
     for forecast in forecasts:
@@ -202,23 +207,23 @@ def main(config, stid, forecast_date):
         plot_directory = config['Plot']['Options']['plot_directory']
     except KeyError:
         plot_directory = '%s/site_data' % config['THETAE_ROOT']
-        print('plot.hilo warning: setting output directory to default')
+        print('plot.daily warning: setting output directory to default')
     if not (os.path.isdir(plot_directory)):
         os.makedirs(plot_directory)
     if config['debug'] > 9:
-        print('plot.hilo: writing output to %s' % plot_directory)
+        print('plot.daily: writing output to %s' % plot_directory)
     try:
         image_type = config['Plot']['Options']['plot_file_format']
     except KeyError:
         image_type = 'svg'
         if config['debug'] > 50:
-            print('plot.hilo warning: using default image file format (svg)')
+            print('plot.daily warning: using default image file format (svg)')
 
     # Get list of models
     models = list(config['Models'].keys())
 
     if config['debug'] > 50:
-        print('plot.hilo: plotting Hi-Lo bar plots')
+        print('plot.daily: plotting Hi-Lo bar plots')
 
     # tomorrow sort by high
     plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, sort_by='high')

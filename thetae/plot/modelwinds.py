@@ -56,8 +56,8 @@ def plot_model_winds(config, stid, models, forecast_date, plot_directory, image_
             color = 'k'
 
         plot_times = [dates.date2num(d) for d in pd.to_datetime(times.values)]
-        plt.barbs(plot_times,[key]*len(times), uwnd, vwnd, barbcolor=color, flagcolor=color, zorder=2,
-                  length=len(models)/2.5, lw=0.9)
+        plt.barbs(plot_times, [key]*len(times), uwnd, vwnd, barbcolor=color, flagcolor=color, zorder=2,
+                  length=70./(len(models) + 2), lw=0.9)
         key += 1
         model_list.append(model)
 
