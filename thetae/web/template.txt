@@ -1,0 +1,26 @@
+<?php
+/**
+ * Settings file for the theta-e plotting website.
+ */
+
+$$pageURL = '$page_url';
+$$path = '$page_path';
+$$jsonROOT= '$json_directory';
+$$plotROOT = '$plot_directory';
+
+$$models = $models;
+$$defaultModel = '$default_model';
+$$bufrModels = $bufr_models;
+
+$$stid = '$stid';
+$$timezone = '$timezone';
+$$latitude = '$latitude';
+$$longitude = '$longitude';
+$$stationName = '$long_name';
+
+$$chartColors = $colors;
+$$highChartsCreditsText = '(c) 2019 UW WxChallenge Team';
+$$graphTimeFormat = '%HZ';
+$$graphDateFormat = '%b %e';
+
+$$nextUTCTime = 24 * 3600 * (intdiv(time() - 3600, 24 * 3600) + 1);
