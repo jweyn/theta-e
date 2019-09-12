@@ -317,7 +317,7 @@ def get_ghcn_stid(config, stid):
         try:
             response = urlopen('%s/%s' % (main_addr, stations_file))
             with open(stations_filename, 'w') as f:
-                f.write(response.read())
+                f.write(response.read().decode("utf-8"))
         except BaseException as e:
             print('get_ghcn_stid: unable to download site name database')
             print("*** Reason: '%s'" % str(e))
