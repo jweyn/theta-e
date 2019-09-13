@@ -379,8 +379,10 @@ def main(config, stid):
             num_files = 1
         get_cf6_files(config, stid, num_files)
 
-    # Get the first incomplete date in the OBS table - subtract 5 hours since the 6Z ob is just before 6Z
-    first_date = get_latest_date(config, 'forecast', stid, 'OBS') - timedelta(hours=5)
+    # Get the latest date in the verification. It is likely not complete.
+    first_date = get_latest_date(config, 'forecast', stid, 'VERIF')
+    if first_date is None:
+        first_date = end_date - timedelta(hours=24)
     start_date = datetime(first_date.year, first_date.month, first_date.day, 6)
 
     # Get the daily verification
