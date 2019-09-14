@@ -113,9 +113,15 @@ def plot_hilo(config, stid, models, forecast_date, plot_directory, image_type, n
             edgecolor=df['color'].values, align='center')
 
     # plot verify lines if applicable, make sure y-lims account for verification
-    if verify_lines is not False:
-        # load verification
-        obs = readDaily(config, stid, 'forecast', 'verif', start_date=forecast_date, end_date=forecast_date)
+    if verify_lines:
+        try:
+            # load verification
+            obs = readDaily(config, stid, 'forecast', 'verif', start_date=forecast_date, end_date=forecast_date)
+        except MissingDataError:
+            obs = None
+            verify_lines = False
+
+    if verify_lines:
         plt.axhline(y=obs.high, lw=3, c='k')
         plt.axhline(y=obs.high, lw=2, c='r')
         plt.axhline(y=obs.low, lw=3, c='k')

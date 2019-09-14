@@ -14,7 +14,7 @@ import pandas as pd
 import numpy as np
 import os
 import re
-from thetae.util import meso_api_dates, Daily
+from thetae.util import meso_api_dates, Daily, check_cache_file
 from thetae.db import readTimeSeries, get_latest_date
 from thetae import MissingDataError
 from datetime import datetime, timedelta
@@ -370,14 +370,13 @@ def main(config, stid):
     """
     end_date = datetime.utcnow()
 
-    # Download latest CF6 files. There's no need to do this all the time
-    if 12 <= end_date.hour < 20:
+    # Download latest CF6 files. Check the age (or existence) of the current month file.
+    site_directory = '%s/site_data' % config['THETAE_ROOT']
+    latest_cf6_file = '%s/%s_%s.cli' % (site_directory, stid, end_date.strftime('%Y%m'))
+    cache_ok = check_cache_file(config, latest_cf6_file, get_23z=False)
+    if not cache_ok:
         # If we're at the beginning of the month, get the last month too
-        if end_date.day < 3:
-            num_files = 2
-        else:
-            num_files = 1
-        get_cf6_files(config, stid, num_files)
+        get_cf6_files(config, stid, 2 if end_date.day < 3 else 1)
 
     # Get the latest date in the verification. It is likely not complete.
     first_date = get_latest_date(config, 'forecast', stid, 'VERIF')
