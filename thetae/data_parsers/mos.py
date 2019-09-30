@@ -69,7 +69,10 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     # Remove duplicate rows
     df = df.drop_duplicates()
     # Fix rain
-    df['q06'] = df['q06'].apply(qpf_interpreter)
+    if mos_model.upper() == 'NBS':
+        df['q06'] = df['q06'].apply(lambda x: x / 100.)
+    else:
+        df['q06'] = df['q06'].apply(qpf_interpreter)
 
     # Format the DataFrame for the default schema
     # Dictionary for renaming columns

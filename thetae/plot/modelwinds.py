@@ -46,8 +46,8 @@ def plot_model_winds(config, stid, models, forecast_date, plot_directory, image_
             continue
 
         times = forecast.timeseries.data['DATETIME']
-        wspd = forecast.timeseries.data['WINDSPEED']
-        drct = forecast.timeseries.data['WINDDIRECTION']
+        wspd = forecast.timeseries.data['WINDSPEED'].apply(lambda x: 0. if x is None else x)
+        drct = forecast.timeseries.data['WINDDIRECTION'].apply(lambda x: 0. if x is None else x)
         uwnd, vwnd = wind_speed_dir_to_uv(wspd.values, drct.values)
 
         try:
@@ -57,7 +57,7 @@ def plot_model_winds(config, stid, models, forecast_date, plot_directory, image_
 
         plot_times = [dates.date2num(d) for d in pd.to_datetime(times.values)]
         plt.barbs(plot_times, [key]*len(times), uwnd, vwnd, barbcolor=color, flagcolor=color, zorder=2,
-                  length=70./(len(models) + 2), lw=0.9)
+                  length=6., lw=0.9)
         key += 1
         model_list.append(model)
 
