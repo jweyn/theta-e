@@ -51,13 +51,13 @@ def plot_windrose(wdf2, wsf2, start_date=None, end_date=None, start_year=None,
     ax = WindroseAxes.from_ax(fig=fig)
     ax.bar(wdf2, wsf2, bins=np.arange(5, 36, 5),
            opening=1.0, nsector=36, edgecolor='white')
-    if (start_year is not None and not (start_date is not None and start_date.year < start_year)):
-        start_year = start_date.year
+    if start_year is not None:
+        start_date = start_date.replace(year=start_year)
     if start_date is not None and end_date is not None and stid is not None:
         ax.set_title('Max 2-min wind rose for ' + stid + ' from ' +
                      datetime.strftime(start_date, "%d %b") + ' to ' +
                      datetime.strftime(end_date, "%d %b") + ' for ' +
-                     '{:d} to {:d}\n'.format(start_year, end_date.year))
+                     '{:d} to {:d}\n'.format(start_date.year, end_date.year))
     box = ax.get_position()
     ax.set_position([box.x0 + 0.1 * box.width, box.y0 - box.height * 0.05, box.width, box.height])
     ax.legend(title='Speed (knots)', loc='center right', bbox_to_anchor=(-.1, 0.5))
@@ -85,13 +85,13 @@ def plot_histogram(x, facecolor='b', add_mean=False, bins=None, align='left'):
 def plot_maxt(x, start_date=None, end_date=None, start_year=None, stid=None, outdir='.', img_type='svg'):
     fig, ax, n = plot_histogram(x, facecolor=(0.1, 0.6, 0.4), add_mean=True)
     ax.set_xlabel('Maximum temperature ($^{\circ}$F)')
-    if (start_year is not None and not (start_date is not None and start_date.year < start_year)):
-        start_year = start_date.year
+    if start_year is not None:
+        start_date = start_date.replace(year=start_year)
     if start_date is not None and end_date is not None and stid is not None:
         ax.set_title('Maximum temperature for ' + stid + ' from ' +
                      datetime.strftime(start_date, "%d %b") + ' to ' +
                      datetime.strftime(end_date, "%d %b") + ' for ' +
-                     '{:d} to {:d}\n'.format(start_year, end_date.year))
+                     '{:d} to {:d}\n'.format(start_date.year, end_date.year))
     fig.set_size_inches(8, 6)
     plt.tight_layout()
     if outdir is not None and stid is not None:
@@ -101,13 +101,13 @@ def plot_maxt(x, start_date=None, end_date=None, start_year=None, stid=None, out
 def plot_mint(x, start_date=None, end_date=None, start_year=None, stid=None, outdir='.', img_type='svg'):
     fig, ax, n = plot_histogram(x, facecolor=(0.6, 0.1, 0.4), add_mean=True)
     ax.set_xlabel('Minimum temperature ($^{\circ}$F)')
-    if (start_year is not None and not (start_date is not None and start_date.year < start_year)):
-        start_year = start_date.year
+    if start_year is not None:
+        start_date = start_date.replace(year=start_year)
     if start_date is not None and end_date is not None and stid is not None:
         ax.set_title('Minimum temperature for ' + stid + ' from ' +
                      datetime.strftime(start_date, "%d %b") + ' to ' +
                      datetime.strftime(end_date, "%d %b") + ' for ' +
-                     '{:d} to {:d}\n'.format(start_year, end_date.year))
+                     '{:d} to {:d}\n'.format(start_date.year, end_date.year))
     fig.set_size_inches(8, 6)
     plt.tight_layout()
     if outdir is not None and stid is not None:
@@ -117,13 +117,13 @@ def plot_mint(x, start_date=None, end_date=None, start_year=None, stid=None, out
 def plot_wspeed(x, start_date=None, end_date=None, start_year=None, stid=None, outdir='.', img_type='svg'):
     fig, ax, n = plot_histogram(x, facecolor=(0.2, 0.4, 0.8), add_mean=True)
     ax.set_xlabel('Wind speed (knots)')
-    if (start_year is not None and not (start_date is not None and start_date.year < start_year)):
-        start_year = start_date.year
+    if start_year is not None:
+        start_date = start_date.replace(year=start_year)
     if start_date is not None and end_date is not None and stid is not None:
         ax.set_title('Max 2-min wind speed for ' + stid + ' from ' +
                      datetime.strftime(start_date, "%d %b") + ' to ' +
                      datetime.strftime(end_date, "%d %b") + ' for ' +
-                     '{:d} to {:d}\n'.format(start_year, end_date.year))
+                     '{:d} to {:d}\n'.format(start_date.year, end_date.year))
     fig.set_size_inches(8, 6)
     plt.tight_layout()
     if outdir is not None and stid is not None:
@@ -140,18 +140,18 @@ def plot_precip(x, start_date=None, end_date=None, start_year=None, stid=None, o
     x1[x > bins[-1]] = len(bins) + 1
     fig, ax, n = plot_histogram(x1, facecolor=(0.8, 0.7, 0.1), bins=range(len(bins) + 2), align='mid')
     ax.set_xlabel('Precipitation (inches)')
-    if (start_year is not None and not (start_date is not None and start_date.year < start_year)):
-        start_year = start_date.year
+    if start_year is not None:
+        start_date = start_date.replace(year=start_year)
     if start_date is not None and end_date is not None and stid is not None:
         ax.set_title('Daily precipitation for ' + stid + ' from ' +
                      datetime.strftime(start_date, "%d %b") + ' to ' +
                      datetime.strftime(end_date, "%d %b") + ' for ' +
-                     '{:d} to {:d}\n'.format(start_year, end_date.year))
+                     '{:d} to {:d}\n'.format(start_date.year, end_date.year))
     xlabels = ['{:1.2f}'.format(bins[0])]
     for b in range(len(bins) - 1):
         xlabels.append('{:1.2f}-{:1.2f}'.format(bins[b] + 0.01, bins[b + 1]))
     xlabels.append('{:1.2f}+'.format(bins[-1]))
-    ax.set_xticklabels(xlabels)
+    ax.set_xticklabels([''] + xlabels)
     plt.setp(ax.get_xticklabels(), ha='left')
     fig.set_size_inches(8, 6)
     plt.tight_layout()
