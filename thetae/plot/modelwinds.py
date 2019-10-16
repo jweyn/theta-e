@@ -112,6 +112,10 @@ def plot_mixed_layer_winds(config, stid, models, forecast_date, plot_directory, 
                 if config['debug'] > 50:
                     print('plot.modelwinds: bufkit import error for %s' % model)
                 continue
+            except ValueError:
+                if config['debug'] > 50:
+                    print('plot.modelwinds: bad boundary layer computation for %s' % model)
+                continue
             try:
                 color = config['Models'][model]['color']
             except KeyError:
