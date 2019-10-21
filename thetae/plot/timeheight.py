@@ -14,7 +14,6 @@ import re
 import numpy as np
 from scipy import interpolate
 import pandas as pd
-from scipy.ndimage.filters import gaussian_filter
 from math import ceil
 from datetime import datetime, timedelta
 from io import open
@@ -352,6 +351,15 @@ def compute_bl_winds(bufkit_df):
     return bl_df
 
 
+def delete_plots(stid, model, variables, plot_dir, img_type):
+    for v in variables:
+        plot_file = '{}/{}_timeheight_{}_{}.{}'.format(plot_dir, stid, v.upper(), model, img_type)
+        try:
+            os.remove(plot_file)
+        except:
+            pass
+
+
 def main(config, stid, forecast_date):
     """
     Make timeseries plots for a given station.
@@ -388,12 +396,21 @@ def main(config, stid, forecast_date):
         if 'bufr_name' in config['Models'][model].keys():
             try:
                 df = bufr_timeheight_parser(config, model, stid, forecast_date)
-                for variable in variables:
-                    if config['debug'] > 50:
-                        print('plot.timeheight: plotting %s for %s' % (variable, model))
-                    plot_timeheight(config, stid, model, forecast_date, variable, df, plot_directory, image_type)
+            except IOError:
+                if config['debug'] > 9:
+                    print('plot.timeheight: bufr file missing for %s; deleting old plots')
+                delete_plots(stid, model, variables, plot_directory, image_type)
+                continue
             except BaseException:
                 if config['traceback']:
                     raise
-                pass
+                continue
+            for variable in variables:
+                if config['debug'] > 50:
+                    print('plot.timeheight: plotting %s for %s' % (variable, model))
+                try:
+                    plot_timeheight(config, stid, model, forecast_date, variable, df, plot_directory, image_type)
+                except BaseException:
+                    if config['traceback']:
+                        raise
     return
