@@ -39,6 +39,8 @@ def parse_args():
     parser.add_argument("--remove", action="store", dest="r_stid", nargs='*',
                         help="Remove the database tables for any number of stations; if no stations are specified, "
                              "nothing is done.")
+    parser.add_argument("--no-check-climo", action="store_true", dest="no_climo",
+                        help="Omit check for historical climatology in database")
     arguments = parser.parse_args()
 
     if arguments.version:

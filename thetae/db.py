@@ -62,13 +62,14 @@ def connection(config, database):
     return conn
 
 
-def init(config, reset_old=False):
+def init(config, reset_old=False, no_climo=False):
     """
     Initializes new station IDs in the databases. Returns a list of all sites included in config that require historical
     data to be retrieved. Also creates a database if it does not exist.
 
     :param config:
     :param reset_old: if True, erases tables if they are too old
+    :param no_climo: if True, does not check "CLIMO" tables
     """
     add_sites = []
     for data_binding in config['DataBinding'].keys():
@@ -99,8 +100,11 @@ def init(config, reset_old=False):
                 print(sql_table_names)
 
             # For each requested table, create it if it doesn't exist
-            for t in range(len(schema_table_names)):
-                table = schema_table_names[t]
+            for t, table in enumerate(schema_table_names):
+                if no_climo and 'CLIMO' in table.upper():
+                    if config['debug'] > 9:
+                        print('db.init: ignoring table %s' % table)
+                    continue
                 if not (table in sql_table_names):
                     # Something was missing, so we need to add the site to the output list
                     add_site = True

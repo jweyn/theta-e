@@ -54,7 +54,7 @@ def main(args):
 
     # Step 1: check the database initialization
     print('thetae.engine: running database initialization checks')
-    add_sites = thetae.db.init(config)
+    add_sites = thetae.db.init(config, no_climo=args.no_climo)
 
     # Check for backfill-historical sites
     if args.b_stid is not None:
