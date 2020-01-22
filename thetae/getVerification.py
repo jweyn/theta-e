@@ -10,7 +10,7 @@ the main engine process, while the historical process is used in the engine hist
 observations.
 """
 
-from thetae.db import writeTimeSeries, writeDaily
+from thetae.db import writeTimeSeries, writeDaily, get_latest_date
 from datetime import datetime, timedelta
 from thetae.util import get_object, config_date_to_datetime
 from builtins import str
@@ -35,10 +35,22 @@ def main(config):
     except KeyError:
         print('getVerification error: no driver specified for Obs!')
         raise
-    # Iterate over stations
+    # Iterate over stations. For stations other than current stid, rapid updates are not necessary.
     for stid in config['Stations'].keys():
+        # Check date
+        if stid == config['current_stid']:
+            last_obs_age = None
+        else:
+            try:
+                last_obs_age = (get_latest_date(config, 'forecast', stid, 'OBS') - time_now).seconds // 3600
+            except BaseException as e:
+                last_obs_age = None
+        if last_obs_age is not None and last_obs_age < int(config['Verify']['obs_refresh_interval_hours']):
+            if config['debug'] > 0:
+                print('getVerification: obs recent enough for station %s, omitting this time' % stid)
+            continue
         # Get the obs
-        if config['debug'] > 9:
+        if config['debug'] > 0:
             print('getVerification: getting obs for station %s' % stid)
         try:
             # Verification and obs main() only need to know the stid
@@ -67,9 +79,22 @@ def main(config):
     except KeyError:
         print('getVerification error: no driver specified for Verification!')
         raise
-    # Iterate over stations
+    # Iterate over stations. For stations other than current stid, rapid updates are not necessary.
     for stid in config['Stations'].keys():
-        if config['debug'] > 9:
+        # Check date
+        if stid == config['current_stid']:
+            last_verif_age = None
+        else:
+            try:
+                last_verif_age = (get_latest_date(config, 'forecast', stid, 'VERIF') - time_now).seconds // 3600
+            except BaseException as e:
+                last_verif_age = None
+        if last_verif_age is not None and last_verif_age < int(config['Verify']['obs_refresh_interval_hours']):
+            if config['debug'] > 0:
+                print('getVerification: verification recent enough for station %s, omitting this time' % stid)
+            continue
+        # Get the verification
+        if config['debug'] > 0:
             print('getVerification: getting verification for station %s' % stid)
         try:
             # Verification and obs main() only need to know the stid

@@ -69,14 +69,14 @@ def get_ukmet_forecast(config, stid, lat, lon, api_id, api_secret, forecast_date
         'windSpeed10m': 'windSpeed',
         'windGustSpeed10m': 'windGust',
         'windDirectionFrom10m': 'windDirection',
-        'totalPrecipAmount': 'rain',
+        'precipitationRate': 'rain',  # Assume constant in hour. parameter totalPrecipAmount no longer exists.
         'mslp': 'pressure',
     }
     ukmet_df = ukmet_df.rename(columns=column_names_dict)
 
     # drop columns that we are not using
     ukmet_df.drop(['feelsLikeTemperature', 'probOfPrecipitation', 'screenRelativeHumidity', 'significantWeatherCode',
-                   'precipitationRate', 'totalSnowAmount', 'uvIndex', 'visibility'], inplace=True, axis=1)
+                   'totalSnowAmount', 'uvIndex', 'visibility'], inplace=True, axis=1)
 
     # correct units
     ukmet_df['pressure'] /= 100.
