@@ -10,7 +10,7 @@ Retrieve climatology data from ulmo's ghcn_daily
 
 import ulmo
 import numpy as np
-from thetae.util import get_ghcn_stid, Daily
+from thetae.util import get_ghcn_stid, Daily, last_leap_year
 from datetime import datetime, timedelta
 from builtins import str
 
@@ -58,7 +58,7 @@ def get_climo(config, stid, ghcn_stid, start_year=1980):
 
     # Now we have dataframes with indices (month, day). We need to use the
     # nearest leap year to avoid confusion with Feb 29
-    year = 4 * (datetime.utcnow().year // 4)
+    year = last_leap_year()
     # Create a list of Dailys
     dailys = []
     if config['debug'] > 50:
