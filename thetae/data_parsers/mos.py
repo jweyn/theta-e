@@ -139,6 +139,10 @@ def main(config, model, stid, forecast_date):
     else:
         init_date = forecast_date - timedelta(hours=24)
 
+    # For NBS, model run time is 1 hour later
+    if model.upper() == 'NBS':
+        init_date = init_date + timedelta(hours=1)
+
     # Get forecast
     forecast = get_mos_forecast(stid, mos_model, init_date, forecast_date)
 
