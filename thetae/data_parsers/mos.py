@@ -54,6 +54,10 @@ def get_mos_forecast(stid, mos_model, init_date, forecast_date):
     # Create forecast object
     forecast = Forecast(stid, default_model_name, forecast_date)
 
+    # For NBS, model run time is 1 hour later
+    if mos_model.upper() == 'NBS':
+        init_date = init_date + timedelta(hours=1)
+
     # Retrieve the model data
     base_url = 'http://mesonet.agron.iastate.edu/mos/csv.php?station=%s&runtime=%s&model=%s'
     formatted_date = init_date.strftime('%Y-%m-%d%%20%H:00')
@@ -138,10 +142,6 @@ def main(config, model, stid, forecast_date):
         init_date = forecast_date - timedelta(hours=36)
     else:
         init_date = forecast_date - timedelta(hours=24)
-
-    # For NBS, model run time is 1 hour later
-    if mos_model.upper() == 'NBS':
-        init_date = init_date + timedelta(hours=1)
 
     # Get forecast
     forecast = get_mos_forecast(stid, mos_model, init_date, forecast_date)
