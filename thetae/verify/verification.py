@@ -321,11 +321,15 @@ def get_verification(config, stid, start_dt, end_dt, use_climo=False, use_cf6=Tr
     aggregate['WINDSPEED'] = {'wind': np.max}
     aggregate['RAINHOUR'] = {'rain': np.sum}
 
-    obs_hour_day = obs_hour.groupby([pd.DatetimeIndex(obs_hour[datename]).year,
-                                     pd.DatetimeIndex(obs_hour[datename]).month,
-                                     pd.DatetimeIndex(obs_hour[datename]).day]).agg(aggregate)
+    obs_hour.index = obs_hour['DATETIME']
+    obs_hour_day = pd.DataFrame(columns = ['high','low','wind','rain'])
+    obs_hour_day['high'] = obs_hour['TEMPERATURE'].resample('1D').max()
+    obs_hour_day['low'] = obs_hour['TEMPERATURE'].resample('1D').min()
+    obs_hour_day['wind'] = obs_hour['WINDSPEED'].resample('1D').max()
+    obs_hour_day['rain'] = obs_hour['RAINHOUR'].resample('1D').sum()
 
-    obs_hour_day.columns = [v[-1] for v in obs_hour_day.columns.values]
+    obs_daily.index = obs_daily['DATETIME']
+    obs_daily.drop('DATETIME', axis=1, inplace=True)
 
     # Compare the daily to hourly values
     obs_daily['high'] = np.fmax(obs_daily['high'], obs_hour_day['high'])
@@ -333,7 +337,7 @@ def get_verification(config, stid, start_dt, end_dt, use_climo=False, use_cf6=Tr
     obs_daily['wind'] = np.fmax(obs_daily['wind'], obs_hour_day['wind'])
     obs_daily['rain'] = np.fmax(obs_daily['rain'], obs_hour_day['rain'])
 
-    # Make sure rain has no missing values rather than zeros. Groupby appropriately dealt with missing values earlier.
+    # Make sure rain has no missing values rather than zeros. Resample appropriately dealt with missing values earlier.
     obs_daily['rain'].fillna(0.0, inplace=True)
 
     # Round values to nearest degree, knot, and centi-inch
