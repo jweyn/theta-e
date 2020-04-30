@@ -344,8 +344,6 @@ def get_verification(config, stid, start_dt, end_dt, use_climo=False, use_cf6=Tr
     obs_daily = obs_daily.round({'high': 0, 'low': 0, 'wind': 0, 'rain': 2})
 
     # Lastly, place all the values we found into a list of Daily objects.
-    # Set datetime as the index. This will help use datetime in the creation of the Dailys.
-    obs_daily = obs_daily.set_index(datename)
     # Remove extraneous columns
     export_cols = ['high', 'low', 'wind', 'rain']
     for col in obs_daily.columns:
